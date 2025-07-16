@@ -13,6 +13,8 @@ GENERAL_TRANSLATIONS = {
     'general_login_tooltip': 'Sign in to access your account',
     'general_signup_tooltip': 'Create a new account to get started',
     'general_signup_personal': 'Sign up as a personal user',
+    'credits_dashboard': 'Credits Dashboard',
+    'credits_dashboard_desc': 'View and manage your account credits',
     'general_signup_business': 'Sign up as a business owner',
     'general_signup_agent': 'Sign up as an agent',
     'general_personal_user': 'Personal User',
@@ -1472,6 +1474,8 @@ GENERAL_TRANSLATIONS = {
             'general_faq_business_agent_answer': 'Nemo amsoshi ga tambayoyin da aka saba yi ga masu kasuwanci da wakilai',
             'general_terms_of_service': 'Sharuɗɗan Sabis',
             'general_privacy_policy': 'Manufar Sirri',
+    'credits_dashboard': 'Dashboard feasboard na Kiredi',
+    'credits_dashboard_desc': 'Duba da sarrafa kiredit ɗin asusunku',
 
         # Misc
         'payment_locations_title': 'Wuraren Biyan Kuɗi',
