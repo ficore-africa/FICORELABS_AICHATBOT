@@ -1,0 +1,597 @@
+{% extends "base.html" %}
+{% block title %}{{ t('net_worth_calculator', default='Net Worth Calculator', lang=lang) }}{% endblock %}
+{% block extra_head %}
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+        .number-input:invalid { border-color: #dc3545; }
+        .invalid-feedback { display: none; }
+        .number-input:invalid ~ .invalid-feedback { display: block; }
+        .card { transition: transform 0.2s; }
+        .card:hover { transform: scale(1.02); }
+        canvas#netWorthChart { max-height: 400px; width: 100%; }
+        .badge { font-size: 0.9rem; padding: 0.5em; }
+        .table-responsive { max-height: 400px; overflow-y: auto; }
+    </style>
+{% endblock %}
+{% block content %}
+<div class="container my-4">
+    {% set tool_name = 'net_worth_calculator' %}
+    {% set tool_icon = 'fa-balance-scale' %}
+    {% set subtitle = t('net_worth_calculate_wealth', default='Calculate your net worth and track your wealth', lang=lang) %}
+    {% include 'personal/GENERAL/tool_header.html' %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="alert-container">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ t(message, default=message, lang=lang) }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ t('general_close', default='Close', lang=lang) }}"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% if form.errors and request.method == 'POST' %}
+        {% for field, errors in form.errors.items() %}
+            {% for error in errors %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ t(error, default=error, lang=lang) }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ t('general_close', default='Close', lang=lang) }}"></button>
+                </div>
+            {% endfor %}
+        {% endfor %}
+    {% endif %}
+
+    <ul class="nav nav-tabs mb-4" id="netWorthTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'calculator' else '' }}" id="calculator-tab" data-bs-toggle="tab" data-bs-target="#calculator" type="button" role="tab" aria-controls="calculator" aria-selected="{{ 'true' if active_tab == 'calculator' else 'false' }}">
+                <i class="fas fa-calculator me-1"></i> {{ t('net_worth_calculator', default='Calculator', lang=lang) }}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'dashboard' else '' }}" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab" aria-controls="dashboard" aria-selected="{{ 'true' if active_tab == 'dashboard' else 'false' }}">
+                <i class="fas fa-chart-line me-1"></i> {{ t('net_worth_dashboard', default='Dashboard', lang=lang) }}
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="netWorthTabContent">
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'calculator' else '' }}" id="calculator" role="tabpanel" aria-labelledby="calculator-tab">
+            <form method="POST" action="{{ url_for('personal.net_worth.main') }}" id="netWorthForm" class="validate-form needs-validation" novalidate>
+                {{ form.csrf_token }}
+                <input type="hidden" name="action" value="calculate_net_worth">
+
+                {% if current_user.is_authenticated %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-user me-1"></i> {{ t('net_worth_email_preferences', default='Email Preferences', lang=lang) }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check">
+                            {{ form.send_email(class="form-check-input", id="sendEmail", checked=form.send_email.data or False) }}
+                            <label class="form-check-label" for="sendEmail">{{ t('net_worth_send_email', default='Send me my net worth summary by email', lang=lang) }}</label>
+                            <div id="send-email-help" class="form-text">{{ t('general_send_email_title', default='Check to receive an email with your net worth summary', lang=lang) }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-plus-circle text-success me-1"></i> {{ t('net_worth_what_you_own', default='What You Own (Assets)', lang=lang) }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.cash_savings.id }}" class="form-label">{{ t('net_worth_cash_savings', default='Cash & Savings', lang=lang) }}</label>
+                                    {{ form.cash_savings(class="form-control number-input", placeholder=t('net_worth_cash_savings_placeholder', default='e.g., 500,000.00', lang=lang), value=form.cash_savings.data or '') }}
+                                    <div class="invalid-feedback">{{ t('net_worth_cash_savings_invalid', default='Cash & Savings must be a valid number', lang=lang) }}</div>
+                                    <div id="cash_savings_help" class="form-text">{{ t('net_worth_cash_savings_help', default='Enter amount (e.g., 500000 or 500,000.00)', lang=lang) }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.investments.id }}" class="form-label">{{ t('net_worth_investments', default='Investments', lang=lang) }}</label>
+                                    {{ form.investments(class="form-control number-input", placeholder=t('net_worth_investments_placeholder', default='e.g., 1,000,000.00', lang=lang), value=form.investments.data or '') }}
+                                    <div class="invalid-feedback">{{ t('net_worth_investments_invalid', default='Investments must be a valid number', lang=lang) }}</div>
+                                    <div id="investments_help" class="form-text">{{ t('net_worth_investments_help', default='Enter amount (e.g., 1000000 or 1,000,000.00)', lang=lang) }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.property.id }}" class="form-label">{{ t('net_worth_physical_property', default='Physical Property', lang=lang) }}</label>
+                                    {{ form.property(class="form-control number-input", placeholder=t('net_worth_property_placeholder', default='e.g., 5,000,000.00', lang=lang), value=form.property.data or '') }}
+                                    <div class="invalid-feedback">{{ t('net_worth_property_invalid', default='Physical Property must be a valid number', lang=lang) }}</div>
+                                    <div id="property_help" class="form-text">{{ t('net_worth_property_help', default='Enter amount (e.g., 5000000 or 5,000,000.00)', lang=lang) }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-minus-circle text-danger me-1"></i> {{ t('net_worth_what_you_owe', default='What You Owe (Liabilities)', lang=lang) }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.loans.id }}" class="form-label">{{ t('net_worth_loans', default='Loans & Debts', lang=lang) }}</label>
+                                    {{ form.loans(class="form-control number-input", placeholder=t('net_worth_loans_placeholder', default='e.g., 200,000.00', lang=lang), value=form.loans.data or '') }}
+                                    <div class="invalid-feedback">{{ t('net_worth_loans_invalid', default='Loans must be a valid number', lang=lang) }}</div>
+                                    <div id="loans_help" class="form-text">{{ t('net_worth_loans_help', default='Enter amount (e.g., 200000 or 200,000.00)', lang=lang) }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    {{ t('net_worth_calculation_info', default='Your Net Worth = Total Assets - Total Liabilities', lang=lang) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-calculator me-1"></i> {{ t('net_worth_calculate_net_worth', default='Calculate Net Worth', lang=lang) }}
+                </button>
+            </form>
+        </div>
+
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'dashboard' else '' }}" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
+            {% if records %}
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h6>{{ t('net_worth_total_assets', default='Total Assets', lang=lang) }}</h6>
+                                <h3>{{ latest_record.total_assets_formatted }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-danger text-white">
+                            <div class="card-body text-center">
+                                <h6>{{ t('net_worth_total_liabilities', default='Total Liabilities', lang=lang) }}</h6>
+                                <h3>{{ latest_record.total_liabilities_formatted }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-{{ 'success' if latest_record.net_worth_raw >= 0 else 'warning' }} text-white">
+                            <div class="card-body text-center">
+                                <h6>{{ t('net_worth_net_worth', default='Net Worth', lang=lang) }}</h6>
+                                <h3>{{ latest_record.net_worth_formatted }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    {% if current_user.is_authenticated %}
+                    <div class="col-md-12 mt-3">
+                        <div class="card bg-secondary text-white">
+                            <div class="card-body text-center">
+                                <h6>{{ t('net_worth_user_email', default='Associated Email', lang=lang) }}</h6>
+                                <h6>{{ latest_record.user_email }}</h6>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-users me-1"></i> {{ t('net_worth_comparison', default='Comparison', lang=lang) }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>{{ t('net_worth_rank', default='Your Rank', lang=lang) }}</span>
+                                <strong>{{ rank }} / {{ total_users }}</strong>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>{{ t('net_worth_average_net_worth', default='Average Net Worth', lang=lang) }}</span>
+                                <strong>{{ average_net_worth }}</strong>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-bar me-1"></i> {{ t('net_worth_net_worth_metrics', default='Net Worth Metrics', lang=lang) }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="netWorthChart" style="max-height: 400px;"></canvas>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6><i class="fas fa-plus-circle text-success me-1"></i> {{ t('net_worth_assets_breakdown', default='Assets Breakdown', lang=lang) }}</h6>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>{{ t('net_worth_cash_savings', default='Cash & Savings', lang=lang) }}</span>
+                                        <strong>{{ latest_record.cash_savings_formatted }}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>{{ t('net_worth_investments', default='Investments', lang=lang) }}</span>
+                                        <strong>{{ latest_record.investments_formatted }}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>{{ t('net_worth_physical_property', default='Physical Property', lang=lang) }}</span>
+                                        <strong>{{ latest_record.property_formatted }}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>{{ t('net_worth_created_at', default='Created At', lang=lang) }}</span>
+                                        <strong>{{ latest_record.created_at }}</strong>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6><i class="fas fa-trophy me-1"></i> {{ t('net_worth_badges', default='Badges', lang=lang) }}</h6>
+                            </div>
+                            <div class="card-body">
+                                {% if latest_record.badges %}
+                                    {% for badge in latest_record.badges %}
+                                        <span class="badge bg-success me-1 mb-1">{{ badge }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="text-muted">{{ t('net_worth_no_badges_earned_yet', default='No badges earned yet', lang=lang) }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if insights or cross_tool_insights %}
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h6><i class="fas fa-lightbulb me-1"></i> {{ t('net_worth_insights', default='Insights', lang=lang) }}</h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled">
+                                {% for insight in insights %}
+                                    <li><i class="fas fa-check-circle text-success me-1"></i> {{ insight }}</li>
+                                {% endfor %}
+                                {% for insight in cross_tool_insights %}
+                                    <li><i class="fas fa-link text-primary me-1"></i> {{ insight }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if tips %}
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h6><i class="fas fa-rocket me-1"></i> {{ t('net_worth_tips_for_improving_net_worth', default='Tips for Improving Net Worth', lang=lang) }}</h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled">
+                                {% for tip in tips %}
+                                    <li><i class="fas fa-arrow-up text-primary me-1"></i> {{ tip }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if records %}
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h6><i class="fas fa-history me-1"></i> {{ t('net_worth_previous_assessments', default='Previous Assessments', lang=lang) }}</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>{{ t('general_date', default='Date', lang=lang) }}</th>
+                                            <th>{{ t('net_worth_net_worth', default='Net Worth', lang=lang) }}</th>
+                                            <th>{{ t('net_worth_total_assets', default='Assets', lang=lang) }}</th>
+                                            <th>{{ t('net_worth_total_liabilities', default='Liabilities', lang=lang) }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for record_id, record in records %}
+                                            <tr>
+                                                <td>{{ record.created_at }}</td>
+                                                <td class="{% if record.net_worth_raw >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                                    {{ record.net_worth_formatted }}
+                                                </td>
+                                                <td>{{ record.total_assets_formatted }}</td>
+                                                <td>{{ record.total_liabilities_formatted }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-balance-scale fa-3x mb-3 text-muted"></i>
+                        <p>{{ t('net_worth_no_net_worth_data_available', default='No net worth data available', lang=lang) }}</p>
+                        <p>{{ t('net_worth_complete_calculator', default='Complete the calculator to see your net worth summary.', lang=lang) }}</p>
+                        <button class="btn btn-primary" onclick="document.getElementById('calculator-tab').click()">
+                            <i class="fas fa-calculator me-1"></i> {{ t('net_worth_calculator', default='Calculator', lang=lang) }}
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if current_user.is_authenticated %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5>{{ t('general_share_ficore', default='Share Ficore Africa with Friends', lang=lang) }}</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ t('general_share_ficore_invite', default='Invite your friends to join Ficore Africa and manage their finances better!', lang=lang) }}</p>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="referralLink" value="{{ url_for('users.signup', ref=current_user.referral_code, _external=True) }}" readonly>
+                    <button class="btn btn-primary" type="button" onclick="copyReferralLink()">{{ t('general_profile_copy_link', default='Copy', lang=lang) }}</button>
+                </div>
+                <div class="mt-3">
+                    <h6>{{ t('net_worth_email_preferences', default='Email Preferences', lang=lang) }}</h6>
+                    <p>{{ t('net_worth_unsubscribe_description', default='Click below to unsubscribe from net worth email notifications.', lang=lang) }}</p>
+                    <form method="POST" action="{{ url_for('personal.net_worth.unsubscribe') }}" class="d-inline">
+                        {{ form.csrf_token }}
+                        <button type="submit" class="btn btn-warning btn-sm">{{ t('net_worth_unsubscribe', default='Unsubscribe', lang=lang) }}</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Translation map for help text
+    const helpTextTranslations = {
+        'cash_savings': "{{ t('net_worth_cash_savings_help', default='Enter amount (e.g., 500000 or 500,000.00)', lang=lang) | escape }}",
+        'investments': "{{ t('net_worth_investments_help', default='Enter amount (e.g., 1000000 or 1,000,000.00)', lang=lang) | escape }}",
+        'property': "{{ t('net_worth_property_help', default='Enter amount (e.g., 5000000 or 5,000,000.00)', lang=lang) | escape }}",
+        'loans': "{{ t('net_worth_loans_help', default='Enter amount (e.g., 200000 or 200,000.00)', lang=lang) | escape }}",
+        'number_invalid': "{{ t('net_worth_number_invalid', default='Please enter a valid non-negative number', lang=lang) | escape }}",
+        'number_max': "{{ t('net_worth_number_max', default='Input cannot exceed 10 billion', lang=lang) | escape }}"
+    };
+
+    // Helper function to format a number for display
+    function formatForDisplay(value) {
+        if (value === null || value === undefined || isNaN(value)) {
+            return '';
+        }
+        return parseFloat(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // Helper function to clean input for numeric parsing
+    function cleanForParse(value) {
+        if (!value) return '';
+        let clean = value.replace(/,/g, '');
+        const parts = clean.split('.');
+        if (parts.length > 2) {
+            clean = parts[0] + '.' + parts.slice(1).join('');
+        }
+        return clean;
+    }
+
+    // Apply formatting and validation to all number inputs
+    document.querySelectorAll('.number-input').forEach(input => {
+        const originalHelpText = helpTextTranslations[input.id] || helpTextTranslations['cash_savings'];
+
+        // Restore raw value on focus
+        input.addEventListener('focus', function() {
+            let currentValue = input.value;
+            input.value = cleanForParse(currentValue);
+        });
+
+        // Apply formatting and validation on blur
+        input.addEventListener('blur', function() {
+            let rawValue = cleanForParse(input.value);
+            let numValue = parseFloat(rawValue) || 0;
+
+            // Client-side validation
+            if (numValue > 10000000000) {
+                numValue = 10000000000;
+                input.classList.add('is-invalid');
+                document.getElementById(`${input.id}_help`).innerText = helpTextTranslations['number_max'];
+            } else if (numValue < 0) {
+                numValue = 0;
+                input.classList.add('is-invalid');
+                document.getElementById(`${input.id}_help`).innerText = helpTextTranslations['number_invalid'];
+            } else {
+                input.classList.remove('is-invalid');
+                document.getElementById(`${input.id}_help`).innerText = originalHelpText;
+            }
+            input.value = formatForDisplay(numValue);
+        });
+
+        // Clean input while typing
+        input.addEventListener('input', function() {
+            let value = input.value;
+            let cleanedValue = value.replace(/[^0-9.]/g, '');
+            const parts = cleanedValue.split('.');
+            if (parts.length > 2) {
+                cleanedValue = parts[0] + '.' + parts.slice(1).join('');
+            }
+            if (input.value !== cleanedValue) {
+                const start = input.selectionStart;
+                const end = input.selectionEnd;
+                input.value = cleanedValue;
+                input.setSelectionRange(start, end);
+            }
+        });
+
+        // Handle paste events
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            let pasted = (e.clipboardData || window.clipboardData).getData('text');
+            let clean = cleanForParse(pasted);
+            let numValue = parseFloat(clean) || 0;
+            if (numValue > 10000000000) {
+                numValue = 10000000000;
+                alert('{{ t('general_input_cannot_exceed_10_billion', default='Input cannot exceed 10 billion', lang=lang) | escape }}');
+            }
+            input.value = formatForDisplay(numValue);
+        });
+
+        // Format pre-filled values on load
+        input.dispatchEvent(new Event('blur'));
+    });
+
+    // Clean inputs before form submission
+    const form = document.getElementById('netWorthForm');
+    form.addEventListener('submit', function(e) {
+        let formIsValid = true;
+        form.querySelectorAll('.number-input').forEach(input => {
+            let rawValue = cleanForParse(input.value);
+            let numValue = parseFloat(rawValue) || 0;
+
+            if (numValue > 10000000000) {
+                input.classList.add('is-invalid');
+                document.getElementById(`${input.id}_help`).innerText = helpTextTranslations['number_max'];
+                formIsValid = false;
+            } else if (numValue < 0) {
+                input.classList.add('is-invalid');
+                document.getElementById(`${input.id}_help`).innerText = helpTextTranslations['number_invalid'];
+                formIsValid = false;
+            } else {
+                input.classList.remove('is-invalid');
+                document.getElementById(`${input.id}_help`).innerText = helpTextTranslations[input.id];
+            }
+            input.value = numValue.toFixed(2);
+        });
+
+        if (!form.checkValidity() || !formIsValid) {
+            e.preventDefault();
+            e.stopPropagation();
+            form.classList.add('was-validated');
+            const firstInvalid = form.querySelector('.is-invalid');
+            if (firstInvalid) {
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstInvalid.focus();
+            }
+        }
+    });
+
+    // Tab persistence with sessionStorage
+    const tabs = document.querySelectorAll('#netWorthTabs .nav-link');
+    tabs.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function(e) {
+            const activeTabId = e.target.id.replace('-tab', '');
+            sessionStorage.setItem('activeNetWorthTab', activeTabId);
+            const url = new URL(window.location);
+            url.searchParams.set('tab', activeTabId);
+            window.history.replaceState({}, '', url);
+        });
+    });
+
+    const savedTab = sessionStorage.getItem('activeNetWorthTab') || '{{ active_tab }}';
+    if (savedTab) {
+        const tabButton = document.getElementById(`${savedTab}-tab`);
+        if (tabButton) {
+            const bsTab = new bootstrap.Tab(tabButton);
+            bsTab.show();
+        }
+    }
+
+    {% if records %}
+    // Net Worth Chart
+    const ctx = document.getElementById('netWorthChart').getContext('2d');
+    const dataValues = [
+        {{ latest_record.total_assets_raw | default(0) }},
+        {{ latest_record.total_liabilities_raw | default(0) }},
+        {{ latest_record.net_worth_raw | default(0) }}
+    ];
+    const maxValue = Math.max(...dataValues) * 1.2;
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [
+                '{{ t('net_worth_total_assets', default='Total Assets', lang=lang) | escape }}',
+                '{{ t('net_worth_total_liabilities', default='Total Liabilities', lang=lang) | escape }}',
+                '{{ t('net_worth_net_worth', default='Net Worth', lang=lang) | escape }}'
+            ],
+            datasets: [{
+                label: '{{ t('net_worth_metrics', default='Metrics', lang=lang) | escape }}',
+                data: dataValues,
+                backgroundColor: ['#4CAF50', '#EF5350', '#42A5F5'],
+                borderColor: ['#388E3C', '#D32F2F', '#0288D1'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: maxValue > 0 ? maxValue : 1000,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.parsed.y.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                        }
+                    }
+                },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'top',
+                    formatter: function(value) {
+                        return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    },
+                    color: '#333',
+                    font: { size: 12, weight: 'bold' }
+                }
+            },
+            responsive: true,
+            maintainAspectRatio: false
+        },
+        plugins: [ChartDataLabels]
+    });
+    {% endif %}
+
+    // Copy referral link
+    window.copyReferralLink = function() {
+        const referralLink = document.getElementById('referralLink');
+        navigator.clipboard.writeText(referralLink.value)
+            .then(() => {
+                alert('{{ t('general_profile_link_copied', default='Referral link copied to clipboard!', lang=lang) | escape }}');
+            })
+            .catch(() => {
+                alert('{{ t('general_copy_failed', default='Failed to copy link', lang=lang) | escape }}');
+            });
+    };
+});
+</script>
+{% endblock %}

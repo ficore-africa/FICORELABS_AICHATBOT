@@ -1,0 +1,543 @@
+{% extends "base.html" %}
+{% block title %}{{ t('emergency_fund_calculator', default='Emergency Fund Calculator') }}{% endblock %}
+{% block content %}
+<div class="container">
+    {% set tool_name = 'emergency_fund_calculator' %}
+    {% set tool_icon = 'fa-piggy-bank' %}
+    {% set subtitle = t('emergency_fund_plan_savings', default='Plan your emergency savings effectively') %}
+    {% include 'personal/GENERAL/tool_header.html' %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ t(message, default=message) | safe }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ t('general_close', default='Close') }}"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if form.errors and request.method == 'POST' %}
+        {% for field, errors in form.errors.items() %}
+            {% for error in errors %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ t(error, default=error) | safe }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ t('general_close', default='Close') }}"></button>
+                </div>
+            {% endfor %}
+        {% endfor %}
+    {% endif %}
+
+    <ul class="nav nav-tabs mb-4" id="emergencyFundTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'create-plan' else '' }}" id="create-plan-tab" data-bs-toggle="tab" data-bs-target="#create-plan" type="button" role="tab" aria-controls="create-plan" aria-selected="{{ 'true' if active_tab == 'create-plan' else 'false' }}">
+                <i class="fas fa-plus"></i> {{ t('emergency_fund_create_plan', default='Create Plan') }}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'dashboard' else '' }}" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab" aria-controls="dashboard" aria-selected="{{ 'true' if active_tab == 'dashboard' else 'false' }}">
+                <i class="fas fa-chart-line"></i> {{ t('emergency_fund_dashboard', default='Dashboard') }}
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="emergencyFundTabContent">
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'create-plan' else '' }}" id="create-plan" role="tabpanel" aria-labelledby="create-plan-tab">
+            <form method="POST" action="{{ url_for('personal.emergency_fund.main') }}" id="emergencyFundForm" class="validate-form">
+                {{ form.csrf_token }}
+                <input type="hidden" name="action" value="create_plan">
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-money-bill-wave"></i> {{ t('emergency_fund_income_expenses', default='Income & Expenses') }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.monthly_expenses.id }}" class="form-label">{{ t('emergency_fund_monthly_expenses', default='Monthly Expenses') }}</label>
+                                    {{ form.monthly_expenses(class="form-control number-input", placeholder=t('emergency_fund_monthly_expenses_placeholder', default='e.g., 30,000.00'), value=form.monthly_expenses.data or '') }}
+                                    <div class="invalid-feedback">{{ t('emergency_fund_monthly_expenses_invalid', default='Please enter a valid number (e.g., 30000 or 30000.00)') }}</div>
+                                    <small id="monthly_expenses_help" class="form-text text-muted">{{ t('emergency_fund_monthly_expenses_help', default='Enter amount without commas (e.g., 30000 or 30000.00)') }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.monthly_income.id }}" class="form-label">{{ t('emergency_fund_monthly_income', default='Monthly Income (Optional)') }}</label>
+                                    {{ form.monthly_income(class="form-control number-input", placeholder=t('emergency_fund_monthly_income_placeholder', default='e.g., 50,000.00'), value=form.monthly_income.data or '') }}
+                                    <div class="invalid-feedback">{{ t('emergency_fund_monthly_income_invalid', default='Please enter a valid number (e.g., 50000 or 50000.00)') }}</div>
+                                    <small id="monthly_income_help" class="form-text text-muted">{{ t('emergency_fund_monthly_income_help', default='Enter amount without commas (e.g., 50000 or 50000.00)') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-check">
+                            {{ form.email_opt_in(class="form-check-input") }}
+                            <label class="form-check-label">{{ t('emergency_fund_send_email', default='Send me my plan by email') }}</label>
+                            <div class="invalid-feedback">{{ t('emergency_fund_email_required', default='Email notifications require an authenticated user') }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5><i class="fas fa-shield-alt"></i> {{ t('emergency_fund_savings_risk', default='Savings & Risk Assessment') }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.current_savings.id }}" class="form-label">{{ t('emergency_fund_current_savings', default='Current Savings') }}</label>
+                                    {{ form.current_savings(class="form-control number-input", placeholder=t('emergency_fund_current_savings_placeholder', default='e.g., 20,000.00'), value=form.current_savings.data or '') }}
+                                    <div class="invalid-feedback">{{ t('emergency_fund_current_savings_invalid', default='Please enter a valid number (e.g., 20000 or 20000.00)') }}</div>
+                                    <small id="current_savings_help" class="form-text text-muted">{{ t('emergency_fund_current_savings_help', default='Enter amount without commas (e.g., 20000 or 20000.00)') }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.risk_tolerance_level.id }}" class="form-label">{{ t('emergency_fund_risk_tolerance_level', default='Risk Level') }}</label>
+                                    {{ form.risk_tolerance_level(class="form-select") }}
+                                    <div class="invalid-feedback">{{ t('emergency_fund_risk_tolerance_required', default='Risk level is required') }}</div>
+                                    <small id="risk_tolerance_level_help" class="form-text text-muted">{{ t('emergency_fund_risk_tolerance_level_example', default='Example: Choose "Low" if your job is not steady') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.dependents.id }}" class="form-label">{{ t('emergency_fund_dependents', default='Number of Dependents') }}</label>
+                                    {{ form.dependents(class="form-control number-input", placeholder=t('emergency_fund_dependents_placeholder', default='e.g., 3'), value=form.dependents.data or '0') }}
+                                    <div class="invalid-feedback">{{ t('emergency_fund_dependents_invalid', default='Please enter a valid integer (e.g., 3)') }}</div>
+                                    <small id="dependents_help" class="form-text text-muted">{{ t('emergency_fund_dependents_example', default='Example: 3 for your two kids and one parent') }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.timeline.id }}" class="form-label">{{ t('emergency_fund_timeline', default='Savings Timeline') }}</label>
+                                    {{ form.timeline(class="form-select") }}
+                                    <div class="invalid-feedback">{{ t('emergency_fund_timeline_required', default='Timeline is required') }}</div>
+                                    <small id="timeline_help" class="form-text text-muted">{{ t('emergency_fund_timeline_example', default='Example: Choose 6 months to save quickly') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-calculator"></i> {{ t('emergency_fund_calculate_button', default='Calculate Emergency Fund') }}
+                </button>
+            </form>
+        </div>
+
+        <div class="tab-pane fade {{ 'show active' if active_tab == 'dashboard' else '' }}" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-piggy-bank"></i> {{ t('emergency_fund_latest_plan', default='Your Latest Plan') }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if records %}
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body text-center">
+                                        <h6>{{ t('emergency_fund_target_amount', default='Target Amount') }}</h6>
+                                        <h4>{{ latest_record.get('target_amount', '0.00') }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-warning text-white">
+                                    <div class="card-body text-center">
+                                        <h6>{{ t('emergency_fund_current_savings', default='Current Savings') }}</h6>
+                                        <h4>{{ latest_record.get('current_savings', '0.00') }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-info text-white">
+                                    <div class="card-body text-center">
+                                        <h6>{{ t('emergency_fund_savings_gap', default='Savings Gap') }}</h6>
+                                        <h4>{{ latest_record.get('savings_gap', '0.00') }}</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>{{ t('emergency_fund_plan_details', default='Plan Details') }}</h6>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>{{ t('emergency_fund_monthly_expenses', default='Monthly Expenses') }}</span>
+                                        <strong>{{ latest_record.get('monthly_expenses', '0.00') }}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>{{ t('emergency_fund_recommended_months', default='Recommended Months') }}</span>
+                                        <strong>{{ latest_record.get('recommended_months', 0) }} {{ t('general_months', default='months') }}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>{{ t('emergency_fund_monthly_savings', default='Monthly Savings Needed') }}</span>
+                                        <strong>{{ latest_record.get('monthly_savings', '0.00') }}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>{{ t('emergency_fund_timeline', default='Timeline') }}</span>
+                                        <strong>{{ latest_record.get('timeline', 0) }} {{ t('general_months', default='months') }}</strong>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>{{ t('emergency_fund_created_at', default='Created At') }}</span>
+                                        <strong>{{ latest_record.get('created_at', 'N/A') }}</strong>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>{{ t('emergency_fund_badges', default='Achievements') }}</h6>
+                                {% if latest_record.get('badges') %}
+                                    {% for badge in latest_record['badges'] %}
+                                        <span class="badge bg-success me-1 mb-1">{{ t(badge, default=badge) }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="text-muted">{{ t('emergency_fund_no_badges', default='No badges earned yet') }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if insights or cross_tool_insights %}
+                            <div class="mt-4">
+                                <h6>{{ t('emergency_fund_insights', default='Insights') }}</h6>
+                                <ul class="list-unstyled">
+                                    {% for insight in insights %}
+                                        <li><i class="fas fa-lightbulb text-warning"></i> {{ t(insight, default=insight) }}</li>
+                                    {% endfor %}
+                                    {% for insight in cross_tool_insights %}
+                                        <li><i class="fas fa-link text-primary"></i> {{ t(insight, default=insight) }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        {% if tips %}
+                            <div class="mt-4">
+                                <h6>{{ t('emergency_fund_tips', default='Tips to Build Your Fund') }}</h6>
+                                <ul class="list-unstyled">
+                                    {% for tip in tips %}
+                                        <li><i class="fas fa-check-circle text-success"></i> {{ t(tip, default=tip) }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center">
+                            <i class="fas fa-piggy-bank fa-3x mb-3 text-muted"></i>
+                            <p>{{ t('emergency_fund_no_data', default='No emergency fund plan found. Start a new plan to see your summary.') }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if current_user.is_authenticated %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5>{{ t('general_share_ficore', default='Share Ficore Africa with Friends') }}</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ t('general_share_ficore_invite', default='Invite your friends to join Ficore Africa and manage their finances better!') }}</p>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="referralLink" value="{{ url_for('users.signup', ref=current_user.referral_code, _external=True) if current_user.referral_code else t('general_profile_no_referral', default='No referral link available.') }}" readonly>
+                    <button class="btn btn-primary" type="button" onclick="copyReferralLink()">{{ t('general_profile_copy_link', default='Copy') }}</button>
+                </div>
+                <div class="mt-3">
+                    <h6>{{ t('emergency_fund_email_preferences', default='Email Preferences') }}</h6>
+                    <p>{{ t('emergency_fund_unsubscribe_description', default='Click below to unsubscribe from emergency fund email notifications.') }}</p>
+                    <form method="POST" action="{{ url_for('personal.emergency_fund.unsubscribe') }}" class="d-inline">
+                        {{ form.csrf_token }}
+                        <button type="submit" class="btn btn-warning btn-sm">{{ t('emergency_fund_unsubscribe', default='Unsubscribe') }}</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Translation map for help text
+    const helpTextTranslations = {
+        'monthly_expenses': "{{ t('emergency_fund_monthly_expenses_help', default='Enter amount without commas (e.g., 30000 or 30000.00)') | e }}",
+        'monthly_income': "{{ t('emergency_fund_monthly_income_help', default='Enter amount without commas (e.g., 50000 or 50000.00)') | e }}",
+        'current_savings': "{{ t('emergency_fund_current_savings_help', default='Enter amount without commas (e.g., 20000 or 20000.00)') | e }}",
+        'dependents': "{{ t('emergency_fund_dependents_example', default='Example: 3 for your two kids and one parent') | e }}",
+        'dependents_max': "{{ t('emergency_fund_dependents_max', default='Number of dependents cannot exceed 100') | e }}",
+        'amount_exceed': "{{ t('emergency_fund_monthly_exceed', default='Amount must be between 0 and 10 billion') | e }}",
+        'amount_positive': "{{ t('emergency_fund_amount_positive', default='Amount must be positive') | e }}",
+        'monthly_expenses_required': "{{ t('emergency_fund_monthly_expenses_invalid', default='This field is required and must be greater than 0') | e }}"
+    };
+
+    // Helper function to format a number for display (with commas and decimals)
+    function formatForDisplay(value, isDependents) {
+        if (value === null || value === undefined || isNaN(value)) {
+            return '';
+        }
+        if (isDependents) {
+            return Math.floor(value).toLocaleString('en-US', { maximumFractionDigits: 0 });
+        } else {
+            return parseFloat(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+    }
+
+    // Helper function to clean input for numeric parsing (remove commas, allow one decimal)
+    function cleanForParse(value) {
+        if (!value) return '';
+        let clean = value.replace(/,/g, ''); // Remove all commas
+        // Ensure only one decimal point
+        const parts = clean.split('.');
+        if (parts.length > 2) {
+            clean = parts[0] + '.' + parts.slice(1).join('');
+        }
+        return clean;
+    }
+
+    // Apply formatting and validation to all number inputs
+    document.querySelectorAll('.number-input').forEach(input => {
+        const isDependents = input.id === 'dependents';
+        const originalHelpText = helpTextTranslations[input.id] || helpTextTranslations['monthly_expenses'];
+
+        // Restore raw value on focus to allow easier editing
+        input.addEventListener('focus', function() {
+            let currentValue = input.value;
+            input.value = cleanForParse(currentValue);
+        });
+
+        // Apply formatting and validation on blur (when user leaves the field)
+        input.addEventListener('blur', function() {
+            let rawValue = cleanForParse(input.value);
+            let numValue;
+
+            if (isDependents) {
+                numValue = parseInt(rawValue) || 0;
+                // Client-side validation for dependents
+                if (numValue > 100) {
+                    numValue = 100;
+                    input.classList.add('is-invalid');
+                    document.getElementById('dependents_help').innerText = helpTextTranslations['dependents_max'];
+                } else if (numValue < 0) {
+                    numValue = 0;
+                    input.classList.add('is-invalid');
+                    document.getElementById('dependents_help').innerText = helpTextTranslations['amount_positive'];
+                } else {
+                    input.classList.remove('is-invalid');
+                    document.getElementById('dependents_help').innerText = originalHelpText;
+                }
+            } else {
+                numValue = parseFloat(rawValue) || 0;
+                // Client-side validation for currency fields
+                if (numValue > 10000000000) {
+                    numValue = 10000000000;
+                    input.classList.add('is-invalid');
+                    document.getElementById(`${input.id}_help`).innerText = helpTextTranslations['amount_exceed'];
+                } else if (numValue < 0) {
+                    numValue = 0;
+                    input.classList.add('is-invalid');
+                    document.getElementById(`${input.id}_help`).innerText = helpTextTranslations['amount_positive'];
+                } else {
+                    input.classList.remove('is-invalid');
+                    document.getElementById(`${input.id}_help`).innerText = originalHelpText;
+                }
+            }
+            // Format the value for display
+            input.value = formatForDisplay(numValue, isDependents);
+        });
+
+        // Clean input while typing to remove invalid characters
+        input.addEventListener('input', function() {
+            let value = input.value;
+            let cleanedValue;
+
+            if (isDependents) {
+                // For dependents, allow only digits
+                cleanedValue = value.replace(/[^0-9]/g, '');
+            } else {
+                // For currency, allow digits and one decimal point
+                cleanedValue = value.replace(/[^0-9.]/g, '');
+                const parts = cleanedValue.split('.');
+                if (parts.length > 2) {
+                    cleanedValue = parts[0] + '.' + parts.slice(1).join('');
+                }
+            }
+
+            if (input.value !== cleanedValue) {
+                const start = input.selectionStart;
+                const end = input.selectionEnd;
+                input.value = cleanedValue;
+                input.setSelectionRange(start, end);
+            }
+        });
+
+        // Handle paste events
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            let pasted = (e.clipboardData || window.clipboardData).getData('text');
+            let clean = pasted.replace(/[^0-9.]/g, '');
+            if (!clean) return;
+
+            if (isDependents) {
+                let numValue = parseInt(clean) || 0;
+                if (numValue > 100) numValue = 100;
+                input.value = numValue.toString();
+            } else {
+                const parts = clean.split('.');
+                if (parts.length > 2) {
+                    clean = parts[0] + '.' + parts.slice(1).join('');
+                }
+                if (parts.length > 1) {
+                    parts[1] = parts[1].slice(0, 2);
+                    clean = parts[0] + (parts[1] ? '.' + parts[1] : '');
+                }
+                input.value = clean;
+            }
+            // Trigger blur to format and validate
+            input.dispatchEvent(new Event('blur'));
+        });
+
+        // Format pre-filled values on page load
+        input.dispatchEvent(new Event('blur'));
+    });
+
+    // Handle form submission: Clean values for server
+    const form = document.getElementById('emergencyFundForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let formIsValid = true;
+            this.querySelectorAll('.number-input').forEach(input => {
+                const isDependents = input.id === 'dependents';
+                let rawValue = cleanForParse(input.value);
+                let numValue;
+
+                if (isDependents) {
+                    numValue = parseInt(rawValue) || 0;
+                    if (numValue > 100 || numValue < 0) {
+                        input.classList.add('is-invalid');
+                        document.getElementById(`${input.id}_help`).innerText = numValue > 100 ? helpTextTranslations['dependents_max'] : helpTextTranslations['amount_positive'];
+                        formIsValid = false;
+                    } else {
+                        input.classList.remove('is-invalid');
+                        document.getElementById(`${input.id}_help`).innerText = helpTextTranslations[input.id];
+                    }
+                } else {
+                    numValue = parseFloat(rawValue) || 0;
+                    if (input.id === 'monthly_expenses' && numValue === 0) {
+                        input.classList.add('is-invalid');
+                        document.getElementById(`${input.id}_help`).innerText = helpTextTranslations['monthly_expenses_required'];
+                        formIsValid = false;
+                    } else if (numValue > 10000000000 || numValue < 0) {
+                        input.classList.add('is-invalid');
+                        document.getElementById(`${input.id}_help`).innerText = numValue > 10000000000 ? helpTextTranslations['amount_exceed'] : helpTextTranslations['amount_positive'];
+                        formIsValid = false;
+                    } else {
+                        input.classList.remove('is-invalid');
+                        document.getElementById(`${input.id}_help`).innerText = helpTextTranslations[input.id];
+                    }
+                }
+                // Set raw numeric values for server
+                input.value = isDependents ? numValue.toString() : numValue.toFixed(2);
+            });
+
+            if (!formIsValid) {
+                e.preventDefault();
+                const firstInvalid = this.querySelector('.is-invalid');
+                if (firstInvalid) {
+                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstInvalid.focus();
+                }
+                // Restore formatted values
+                this.querySelectorAll('.number-input').forEach(input => {
+                    const isDependents = input.id === 'dependents';
+                    let numValue = isDependents ? parseInt(input.value) : parseFloat(input.value);
+                    input.value = formatForDisplay(numValue, isDependents);
+                });
+            } else {
+                // Show loading state
+                const submitButton = form.querySelector('button[type="submit"]');
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> {{ t('emergency_fund_calculating', default='Calculating...') | e }}';
+                }
+            }
+        });
+    }
+
+    // Tab persistence with sessionStorage
+    const validTabs = ['create-plan', 'dashboard'];
+    let savedTab = sessionStorage.getItem('activeEmergencyFundTab') || '{{ active_tab }}';
+    if (!validTabs.includes(savedTab)) {
+        savedTab = 'create-plan';
+    }
+    if (savedTab) {
+        const tabButton = document.getElementById(`${savedTab}-tab`);
+        if (tabButton) {
+            const bsTab = new bootstrap.Tab(tabButton);
+            bsTab.show();
+        }
+    }
+
+    document.querySelectorAll('#emergencyFundTabs .nav-link').forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function(e) {
+            const activeTabId = e.target.id.replace('-tab', '');
+            if (validTabs.includes(activeTabId)) {
+                sessionStorage.setItem('activeEmergencyFundTab', activeTabId);
+                const url = new URL(window.location);
+                url.searchParams.set('tab', activeTabId);
+                window.history.replaceState({}, '', url);
+            }
+        });
+    });
+
+    // Copy referral link
+    window.copyReferralLink = function() {
+        const referralLink = document.getElementById('referralLink');
+        const value = referralLink.value;
+        if (value && value !== '{{ t('general_profile_no_referral', default='No referral link available.') | e }}') {
+            navigator.clipboard.writeText(value).then(() => {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                alertDiv.innerHTML = `
+                    {{ t('general_profile_link_copied', default='Referral link copied to clipboard!') | e }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ t('general_close', default='Close') }}"></button>
+                `;
+                referralLink.parentNode.appendChild(alertDiv);
+                setTimeout(() => alertDiv.remove(), 3000);
+            }).catch(() => {
+                referralLink.select();
+                document.execCommand('copy');
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                alertDiv.innerHTML = `
+                    {{ t('general_profile_link_copied', default='Referral link copied to clipboard!') | e }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ t('general_close', default='Close') }}"></button>
+                `;
+                referralLink.parentNode.appendChild(alertDiv);
+                setTimeout(() => alertDiv.remove(), 3000);
+            });
+        } else {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-warning alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                {{ t('general_profile_no_referral', default='No referral link available.') | e }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ t('general_close', default='Close') }}"></button>
+            `;
+            referralLink.parentNode.appendChild(alertDiv);
+            setTimeout(() => alertDiv.remove(), 3000);
+        }
+    };
+
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+        new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

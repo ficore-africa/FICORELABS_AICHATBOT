@@ -1,0 +1,497 @@
+{% extends 'base.html' %}
+{% block title %}{{ t('general_personal_finance_home', default='Personal Finance Home') | e }}{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    {% if current_user.is_authenticated %}
+        <!-- Financial Summary -->
+        <div class="section-card financial-snapshots">
+            <h3 class="section-title">{{ t('general_snapshots', default='Financial Snapshots') | e }}</h3>
+            <div class="summary-cards">
+                <div class="summary-card budget-card">
+                    <div class="card-header d-flex align-items-center gap-3">
+                        <i class="bi bi-pie-chart card-icon text-primary"></i>
+                        <span class="fw-bold">{{ t('budget_budget_status', default='Budget Status') | e }}</span>
+                    </div>
+                    <div class="card-amount text-primary mt-3" id="budgetStatus">
+                        <span class="currency-symbol">₦</span>
+                        <span class="amount-value" data-amount="0">0</span>
+                    </div>
+                </div>
+                <div class="summary-card bills-card">
+                    <div class="card-header d-flex align-items-center gap-3">
+                        <i class="bi bi-receipt card-icon text-warning"></i>
+                        <span class="fw-bold">{{ t('bill_upcoming_bills', default='Upcoming Bills') | e }}</span>
+                    </div>
+                    <div class="card-amount text-warning mt-3" id="upcomingBills">
+                        <span class="currency-symbol">₦</span>
+                        <span class="amount-value" data-amount="0">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="net-position-card">
+                <div class="net-position-info">
+                    <span class="net-label fw-bold">{{ t('net_worth_net_worth', default='Net Worth') | e }}:</span>
+                    <span class="net-amount" id="netWorth" data-amount="0">₦0</span>
+                    <span class="net-status" id="netWorthStatus">(Balanced)</span>
+                </div>
+                <a href="{{ url_for('personal.net_worth.main') | e }}" class="btn btn-primary btn-sm" aria-label="{{ t('general_details', default='Details') | e }}">
+                    {{ t('general_details', default='Details') | e }}
+                </a>
+            </div>
+            <p class="spacer">Overview</p>
+            <div class="stat-cards-container">
+                <div class="stat-card financial-health">
+                    <div class="snapshot-icon">
+                        <i class="bi bi-heart-pulse text-success"></i>
+                    </div>
+                    <div class="snapshot-info">
+                        <div class="snapshot-label fw-bold">{{ t('financial_health_financial_health_score', default='Financial Health') | e }}</div>
+                        <div class="stat-card-value" id="financialHealthScore" data-original-text="0">0%</div>
+                    </div>
+                </div>
+                <div class="stat-card emergency-fund">
+                    <div class="snapshot-icon">
+                        <i class="bi bi-piggy-bank text-info"></i>
+                    </div>
+                    <div class="snapshot-info">
+                        <div class="snapshot-label fw-bold">{{ t('emergency_fund_savings', default='Emergency Fund') | e }}</div>
+                        <div class="stat-card-value" id="emergencyFund" data-original-text="₦0">₦0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3 text-end">
+                <button class="btn btn-link" onclick="toggleAmountVisibility()" data-bs-toggle="tooltip" data-bs-title="{{ t('general_toggle_visibility', default='Toggle amount visibility') | e }}">
+                    <i id="visibilityIcon" class="bi bi-eye"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="section-card recent-activity">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="section-title mb-0">{{ t('general_recent_activity', default='Recent Activity') | e }}</h3>
+                <a href="#" class="btn btn-link btn-sm p-0 text-decoration-none" id="viewAllActivities" onclick="toggleRecentActivities()">
+                    {{ t('general_view_all', default='View All') | e }}
+                </a>
+            </div>
+            <div id="recentActivityList">
+                <div class="recent-activity-card">
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="bi bi-info-circle text-muted"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-description fw-semibold">{{ t('general_no_recent_activity', default='No recent activity') | e }}</div>
+                            <div class="activity-time text-muted">{{ t('general_start_by_adding', default='Start by adding a budget or bill') | e }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="section-card notifications">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="section-title mb-0">{{ t('general_notifications', default='Notifications') | e }}</h3>
+                <span class="badge bg-primary rounded-pill" id="notificationCount">0</span>
+            </div>
+            <div id="notificationList">
+                <div class="notification-card">
+                    <div class="notification-item">
+                        <div class="notification-icon">
+                            <i class="bi bi-info-circle text-muted"></i>
+                        </div>
+                        <div class="notification-content">
+                            <div class="notification-description fw-semibold">{{ t('general_no_notifications', default='No notifications') | e }}</div>
+                            <div class="notification-time text-muted">{{ t('general_check_back_later', default='Check back later') | e }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <section class="quick-actions-section">
+            <h3 class="quick-actions-heading">{{ t('general_quick_actions', default='Quick Actions') | e }}</h3>
+            <div class="quick-actions">
+                {% for tool in tools_for_template %}
+                <a href="{{ tool.get('url', '#') | e }}" class="quick-action-card {{ tool.get('class', '') | e }} text-decoration-none" aria-label="{{ t(tool.get('label_key', ''), default=tool.get('label', 'Tool')) | e }}">
+                    {% if tool.badge %}
+                    <span class="badge bg-danger position-absolute top-0 end-0 translate-middle rounded-pill">{{ tool.badge | e }}</span>
+                    {% endif %}
+                    <i class="bi {{ tool.get('icon', 'bi-circle') | e }} action-icon"></i>
+                    <div class="action-label">{{ t(tool.get('label_key', ''), default=tool.get('label', 'Tool')) | e }}</div>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Explore Features -->
+        <div class="section-card explore-section">
+            <h3 class="section-title">{{ t('general_explore_features', default='Explore Features') | e }}</h3>
+            {% for feature in explore_features_for_template %}
+            <a href="{{ feature.get('url', '#') | e }}" class="explore-card text-decoration-none" aria-label="{{ t(feature.get('label_key', ''), default=feature.get('label', 'Feature')) | e }}">
+                <div class="explore-card-icon">
+                    <i class="bi {{ feature.get('icon', 'bi-circle') | e }} text-primary"></i>
+                </div>
+                <div class="explore-card-text">
+                    <h4>{{ t(feature.get('label_key', ''), default=feature.get('label', 'Feature')) | e }}</h4>
+                    <p class="text-muted">{{ t(feature.get('description_key', ''), default=feature.get('description', 'Description not available')) | e }}</p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.spacer {
+    margin: 1.5rem 0;
+}
+.notification-card {
+    border-bottom: 1px solid #e9ecef;
+    padding: 0.75rem 0;
+}
+.notification-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.notification-icon {
+    font-size: 1.25rem;
+}
+.notification-content {
+    flex-grow: 1;
+}
+.notification-description {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+.notification-time {
+    font-size: 0.8rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(tooltipTriggerEl => {
+        new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Debug icons
+    document.querySelectorAll('.bi').forEach(icon => {
+        if (!icon.className.includes('bi-')) {
+            console.warn('Invalid or missing Bootstrap Icon class:', icon.className);
+        }
+    });
+
+    // Debug navigation duplication
+    const topNav = document.querySelector('.top-header');
+    const bottomNav = document.querySelector('.bottom-nav');
+    if (topNav && bottomNav) {
+        const topNavItems = topNav.querySelectorAll('.nav-item');
+        if (topNavItems.length > 0) {
+            console.warn('Unexpected navigation items in top-header:', topNavItems);
+        }
+    }
+
+    {% if current_user.is_authenticated %}
+    // Load financial data, notifications, and recent activity
+    loadFinancialSummary();
+    loadRecentActivity();
+    loadNotifications();
+    {% endif %}
+});
+
+{% if current_user.is_authenticated %}
+let amountsVisible = true;
+let allActivities = [];
+let isShowingAllActivities = false;
+
+// Translation strings
+const translations = {
+    just_now: '{{ t("general_just_now", default="Just now") | e }}',
+    minutes_ago: '{{ t("general_minutes_ago", default="m ago") | e }}',
+    hours_ago: '{{ t("general_hours_ago", default="h ago") | e }}',
+    days_ago: '{{ t("general_days_ago", default="d ago") | e }}',
+    positive_net_worth: '{{ t("general_positive_net_worth", default="Positive") | e }}',
+    negative_net_worth: '{{ t("general_negative_net_worth", default="Negative") | e }}',
+    balanced: '{{ t("general_balanced", default="Balanced") | e }}',
+    no_recent_activity: '{{ t("general_no_recent_activity", default="No recent activity") | e }}',
+    start_by_adding: '{{ t("general_start_by_adding", default="Start by adding a budget or bill") | e }}',
+    no_notifications: '{{ t("general_no_notifications", default="No notifications") | e }}',
+    check_back_later: '{{ t("general_check_back_later", default="Check back later") | e }}',
+    view_all: '{{ t("general_view_all", default="View All") | e }}',
+    view_less: '{{ t("general_view_less", default="View Less") | e }}'
+};
+
+// Load financial data
+function loadFinancialSummary() {
+    Promise.all([
+        fetch('{{ url_for("personal.summaries.budget_summary") | e }}').then(r => r.json()).catch(() => ({totalBudget: 0})),
+        fetch('{{ url_for("personal.summaries.bill_summary") | e }}').then(r => r.json()).catch(() => ({totalUpcomingBills: 0})),
+        fetch('{{ url_for("personal.summaries.net_worth_summary") | e }}').then(r => r.json()).catch(() => ({netWorth: 0})),
+        fetch('{{ url_for("personal.summaries.financial_health_summary") | e }}').then(r => r.json()).catch(() => ({score: 0})),
+        fetch('{{ url_for("personal.summaries.emergency_fund_summary") | e }}').then(r => r.json()).catch(() => ({totalSavings: 0}))
+    ]).then(([budgetData, billsData, netWorthData, healthData, emergencyFundData]) => {
+        updateFinancialSummary(budgetData, billsData, netWorthData, healthData, emergencyFundData);
+    }).catch(error => {
+        console.error('Error loading financial data:', error);
+    });
+}
+
+// Load recent activity
+function loadRecentActivity() {
+    fetch('{{ url_for("personal.summaries.recent_activity") | e }}')
+        .then(response => response.json())
+        .then(activities => {
+            allActivities = activities; // Store all activities
+            renderRecentActivities(isShowingAllActivities ? activities : activities.slice(0, 2));
+            updateViewAllLink();
+        }).catch(error => {
+            console.error('Error loading recent activity:', error);
+            renderRecentActivities([]);
+        });
+}
+
+// Render recent activities
+function renderRecentActivities(activities) {
+    const activityList = document.getElementById('recentActivityList');
+    if (activities && activities.length > 0) {
+        activityList.innerHTML = activities.map(activity => `
+            <div class="recent-activity-card">
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="bi ${activity.icon || getActivityIcon(activity.type)} ${getActivityColor(activity.type)}"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-description fw-semibold">${activity.description}</div>
+                        <div class="activity-time text-muted">${formatTimeAgo(activity.timestamp)}</div>
+                    </div>
+                    ${activity.details && activity.details.amount ? `<div class="activity-amount text-nowrap ms-2 fw-bold">${format_currency(activity.details.amount)}</div>` : ''}
+                </div>
+            </div>
+        `).join('');
+    } else {
+        activityList.innerHTML = `
+            <div class="recent-activity-card">
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="bi bi-info-circle text-muted"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-description fw-semibold">${translations.no_recent_activity}</div>
+                        <div class="activity-time text-muted">${translations.start_by_adding}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Toggle between showing first two and all activities
+function toggleRecentActivities() {
+    isShowingAllActivities = !isShowingAllActivities;
+    renderRecentActivities(isShowingAllActivities ? allActivities : allActivities.slice(0, 2));
+    updateViewAllLink();
+}
+
+// Update the "View All" link text
+function updateViewAllLink() {
+    const viewAllLink = document.getElementById('viewAllActivities');
+    viewAllLink.textContent = isShowingAllActivities ? translations.view_less : translations.view_all;
+}
+
+// Load notifications
+function loadNotifications() {
+    // Update notification count
+    fetch('{{ url_for("personal.summaries.notification_count") | e }}')
+        .then(response => response.json())
+        .then(data => {
+            const notificationCount = document.getElementById('notificationCount');
+            notificationCount.textContent = data.count || 0;
+            notificationCount.className = `badge bg-${data.count > 0 ? 'danger' : 'primary'} rounded-pill`;
+        })
+        .catch(error => {
+            console.error('Error loading notification count:', error);
+        });
+
+    // Fetch and display notifications
+    fetch('{{ url_for("personal.summaries.notifications") | e }}')
+        .then(response => response.json())
+        .then(data => {
+            const notificationList = document.getElementById('notificationList');
+            if (data && data.length > 0) {
+                notificationList.innerHTML = data.map(notification => `
+                    <div class="notification-card">
+                        <div class="notification-item">
+                            <div class="notification-icon">
+                                <i class="bi ${getNotificationIcon(notification.type)} ${notification.read ? 'text-muted' : 'text-primary'}"></i>
+                            </div>
+                            <div class="notification-content">
+                                <div class="notification-description fw-semibold">${notification.message}</div>
+                                <div class="notification-time text-muted">${formatTimeAgo(notification.timestamp)}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                notificationList.innerHTML = `
+                    <div class="notification-card">
+                        <div class="notification-item">
+                            <div class="notification-icon">
+                                <i class="bi bi-info-circle text-muted"></i>
+                            </div>
+                            <div class="notification-content">
+                                <div class="notification-description fw-semibold">${translations.no_notifications}</div>
+                                <div class="notification-time text-muted">${translations.check_back_later}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }).catch(error => {
+            console.error('Error loading notifications:', error);
+            const notificationList = document.getElementById('notificationList');
+            notificationList.innerHTML = `
+                <div class="notification-card">
+                    <div class="notification-item">
+                        <div class="notification-icon">
+                            <i class="bi bi-info-circle text-muted"></i>
+                        </div>
+                        <div class="notification-content">
+                            <div class="notification-description fw-semibold">${translations.no_notifications}</div>
+                            <div class="notification-time text-muted">${translations.check_back_later}</div>
+                        </div>
+                    </div>
+                `;
+            });
+}
+
+function updateFinancialSummary(budgetData, billsData, netWorthData, healthData, emergencyFundData) {
+    const budgetStatusEl = document.querySelector('#budgetStatus .amount-value');
+    budgetStatusEl.textContent = format_currency(budgetData.totalBudget || 0);
+    budgetStatusEl.dataset.amount = budgetData.totalBudget || 0;
+
+    const upcomingBillsEl = document.querySelector('#upcomingBills .amount-value');
+    upcomingBillsEl.textContent = format_currency(billsData.totalUpcomingBills || 0);
+    upcomingBillsEl.dataset.amount = billsData.totalUpcomingBills || 0;
+
+    const netWorth = netWorthData.netWorth || 0;
+    const netWorthEl = document.getElementById('netWorth');
+    const netWorthStatusEl = document.getElementById('netWorthStatus');
+
+    netWorthEl.textContent = '₦' + format_currency(Math.abs(netWorth));
+    netWorthEl.dataset.amount = netWorth;
+
+    if (netWorth > 0) {
+        netWorthEl.className = 'net-amount text-success';
+        netWorthStatusEl.textContent = `(${translations.positive_net_worth})`;
+        netWorthStatusEl.className = 'net-status text-success';
+    } else if (netWorth < 0) {
+        netWorthEl.className = 'net-amount text-danger';
+        netWorthStatusEl.textContent = `(${translations.negative_net_worth})`;
+        netWorthStatusEl.className = 'net-status text-danger';
+    } else {
+        netWorthEl.className = 'net-amount text-muted';
+        netWorthStatusEl.textContent = `(${translations.balanced})`;
+        netWorthStatusEl.className = 'net-status text-muted';
+    }
+
+    const financialHealthEl = document.getElementById('financialHealthScore');
+    financialHealthEl.textContent = (healthData.score || 0) + '%';
+    financialHealthEl.dataset.originalText = (healthData.score || 0) + '%';
+
+    const emergencyFundEl = document.getElementById('emergencyFund');
+    emergencyFundEl.textContent = '₦' + format_currency(emergencyFundData.totalSavings || 0);
+    emergencyFundEl.dataset.originalText = '₦' + format_currency(emergencyFundData.totalSavings || 0);
+}
+
+function getActivityIcon(type) {
+    const icons = {
+        'budget': 'bi-pie-chart',
+        'bill': 'bi-receipt',
+        'bill_paid': 'bi-check-circle',
+        'emergency_fund': 'bi-piggy-bank',
+        'net_worth': 'bi-wallet2',
+        'financial_health': 'bi-heart-pulse',
+        'quiz': 'bi-question-circle',
+        'learning_hub': 'bi-book'
+    };
+    return icons[type] || 'bi-circle';
+}
+
+function getActivityColor(type) {
+    const colors = {
+        'budget': 'text-primary',
+        'bill': 'text-warning',
+        'bill_paid': 'text-success',
+        'emergency_fund': 'text-info',
+        'net_worth': 'text-primary',
+        'financial_health': 'text-success',
+        'quiz': 'text-info',
+        'learning_hub': 'text-primary'
+    };
+    return colors[type] || 'text-muted';
+}
+
+function getNotificationIcon(type) {
+    const icons = {
+        'info': 'bi-info-circle',
+        'warning': 'bi-exclamation-triangle',
+        'error': 'bi-x-circle',
+        'success': 'bi-check-circle'
+    };
+    return icons[type] || 'bi-info-circle';
+}
+
+function formatTimeAgo(timestamp) {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffInSeconds = Math.floor((now - time) / 1000);
+    if (diffInSeconds < 60) return translations.just_now;
+    if (diffInSeconds < 3600) return Math.floor(diffInSeconds / 60) + ' ' + translations.minutes_ago;
+    if (diffInSeconds < 86400) return Math.floor(diffInSeconds / 3600) + ' ' + translations.hours_ago;
+    return Math.floor(diffInSeconds / 86400) + ' ' + translations.days_ago;
+}
+
+window.toggleAmountVisibility = function() {
+    amountsVisible = !amountsVisible;
+    const icon = document.getElementById('visibilityIcon');
+    const amounts = document.querySelectorAll('.amount-value, .net-amount, .stat-card-value');
+
+    amounts.forEach(el => {
+        if (amountsVisible) {
+            if (el.classList.contains('amount-value')) {
+                el.textContent = format_currency(el.dataset.amount);
+            } else if (el.classList.contains('net-amount')) {
+                el.textContent = '₦' + format_currency(Math.abs(el.dataset.amount));
+            } else {
+                el.textContent = el.dataset.originalText || el.textContent;
+            }
+        } else {
+            if (!el.dataset.originalText) {
+                el.dataset.originalText = el.textContent;
+            }
+            el.textContent = '****';
+        }
+    });
+
+    icon.className = 'bi ' + (amountsVisible ? 'bi-eye' : 'bi-eye-slash');
+};
+
+function format_currency(value) {
+    if (!value && value !== 0) return '';
+    value = typeof value === "string" ? parseFloat(value) : value;
+    if (isNaN(value)) return '0';
+    return value.toLocaleString('en-NG', {maximumFractionDigits: 0});
+}
+{% endif %}
+</script>
+{% endblock %}
