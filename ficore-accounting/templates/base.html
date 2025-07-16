@@ -224,28 +224,41 @@
             --df-messenger-input-font-color: #212529;
             --df-messenger-button-titlebar-color: #ffffff;
             z-index: 1000;
+            --df-messenger-chat-window-height: 500px;
+            --df-messenger-chat-window-width: 350px;
+        }
+        /* Ensure chatbot is visible in dark mode */
+        .dark-mode df-messenger {
+            --df-messenger-chat-background: #212529;
+            --df-messenger-input-background: #343a40;
+            --df-messenger-input-font-color: #ffffff;
         }
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
-    <script src="https://www.gstatic.com/dialogflow-console/fast/messenger/bootstrap.js?v=1"></script>
+    <script src="https://www.gstatic.com/dialogflow-console/fast/messenger-bootstrap.js"></script>
     <df-messenger
       intent="WELCOME"
       chat-title="Ficore Assistant"
-      agent-id="ficoreassistant-kywl"
-      language-code="{{ lang }}"
-      chat-icon="https://cdn-icons-png.flaticon.com/512/8943/8943377.png"
+      agent-id="{{ dialogflow_agent_id | default('ficoreassistant-kywl') }}"
+      language-code="{{ lang | default('en') }}"
+      chat-icon="{{ url_for('static', filename='img/chat-icon.png') | e }}"
     ></df-messenger>
     <script>
-        function getCsrfToken() {
-            const token = document.querySelector('meta[name="csrf-token"]').content;
-            if (!token) {
-                console.error('CSRF token not found in meta tag');
-            }
-            return token;
-        }
-
+        // Dialogflow Messenger error handling
         document.addEventListener('DOMContentLoaded', function() {
+            const dfMessenger = document.querySelector('df-messenger');
+            if (!dfMessenger) {
+                console.error('Dialogflow Messenger element not found.');
+                return;
+            }
+            dfMessenger.addEventListener('df-error', (event) => {
+                console.error('Dialogflow Messenger error:', event.detail);
+            });
+            dfMessenger.addEventListener('df-messenger-loaded', () => {
+                console.log('Dialogflow Messenger loaded successfully.');
+            });
+
             // Initialize tooltips
             document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(tooltipTriggerEl => {
                 new bootstrap.Tooltip(tooltipTriggerEl);
@@ -434,6 +447,14 @@
                 `;
                 console.error('Failed to load notifications:', error);
             }
+        }
+
+        function getCsrfToken() {
+            const token = document.querySelector('meta[name="csrf-token"]').content;
+            if (!token) {
+                console.error('CSRF token not found in meta tag');
+            }
+            return token;
         }
 
         function getNotificationIcon(type) {
