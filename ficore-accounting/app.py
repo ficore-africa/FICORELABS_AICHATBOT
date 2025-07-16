@@ -508,6 +508,7 @@ def create_app():
     from news.routes import news_bp
     from taxation.routes import taxation_bp
     from learning_hub import learning_hub_bp
+    from ai import ai_bp
     
     app.register_blueprint(users_bp, url_prefix='/users')
     logger.info('Registered users blueprint')
@@ -551,6 +552,8 @@ def create_app():
     logger.info('Registered learning hub blueprint with url_prefix="/learning_hub"')
     app.register_blueprint(business, url_prefix='/business')
     logger.info('Registered business blueprint with url_prefix="/business"')
+    app.register_blueprint(ai_bp)
+    logger.info('Registered AI blueprint')
 
     utils.initialize_tools_with_urls(app)
     logger.info('Initialized tools and navigation with resolved URLs')
