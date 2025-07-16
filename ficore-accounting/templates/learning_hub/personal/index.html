@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ tool_title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/learning_hub.css') }}">
+</head>
+<body>
+    <header>
+        <h1>{{ t('learning_hub_personal_title', default='Personal Finance Learning', lang=lang) }}</h1>
+        <p>{{ t('personal_welcome', default='Master your personal finances with practical skills for saving, budgeting, and Halal wealth creation in Northern Nigeria.', lang=lang) }}</p>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="{{ url_for('learning_hub.main') }}">{{ t('learning_hub_title', default='Learning Hub', lang=lang) }}</a></li>
+            <li><a href="{{ url_for('learning_hub.business') }}">{{ t('learning_hub_business_title', default='Business Learning', lang=lang) }}</a></li>
+            <li><a href="{{ url_for('learning_hub.agents') }}">{{ t('learning_hub_agents_title', default='Agent Learning', lang=lang) }}</a></li>
+            <li><a href="{{ url_for('learning_hub.compliance') }}">{{ t('learning_hub_compliance_title', default='Compliance Learning', lang=lang) }}</a></li>
+            <li><a href="{{ url_for('learning_hub.tool_tutorials') }}">{{ t('learning_hub_tool_tutorials_title', default='Tool Tutorials', lang=lang) }}</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="section-title">{{ t('personal_courses', default='Personal Finance Courses', lang=lang) }}</div>
+        <div class="card">
+            <h3>{{ t('course_budgeting_title', default='Budgeting for Your Family', lang=lang) }}</h3>
+            <p>{{ t('course_budgeting_desc', default='Learn to create a family budget using Naira, plan for school fees, and save for emergencies in Kano or Kaduna.', lang=lang) }}</p>
+            <a href="{{ url_for('learning_hub.course_overview', course_id='budgeting_101') }}" class="btn">{{ t('start_course', default='Start Course', lang=lang) }}</a>
+        </div>
+        <div class="card">
+            <h3>{{ t('course_islamic_finance_title', default='Islamic Finance Principles', lang=lang) }}</h3>
+            <p>{{ t('course_islamic_finance_desc', default='Understand Halal investments, Zakat calculations, and ethical saving practices aligned with Sharia principles.', lang=lang) }}</p>
+            <a href="{{ url_for('learning_hub.course_overview', course_id='islamic_finance_101') }}" class="btn">{{ t('start_course', default='Start Course', lang=lang) }}</a>
+        </div>
+        <div class="card">
+            <h3>{{ t('course_saving_title', default='Saving for the Future', lang=lang) }}</h3>
+            <p>{{ t('course_saving_desc', default='Discover strategies to save for Hajj, marriage, or children’s education in a Northern Nigerian context.', lang=lang) }}</p>
+            <a href="{{ url_for('learning_hub.course_overview', course_id='saving_101') }}" class="btn">{{ t('start_course', default='Start Course', lang=lang) }}</a>
+        </div>
+        <div class="gamification">
+            <img src="{{ url_for('static', filename='img/coin.png') }}" alt="Coin">
+            <p>{{ t('gamification_personal', default='Earn coins by completing lessons and unlock the “Wise Saver” badge!', lang=lang) }}</p>
+        </div>
+    </div>
+
+    <div class="language-toggle">
+        <a href="?lang=en">{{ t('lang_english', default='English', lang=lang) }}</a> |
+        <a href="?lang=ha">{{ t('lang_hausa', default='Hausa', lang=lang) }}</a>
+    </div>
+
+    <footer>
+        <p>{{ t('footer_text', default='Empowering Northern Nigeria through Financial Education', lang=lang) }}</p>
+    </footer>
+</body>
+</html>
+{% endblock %}

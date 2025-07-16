@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ tool_title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/learning_hub.css') }}">
+</head>
+<body>
+    <header>
+        <h1>{{ t('learning_hub_compliance_title', default='Compliance Learning', lang=lang) }}</h1>
+        <p>{{ t('compliance_welcome', default='Stay compliant with Nigerian tax laws and regulations, tailored for Northern Nigerian businesses and individuals.', lang=lang) }}</p>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="{{ url_for('learning_hub.main') }}">{{ t('learning_hub_title', default='Learning Hub', lang=lang) }}</a></li>
+            <li><a href="{{ url_for('learning_hub.personal') }}">{{ t('learning_hub_personal_title', default='Personal Finance Learning', lang=lang) }}</a></li>
+            <li><a href="{{ url_for('learning_hub.business') }}">{{ t('learning_hub_business_title', default='Business Learning', lang=lang) }}</a></li>
+            <li><a href="{{ url_for('learning_hub.agents') }}">{{ t('learning_hub_agents_title', default='Agent Learning', lang=lang) }}</a></li>
+            <li><a href="{{ url_for('learning_hub.tool_tutorials') }}">{{ t('learning_hub_tool_tutorials_title', default='Tool Tutorials', lang=lang) }}</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="section-title">{{ t('compliance_courses', default='Compliance Courses', lang=lang) }}</div>
+        <div class="card">
+            <h3>{{ t('course_tax_reforms_title', default='Tax Reforms 2025', lang=lang) }}</h3>
+            <p>{{ t('course_tax_reforms_desc', default='Understand the 2025 Nigerian tax reforms and how they affect businesses in Kano and Kaduna.', lang=lang) }}</p>
+            <a href="{{ url_for('learning_hub.course_overview', course_id='tax_reforms_2025') }}" class="btn">{{ t('start_course', default='Start Course', lang=lang) }}</a>
+        </div>
+        <div class="card">
+            <h3>{{ t('course_regulatory_compliance_title', default='Regulatory Compliance', lang=lang) }}</h3>
+            <p>{{ t('course_regulatory_compliance_desc', default='Learn about CAC registration and other regulatory requirements for Northern Nigerian businesses.', lang=lang) }}</p>
+            <a href="{{ url_for('learning_hub.course_overview', course_id='regulatory_compliance_101') }}" class="btn">{{ t('start_course', default='Start Course', lang=lang) }}</a>
+        </div>
+        <div class="card">
+            <h3>{{ t('course_aml_title', default='Anti-Money Laundering Basics', lang=lang) }}</h3>
+            <p>{{ t('course_aml_desc', default='Understand AML regulations to protect your business and community from financial crimes.', lang=lang) }}</p>
+            <a href="{{ url_for('learning_hub.course_overview', course_id='aml_101') }}" class="btn">{{ t('start_course', default='Start Course', lang=lang) }}</a>
+        </div>
+        <div class="gamification">
+            <img src="{{ url_for('static', filename='img/coin.png') }}" alt="Coin">
+            <p>{{ t('gamification_compliance', default='Earn coins and unlock the “Compliance Champion” badge by mastering compliance courses!', lang=lang) }}</p>
+        </div>
+    </div>
+
+    <div class="language-toggle">
+        <a href="?lang=en">{{ t('lang_english', default='English', lang=lang) }}</a> |
+        <a href="?lang=ha">{{ t('lang_hausa', default='Hausa', lang=lang) }}</a>
+    </div>
+
+    <footer>
+        <p>{{ t('footer_text', default='Empowering Northern Nigeria through Financial Education', lang=lang) }}</p>
+    </footer>
+</body>
+</html>
+{% endblock %}
