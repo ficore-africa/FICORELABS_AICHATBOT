@@ -17,10 +17,16 @@ def process_dialogflow_request(request_data, lang='en'):
         data = json.loads(request_data)
         intent = data['queryResult']['intent']['displayName']
         
-        if intent == 'How to get FCs':
+        if intent == 'what_are_fcs':
+            response_text = trans('chatbot_what_are_fcs', lang=lang, default='FCs (Ficore Credits) are non-transferable points used in the Ficore app to access certain features like adding debtors, generating reports, and more. They’re not real money or currency.')
+        elif intent == 'how_to_get_fcs':
             response_text = trans('chatbot_how_to_get_fcs', lang=lang, default='You can get FCs by clicking “Get More FCs” in your wallet section. FCs are added in-app and used for specific tools. No external bank needed.')
-        elif intent == 'How to become an agent':
-            response_text = trans('chatbot_how_to_become_agent', lang=lang, default='Visit the Agent section in the app and enter a valid Agent ID during sign-up. You’ll get onboarding materials after registration.')
+        elif intent == 'who_are_ficore_agents':
+            response_text = trans('chatbot_who_are_ficore_agents', lang=lang, default='Ficore Agents help guide users, offer support, and earn rewards. They are trained and onboarded with official agent IDs.')
+        elif intent == 'how_to_become_ficore_agent':
+            response_text = trans('chatbot_how_to_become_ficore_agent', lang=lang, default='Visit the Agent section in the app and enter a valid Agent ID during sign-up. You’ll get onboarding materials after registration.')
+        elif intent == 'add_debtor':
+            response_text = trans('chatbot_add_debtor', lang=lang, default='Go to “They Owe Me” in the app, click “Add Debtor”, fill in name, amount, and due date!')
         elif intent == 'Check my budget':
             response_text = trans('chatbot_check_budget', lang=lang, default='To check your budget, please go to the Budget section in the app.')
         elif intent == 'Tips on saving':
