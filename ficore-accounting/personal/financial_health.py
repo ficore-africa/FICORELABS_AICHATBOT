@@ -469,7 +469,7 @@ def main():
             if debt_to_income_float > 35:
                 insights.append(trans("financial_health_insight_high_debt", default='Your debt-to-income ratio is high. Consider reducing debt.'))
             elif debt_to_income_float <= 20:
-                insights.append(trans("financial_health_insight_low_debt", defaultentials.append(trans("financial_health_badge_savings_pro", default='Savings Pro'))
+                insights.append(trans("financial_health_insight_low_debt", default='Great job keeping your debt-to-income ratio low!'))
                 if savings_rate >= 20:
                     badges.append(trans("financial_health_badge_savings_pro", default='Savings Pro'))
                 if expense_ratio <= 50:
