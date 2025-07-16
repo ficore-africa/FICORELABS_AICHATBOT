@@ -712,7 +712,8 @@ def create_app():
             'available_languages': [
                 {'code': code, 'name': utils.trans(f'lang_{code}', lang=lang, default=code.capitalize())}
                 for code in supported_languages
-            ]
+            ],
+            'dialogflow_agent_id': app.config.get('DIALOGFLOW_PROJECT_ID', 'ficoreassistant-kywl')
         }
     
     @app.after_request
