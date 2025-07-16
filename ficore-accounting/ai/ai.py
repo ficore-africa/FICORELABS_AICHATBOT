@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, session
 from flask_login import current_user
-from ai_helpers import process_dialogflow_request
-from chat_models import log_chat_interaction
+from .ai_helpers import process_dialogflow_request
+from .chat_models import log_chat_interaction
 from utils import get_user_language, logger
 import json
 
