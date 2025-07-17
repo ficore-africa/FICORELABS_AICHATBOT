@@ -179,7 +179,7 @@ def dashboard():
     except Exception as e:
         logger.error(f"Error loading admin dashboard: {str(e)}")
         flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
-        return render_template('500.html', error=str(e)), 500
+        return render_template('personal/GENERAL/500.html', error=str(e)), 500
 
 @admin_bp.route('/feedbacks', methods=['GET'])
 @login_required
