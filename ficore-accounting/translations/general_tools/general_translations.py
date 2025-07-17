@@ -2,6 +2,7 @@ GENERAL_TRANSLATIONS = {
 'en': {
     # Authentication & User Management
     'general_login': 'Login',
+    'business_home':'Home',
     'general_logout': 'Logout',
     'general_register': 'Register',
     'general_signup': 'Sign Up',
@@ -1486,6 +1487,7 @@ GENERAL_TRANSLATIONS = {
         'general_just_now': 'Yanzu haka',
         'general_minutes_ago': 'mintuna da suka wuce',
         'general_hours_ago': 'awa da suka wuce',
+    'business_home':'Gida',
         'general_days_ago': 'kwanaki da suka wuce',
         'general_no_recent_activity': 'Babu ayyukan kwanan nan',
         'general_dashboard_tooltip': 'Duba dashboard ɗin ku',
