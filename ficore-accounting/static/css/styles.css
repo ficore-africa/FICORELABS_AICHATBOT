@@ -227,12 +227,12 @@ h4 { font-size: clamp(1rem, 2.5vw, 1.25rem); }
 /* --- Homepage Specific Styles --- */
 /* Top Header */
 .top-header {
-    /* position: fixed; → remove or change */
     position: relative;
     top: 0;
     left: 0;
     width: 100%;
     height: var(--navbar-height);
+    overflow: visible; /* Ensures dropdowns are not clipped */
     background-color: transparent;
     border-bottom: 1px solid var(--card-border);
     z-index: 1000;
