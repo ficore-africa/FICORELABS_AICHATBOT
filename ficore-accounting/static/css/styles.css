@@ -967,7 +967,7 @@ h4 { font-size: clamp(1rem, 2.5vw, 1.25rem); }
     align-items: center;
     justify-content: space-between;
     transition: var(--transition-base);
-    overflow: hidden;
+     overflow: visible;
     box-sizing: border-box;
 }
 
@@ -2589,13 +2589,12 @@ h2.card-title {
 }
 
 .dropdown-menu {
-    position: absolute;
+    position: absolute !important;
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     border-radius: 10px;
     box-shadow: var(--card-shadow);
     min-width: 100%;
-    bottom: 100% !important; /* open upwards */
     max-height: 150px;
     z-index: 9999;
     overflow-y: auto;
