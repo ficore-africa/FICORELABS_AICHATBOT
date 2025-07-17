@@ -130,8 +130,8 @@ html, body {
     font-family: 'Poppins', sans-serif;
     color: var(--text-color);
     background-color: var(--background-main);
-    position: static !important;
-    overflow-x: hidden !important;
+    position: static;
+    overflow-x: hidden;
     box-sizing: border-box;
 }
 
@@ -214,8 +214,8 @@ h4 { font-size: clamp(1rem, 2.5vw, 1.25rem); }
     padding-top: 0.3rem;
     padding-bottom: calc(var(--bottom-nav-height) + 2rem);
     min-height: calc(100vh - var(--navbar-height) - var(--bottom-nav-height));
-    position: static !important;
-    overflow-x: hidden !important;
+    position: static;
+    overflow-x: hidden;
 }
 
 .main-content > .page-container:first-child,
@@ -2766,4 +2766,12 @@ body, .app, .main-wrapper, .top-header {
 .container, .container-fluid, .row, .col {
     margin-top: 0 !important;
     padding-top: 0 !important;
+}
+df-messenger {
+    /* Force it to a visible spot for debugging */
+    position: fixed !important;
+    top: 50px !important; /* Adjust if your header is taller */
+    left: 50px !important;
+    z-index: 99999 !important; /* Ensure it's on top of everything */
+    display: block !important; /* Just in case */
 }
