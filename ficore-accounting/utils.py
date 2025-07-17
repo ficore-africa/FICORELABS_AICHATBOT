@@ -561,7 +561,7 @@ _ADMIN_NAV = [
         "icon": "bi-speedometer"
     },
     {
-        "endpoint": "admin.view_credit_requests",
+        "endpoint": "admin.manage_credit_request",
         "label": "Credit Ficore Credits",
         "label_key": "admin_ficore_credits",
         "description_key": "admin_ficore_credits_desc",
