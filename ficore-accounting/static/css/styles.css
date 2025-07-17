@@ -150,14 +150,10 @@ body {
 .full-width,
 .container-fluid,
 .wrapper {
-  width: 100vw;
-  max-width: 100vw;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  padding: 0 !important;
-  margin: 0 !important;
+    width: 100vw;
+    max-width: 100vw;
+    padding: 0;
+    margin: 0;
 }
 
 /* Optional: zero padding on main sections */
@@ -166,8 +162,12 @@ section, header, footer, main {
   padding-right: 0;
 }
 
-*, *::before, *::after {
-  box-sizing: border-box;
+/* Use */
+html {
+    box-sizing: border-box;
+}
+body, section, div, header, footer, main, nav, article, aside {
+    box-sizing: inherit;
 }
 
 /* General container styling */
@@ -1525,23 +1525,6 @@ h4 { font-size: clamp(1rem, 2.5vw, 1.25rem); }
     white-space: nowrap;
 }
 
-/* Bottom Navigation Icons for Trader Role */
-.bottom-nav .nav-item[data-label="Home"] .bi::before {
-    content: "\f2f2"; /* Bootstrap Icons: bi-house */
-}
-
-.bottom-nav .nav-item[data-label="Debtors"] .bi::before {
-    content: "\f4e5"; /* Bootstrap Icons: bi-person-dash */
-}
-
-.bottom-nav .nav-item[data-label="Inventory"] .bi::before {
-    content: "\f2b2"; /* Bootstrap Icons: bi-box-seam */
-}
-
-.bottom-nav .nav-item[data-label="Profile"] .bi::before {
-    content: "\f4f8"; /* Bootstrap Icons: bi-person-circle */
-}
-
 /* Navbar */
 .navbar {
     background: transparent;
@@ -2754,6 +2737,12 @@ body, .app, .main-wrapper, .top-header {
 .main-content .page-container {
     padding-top: 0 !important;
     padding: 0.5rem 0.5rem 1.5rem;
+}
+
+:focus-visible {
+    outline: 3px solid var(--accent-blue);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 5px rgba(58, 134, 255, 0.2);
 }
 /* Mobile adjustments */
 @media (max-width: 768px) {
