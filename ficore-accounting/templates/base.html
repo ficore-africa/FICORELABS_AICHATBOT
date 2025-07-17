@@ -37,16 +37,10 @@
                     <i class="bi bi-bell"></i>
                     <span class="notification-badge badge bg-primary rounded-pill d-none" id="notificationBadge">0</span>
                 </button>
-                <div class="dropdown header-toggles">
-                    <button class="btn btn-link dropdown-toggle" type="button" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false" data-bs-toggle="tooltip" data-bs-title="{{ t('general_language', default='Language') | e }}">
-                        <i class="bi bi-globe"></i>
-                        <span>{{ lang.upper() | e }}</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
-                        <li><a class="dropdown-item" href="{{ url_for('set_language', lang='en') | e }}">{{ t('general_english', default='English') | e }}</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('set_language', lang='ha') | e }}">{{ t('general_hausa', default='Hausa') | e }}</a></li>
-                    </ul>
-                </div>
+                <button class="btn btn-link language-toggle" id="languageToggle" onclick="toggleLanguage()" data-bs-toggle="tooltip" data-bs-title="{{ t('general_language_toggle_tooltip', default='Toggle language') | e }}" aria-label="{{ t('general_language_toggle', default='Toggle language') | e }}">
+                    <i class="bi bi-globe"></i>
+                    <span id="languageText">{{ 'ENGLISH' if lang == 'en' else 'HAUSA' }}</span>
+                </button>
                 <button class="btn btn-link" id="darkModeToggle" onclick="toggleDarkMode()" aria-label="{{ t('general_mode_toggle_dark', default='Toggle dark mode') | e }}" data-bs-toggle="tooltip" data-bs-title="{{ t('general_mode_toggle_tooltip_switch_to_dark', default='Switch to dark mode') | e }}">
                     <i class="bi bi-moon-stars"></i>
                 </button>
@@ -79,15 +73,11 @@
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint == 'users.signup' %}active{% endif %}" href="{{ url_for('users.signup') | e }}" data-bs-toggle="tooltip" data-bs-title="{{ t('general_signup_tooltip', default='Create a new account') | e }}" aria-current="{% if request.endpoint == 'users.signup' %}page{% endif %}">{{ t('general_signup', default='Sign Up') | e }}</a>
                         </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-toggle="tooltip" data-bs-title="{{ t('general_language_tooltip', default='Change language') | e }}" aria-label="{{ t('general_language', default='Language') | e }}">
+                        <li class="nav-item">
+                            <button class="nav-link btn btn-link language-toggle" id="languageToggle" onclick="toggleLanguage()" data-bs-toggle="tooltip" data-bs-title="{{ t('general_language_toggle_tooltip', default='Toggle language') | e }}" aria-label="{{ t('general_language_toggle', default='Toggle language') | e }}">
                                 <i class="bi bi-globe"></i>
-                                {{ lang.upper() | e }}
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
-                                <li><a class="dropdown-item" href="{{ url_for('set_language', lang='en') | e }}">{{ t('general_english', default='English') | e }}</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('set_language', lang='ha') | e }}">{{ t('general_hausa', default='Hausa') | e }}</a></li>
-                            </ul>
+                                <span id="languageText">{{ 'ENGLISH' if lang == 'en' else 'HAUSA' }}</span>
+                            </button>
                         </li>
                         <li class="nav-item">
                             <button class="nav-link btn btn-link" id="darkModeToggle" onclick="toggleDarkMode()" data-bs-toggle="tooltip" data-bs-title="{{ t('general_mode_toggle_tooltip_switch_to_dark', default='Switch to dark mode') | e }}" aria-label="{{ t('general_mode_toggle_dark', default='Toggle dark mode') | e }}">
@@ -209,8 +199,17 @@
         .notification-time {
             font-size: 0.8rem;
         }
-        .dropdown-menu.show {
-            display: block !important;
+        .language-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .language-toggle span {
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+        .dark-mode .language-toggle {
+            color: #ffffff;
         }
         /* Dialogflow Messenger Custom Styling */
         df-messenger {
@@ -264,19 +263,6 @@
                 new bootstrap.Tooltip(tooltipTriggerEl);
             });
 
-            // Debug dropdowns
-            document.querySelectorAll('.dropdown-toggle').forEach(button => {
-                button.addEventListener('click', () => {
-                    console.log('Dropdown button clicked:', button.id || button.className);
-                    const dropdownMenu = button.nextElementSibling;
-                    if (dropdownMenu && dropdownMenu.classList.contains('dropdown-menu')) {
-                        console.log('Dropdown menu found, current classes:', dropdownMenu.className);
-                    } else {
-                        console.warn('Dropdown menu not found for button:', button.id || button.className);
-                    }
-                });
-            });
-
             // Debug icons
             document.querySelectorAll('.bi').forEach(icon => {
                 if (!icon.className.includes('bi-')) {
@@ -328,6 +314,36 @@
                 new bootstrap.Tooltip(darkModeToggle);
             }
         };
+
+        async function toggleLanguage() {
+            const languageText = document.getElementById('languageText');
+            if (!languageText) {
+                console.error('Language text element not found.');
+                return;
+            }
+            const currentLang = languageText.textContent.toLowerCase() === 'english' ? 'en' : 'ha';
+            const newLang = currentLang === 'en' ? 'ha' : 'en';
+            const newLangText = newLang === 'en' ? 'ENGLISH' : 'HAUSA';
+            try {
+                const response = await fetch('{{ url_for("set_language", lang="") }}' + newLang, {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRFToken': getCsrfToken()
+                    }
+                });
+                if (!response.ok) throw new Error('Failed to toggle language');
+                languageText.textContent = newLangText;
+                // Update Dialogflow language
+                const dfMessenger = document.querySelector('df-messenger');
+                if (dfMessenger) {
+                    dfMessenger.setAttribute('language-code', newLang);
+                }
+                // Optionally reload page to apply language changes
+                window.location.reload();
+            } catch (error) {
+                console.error('Failed to toggle language:', error);
+            }
+        }
 
         async function loadNotificationCount() {
             try {
