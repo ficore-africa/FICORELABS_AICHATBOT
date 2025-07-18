@@ -13,16 +13,16 @@ import io
 logger = logging.getLogger(__name__)
 
 class ReceiptForm(FlaskForm):
-    party_name = StringField(trans('receipts_payer_name', default='Payer Name'), validators=[DataRequired()])
+    party_name = StringField(trans('receipts_party_name', default='Customer Name'), validators=[DataRequired()])
     date = DateField(trans('general_date', default='Date'), validators=[DataRequired()])
-    amount = FloatField(trans('receipts_amount', default='Amount'), validators=[DataRequired()])
+    amount = FloatField(trans('general_amount', default='Sale Amount'), validators=[DataRequired()])
     method = SelectField(trans('general_payment_method', default='Payment Method'), choices=[
         ('cash', trans('general_cash', default='Cash')),
         ('card', trans('general_card', default='Card')),
         ('bank', trans('general_bank_transfer', default='Bank Transfer'))
     ], validators=[Optional()])
     category = StringField(trans('general_category', default='Category'), validators=[Optional()])
-    submit = SubmitField(trans('receipts_add_receipt', default='Add Receipt'))
+    submit = SubmitField(trans('receipts_add_receipt', default='Record Sale'))
 
 receipts_bp = Blueprint('receipts', __name__, url_prefix='/receipts')
 
@@ -30,7 +30,7 @@ receipts_bp = Blueprint('receipts', __name__, url_prefix='/receipts')
 @login_required
 @utils.requires_role('trader')
 def index():
-    """List all receipt cashflows for the current user."""
+    """List all sales income cashflows for the current user."""
     try:
         db = utils.get_mongo_db()
         query = {'type': 'receipt'} if utils.is_admin() else {'user_id': str(current_user.id), 'type': 'receipt'}
