@@ -1,4 +1,4 @@
-from flask import Blueprint, session, request, render_template, redirect, url_for, flash, session, jsonify, current_app
+from flask import Blueprint, session, request, render_template, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
@@ -14,6 +14,8 @@ from pymongo import errors
 logger = getLogger(__name__)
 
 credits_bp = Blueprint('credits', __name__, template_folder='templates/credits')
+
+# Note: Ensure Flask app has SECRET_KEY configured for session support (e.g., app.secret_key = 'your-secret-key')
 
 class RequestCreditsForm(FlaskForm):
     amount = SelectField(
@@ -38,7 +40,7 @@ class RequestCreditsForm(FlaskForm):
         ],
         render_kw={'class': 'form-control'}
     )
-    submit = SubmitField(trans('credits_request', default='Request Ficorem Credits'), render_kw={'class': 'btn btn-primary w-100'})
+    submit = SubmitField(trans('credits_request', default='Request Ficore Credits'), render_kw={'class': 'btn btn-primary w-100'})
 
 class ApproveCreditRequestForm(FlaskForm):
     status = SelectField(
@@ -75,7 +77,7 @@ def credit_ficore_credits(user_id: str, amount: int, ref: str, type: str = 'add'
                         session=session
                     )
                     if result.matched_count == 0:
-                        logger.error(f"No user found for ID {user_id} to credit Ficore Credits")
+                        logger.error(f"No user found for ID {user_id} to credit Ficore Credits, ref: {ref}")
                         raise ValueError(f"No user found for ID {user_id}")
                 db.ficore_credit_transactions.insert_one({
                     'user_id': user_id,
@@ -93,11 +95,11 @@ def credit_ficore_credits(user_id: str, amount: int, ref: str, type: str = 'add'
                     'timestamp': datetime.utcnow()
                 }, session=session)
             except ValueError as e:
-                logger.error(f"Transaction aborted: {str(e)}")
+                logger.error(f"Transaction aborted for ref {ref}: {str(e)}")
                 session.abort_transaction()
                 raise
             except errors.PyMongoError as e:
-                logger.error(f"MongoDB error during Ficore Credit transaction for user {user_id}: {str(e)}")
+                logger.error(f"MongoDB error during Ficore Credit transaction for user {user_id}, ref {ref}: {str(e)}")
                 session.abort_transaction()
                 raise
 
@@ -146,13 +148,13 @@ def request_credits():
                         'timestamp': datetime.utcnow()
                     }, session=session)
             flash(trans('credits_request_success', default='Ficore Credit request submitted successfully'), 'success')
-            logger.info(f"User {current_user.id} submitted credit request for {amount} Ficore Credits via {payment_method}")
+            logger.info(f"User {current_user.id} submitted credit request for {amount} Ficore Credits via {payment_method}, ref: {ref}")
             return redirect(url_for('credits.history'))
         except errors.PyMongoError as e:
-            logger.error(f"MongoDB error submitting credit request for user {current_user.id}: {str(e)}")
+            logger.error(f"MongoDB error submitting credit request for user {current_user.id}, ref {ref}: {str(e)}")
             flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
         except Exception as e:
-            logger.error(f"Unexpected error submitting credit request for user {current_user.id}: {str(e)}")
+            logger.error(f"Unexpected error submitting credit request for user {current_user.id}, ref {ref}: {str(e)}")
             flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
     return render_template(
         'credits/request.html',
@@ -229,10 +231,17 @@ def manage_credit_request(request_id):
     """Approve or deny a credit request (admin only)."""
     form = ApproveCreditRequestForm()
     try:
+        # Validate ObjectId early
+        if not ObjectId.is_valid(request_id):
+            logger.error(f"Invalid request_id {request_id} for admin {current_user.id}")
+            flash(trans('credits_request_not_found', default='Credit request not found'), 'danger')
+            return redirect(url_for('credits.view_credit_requests'))
+
         db = utils.get_mongo_db()
         client = db.client
         request_data = db.credit_requests.find_one({'_id': ObjectId(request_id)})
         if not request_data:
+            logger.error(f"Credit request {request_id} not found for admin {current_user.id}")
             flash(trans('credits_request_not_found', default='Credit request not found'), 'danger')
             return redirect(url_for('credits.view_credit_requests'))
 
@@ -263,11 +272,11 @@ def manage_credit_request(request_id):
                     db.audit_logs.insert_one({
                         'admin_id': str(current_user.id),
                         'action': f'credit_request_{status}',
-                        'details': {'request_id': request_id, 'user_id': request_data['user_id'], 'amount': request_data['amount']},
+                        'details': {'request_id': request_id, 'user_id': request_data['user_id'], 'amount': request_data['amount'], 'ref': ref},
                         'timestamp': datetime.utcnow()
                     }, session=session)
             flash(trans(f'credits_request_{status}', default=f'Credit request {status} successfully'), 'success')
-            logger.info(f"Admin {current_user.id} {status} credit request {request_id} for user {request_data['user_id']}")
+            logger.info(f"Admin {current_user.id} {status} credit request {request_id} for user {request_data['user_id']}, ref: {ref}")
             return redirect(url_for('credits.view_credit_requests'))
         
         return render_template(
@@ -277,10 +286,10 @@ def manage_credit_request(request_id):
             title=trans('credits_manage_request_title', default='Manage Credit Request', lang=session.get('lang', 'en'))
         )
     except errors.PyMongoError as e:
-        logger.error(f"MongoDB error managing credit request {request_id} by admin {current_user.id}: {str(e)}")
+        logger.error(f"MongoDB error managing credit request {request_id} by admin {current_user.id}, ref: {ref}: {str(e)}")
         flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
     except Exception as e:
-        logger.error(f"Unexpected error managing credit request {request_id} by admin {current_user.id}: {str(e)}")
+        logger.error(f"Unexpected error managing credit request {request_id} by admin {current_user.id}, ref: {ref}: {str(e)}")
         flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
     return redirect(url_for('credits.view_credit_requests'))
 
@@ -318,7 +327,7 @@ def receipt_upload():
                             session=session
                         )
                         if result.matched_count == 0:
-                            logger.error(f"No user found for ID {current_user.id} to deduct Ficore Credits")
+                            logger.error(f"No user found for ID {current_user.id} to deduct Ficore Credits, ref: {ref}")
                             raise ValueError(f"No user found for ID {current_user.id}")
                         db.ficore_credit_transactions.insert_one({
                             'user_id': str(current_user.id),
@@ -336,16 +345,16 @@ def receipt_upload():
                         'timestamp': datetime.utcnow()
                     }, session=session)
             flash(trans('credits_receipt_uploaded', default='Receipt uploaded successfully'), 'success')
-            logger.info(f"User {current_user.id} uploaded receipt {file_id}")
+            logger.info(f"User {current_user.id} uploaded receipt {file_id}, ref: {ref}")
             return redirect(url_for('credits.history'))
         except ValueError as e:
-            logger.error(f"User not found for receipt upload: {str(e)}")
+            logger.error(f"User not found for receipt upload, ref: {ref}: {str(e)}")
             flash(trans('general_user_not_found', default='User not found'), 'danger')
         except errors.PyMongoError as e:
-            logger.error(f"MongoDB error uploading receipt for user {current_user.id}: {str(e)}")
+            logger.error(f"MongoDB error uploading receipt for user {current_user.id}, ref: {ref}: {str(e)}")
             flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
         except Exception as e:
-            logger.error(f"Unexpected error uploading receipt for user {current_user.id}: {str(e)}")
+            logger.error(f"Unexpected error uploading receipt for user {current_user.id}, ref: {ref}: {str(e)}")
             flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
     return render_template(
         'credits/receipt_upload.html',
@@ -383,10 +392,15 @@ def view_receipts():
 @credits_bp.route('/receipt/<file_id>', methods=['GET'])
 @login_required
 @utils.requires_role('admin')
-@utils.limiter.limit("10 per hour")
+@utils.limiter.limit("20 per hour")
 def view_receipt(file_id):
     """Serve a specific receipt file (admin only)."""
     try:
+        if not ObjectId.is_valid(file_id):
+            logger.error(f"Invalid file_id {file_id} for admin {current_user.id}")
+            flash(trans('credits_receipt_not_found', default='Receipt not found'), 'danger')
+            return redirect(url_for('credits.view_receipts'))
+
         db = utils.get_mongo_db()
         fs = GridFS(db)
         file = fs.get(ObjectId(file_id))
@@ -398,10 +412,13 @@ def view_receipt(file_id):
         response.headers.set('Content-Disposition', 'inline', filename=file.filename)
         logger.info(f"Admin {current_user.id} viewed receipt {file_id}")
         return response
-    except Exception as e:
-        logger.error(f"Error serving receipt {file_id} for admin {current_user.id}: {str(e)}")
+    except errors.PyMongoError as e:
+        logger.error(f"MongoDB error serving receipt {file_id} for admin {current_user.id}: {str(e)}")
         flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
-        return redirect(url_for('credits.view_receipts'))
+    except Exception as e:
+        logger.error(f"Unexpected error serving receipt {file_id} for admin {current_user.id}: {str(e)}")
+        flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
+    return redirect(url_for('credits.view_receipts'))
 
 @credits_bp.route('/api/balance', methods=['GET'])
 @login_required
