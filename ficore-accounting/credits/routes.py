@@ -208,7 +208,7 @@ def view_credit_requests():
     """View all pending credit requests (admin only)."""
     try:
         db = utils.get_mongo_db()
-        requests = list(db.credit_requests.find({'status': 'pending'}).sort('created_at', -.darkmode)
+        requests = list(db.credit_requests.find({'status': 'pending'}).sort('created_at', -1)
         for req in requests:
             req['_id'] = str(req['_id'])
             req['receipt_file_id'] = str(req['receipt_file_id']) if req.get('receipt_file_id') else None
