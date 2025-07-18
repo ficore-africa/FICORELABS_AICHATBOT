@@ -4,7 +4,7 @@ import uuid
 import os
 import certifi
 from datetime import datetime
-from flask import session, has_request_context, current_app, url_for, request
+from flask import flask_session, has_request_context, current_app, url_for, request
 from flask_mail import Mail
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -24,7 +24,7 @@ from flask_compress import Compress
 
 # Initialize extensions
 login_manager = LoginManager()
-flask_session = Session()
+flask_session_ext = Session()
 csrf = CSRFProtect()
 babel = Babel()
 compress = Compress()
@@ -49,7 +49,7 @@ class SessionAdapter(logging.LoggerAdapter):
         user_role = 'anonymous'
         try:
             if has_request_context():
-                session_id = session.get('sid', 'no-session-id')
+                session_id = flask_session.get('sid', 'no-session-id')
                 ip_address = request.remote_addr
                 user_role = current_user.role if current_user.is_authenticated else 'anonymous'
             else:
@@ -806,7 +806,7 @@ def get_explore_features():
                     feature['title_key'] = feature.get('label', 'default_feature').lower().replace(' ', '_') + '_title'
                     logger.warning(
                         f"Missing title_key for feature {feature.get('label', 'unknown')}, assigned default: {feature['title_key']}",
-                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr if has_request_context() else 'unknown'}
+                        extra={'session_id': flask_session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr if has_request_context() else 'unknown'}
                     )
             return generate_tools_with_urls(features)
     except Exception as e:
@@ -932,7 +932,7 @@ def log_tool_usage(action, tool_name=None, details=None, user_id=None, db=None, 
         if not action or not isinstance(action, str):
             raise ValueError("Action must be a non-empty string")
         
-        effective_session_id = session_id or session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'
+        effective_session_id = session_id or flask_session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'
         
         log_entry = {
             'tool_name': tool_name or action,
@@ -959,7 +959,7 @@ def log_tool_usage(action, tool_name=None, details=None, user_id=None, db=None, 
             exc_info=True,
             extra={
                 'user_id': user_id or 'unknown',
-                'session_id': session_id or session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id',
+                'session_id': session_id or flask_session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id',
                 'ip_address': request.remote_addr if has_request_context() else 'unknown'
             }
         )
@@ -970,7 +970,7 @@ def log_tool_usage(action, tool_name=None, details=None, user_id=None, db=None, 
             exc_info=True,
             extra={
                 'user_id': user_id or 'unknown',
-                'session_id': session_id or session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id',
+                'session_id': session_id or flask_session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id',
                 'ip_address': request.remote_addr if has_request_context() else 'unknown'
             }
         )
@@ -984,15 +984,15 @@ def create_anonymous_session():
     for attempt in range(max_retries):
         try:
             with current_app.app_context():
-                session['sid'] = str(uuid.uuid4())
-                session['is_anonymous'] = True
-                session['created_at'] = datetime.utcnow().isoformat()
-                if 'lang' not in session:
-                    session['lang'] = 'en'
-                session.modified = True
+                flask_session['sid'] = str(uuid.uuid4())
+                flask_session['is_anonymous'] = True
+                flask_session['created_at'] = datetime.utcnow().isoformat()
+                if 'lang' not in flask_session:
+                    flask_session['lang'] = 'en'
+                flask_session.modified = True
                 logger.info(
-                    f"{trans('general_anonymous_session_created', default='Created anonymous session')}: {session['sid']}",
-                    extra={'session_id': session['sid'], 'ip_address': request.remote_addr if has_request_context() else 'unknown'}
+                    f"{trans('general_anonymous_session_created', default='Created anonymous session')}: {flask_session['sid']}",
+                    extra={'session_id': flask_session['sid'], 'ip_address': request.remote_addr if has_request_context() else 'unknown'}
                 )
                 return
         except Exception as e:
@@ -1002,13 +1002,13 @@ def create_anonymous_session():
                 extra={'session_id': 'no-session-id', 'ip_address': request.remote_addr if has_request_context() else 'unknown'}
             )
             if attempt == max_retries - 1:
-                session['sid'] = f'error-{str(uuid.uuid4())[:8]}'
-                session['is_anonymous'] = True
-                session.modified = True
+                flask_session['sid'] = f'error-{str(uuid.uuid4())[:8]}'
+                flask_session['is_anonymous'] = True
+                flask_session.modified = True
                 logger.error(
                     f"{trans('general_anonymous_session_error', default='Error creating anonymous session after retries')}: {str(e)}",
                     exc_info=True,
-                    extra={'session_id': session['sid'], 'ip_address': request.remote_addr if has_request_context() else 'unknown'}
+                    extra={'session_id': flask_session['sid'], 'ip_address': request.remote_addr if has_request_context() else 'unknown'}
                 )
                 return
             time.sleep(0.5)
@@ -1028,7 +1028,7 @@ def clean_currency(value):
         if value is None or value == '':
             logger.debug(
                 "clean_currency received empty or None input, returning 0.0",
-                extra={'session_id': session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'}
+                extra={'session_id': flask_session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'}
             )
             return 0.0
         if isinstance(value, (int, float)):
@@ -1042,7 +1042,7 @@ def clean_currency(value):
         if not cleaned or cleaned.count('.') > 1:
             logger.warning(
                 f"Invalid currency format after cleaning: {value_str}, cleaned: {cleaned}, returning 0.0",
-                extra={'session_id': session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'}
+                extra={'session_id': flask_session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'}
             )
             return 0.0
 
@@ -1050,13 +1050,13 @@ def clean_currency(value):
         result = float(cleaned)
         logger.debug(
             f"clean_currency processed {value_str} to {result}",
-            extra={'session_id': session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'}
+            extra={'session_id': flask_session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'}
         )
         return result
     except (ValueError, TypeError) as e:
         logger.warning(
             f"Currency format error for value '{value}': {str(e)}, returning 0.0",
-            extra={'session_id': session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'}
+            extra={'session_id': flask_session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'}
         )
         return 0.0
         
@@ -1066,7 +1066,7 @@ def trans_function(key, lang=None, **kwargs):
     
     Args:
         key: Translation key
-        lang: Language code ('en', 'ha'). Defaults to session['lang'] or 'en'
+        lang: Language code ('en', 'ha'). Defaults to flask_session['lang'] or 'en'
         **kwargs: String formatting parameters
     
     Returns:
@@ -1110,7 +1110,7 @@ def get_mongo_db():
                     mongo_uri = os.getenv('MONGO_URI')
                     if not mongo_uri:
                         logger.error("MONGO_URI environment variable not set",
-                                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr if has_request_context() else 'unknown'})
+                                    extra={'session_id': flask_session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr if has_request_context() else 'unknown'})
                         raise RuntimeError("MONGO_URI environment variable not set")
                     
                     client = MongoClient(
@@ -1124,7 +1124,7 @@ def get_mongo_db():
                     client.admin.command('ping')
                     current_app.extensions['mongo'] = client
                     logger.info("MongoDB client initialized successfully in utils.get_mongo_db",
-                               extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr if has_request_context() else 'unknown'})
+                               extra={'session_id': flask_session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr if has_request_context() else 'unknown'})
                 
                 db = current_app.extensions['mongo']['ficodb']
                 db.command('ping')
@@ -1133,13 +1133,13 @@ def get_mongo_db():
             logger.warning(
                 f"Attempt {attempt + 1}/{max_retries} failed to connect to MongoDB: {str(e)}",
                 exc_info=True,
-                extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr if has_request_context() else 'unknown'}
+                extra={'session_id': flask_session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr if has_request_context() else 'unknown'}
             )
             if attempt == max_retries - 1:
                 logger.error(
                     f"Failed to connect to MongoDB after {max_retries} attempts: {str(e)}",
                     exc_info=True,
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr if has_request_context() else 'unknown'}
+                    extra={'session_id': flask_session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr if has_request_context() else 'unknown'}
                 )
                 raise RuntimeError(f"Failed to connect to MongoDB: {str(e)}")
             time.sleep(retry_delay)
@@ -1273,7 +1273,7 @@ def format_currency(amount, currency='₦', lang=None):
     try:
         with current_app.app_context():
             if lang is None:
-                lang = session.get('lang', 'en') if has_request_context() else 'en'
+                lang = flask_session.get('lang', 'en') if has_request_context() else 'en'
             amount = float(amount) if amount is not None else 0
             if amount.is_integer():
                 return f"{currency}{int(amount):,}"
@@ -1297,7 +1297,7 @@ def format_date(date_obj, lang=None, format_type='short'):
     try:
         with current_app.app_context():
             if lang is None:
-                lang = session.get('lang', 'en') if has_request_context() else 'en'
+                lang = flask_session.get('lang', 'en') if has_request_context() else 'en'
             if not date_obj:
                 return ''
             if isinstance(date_obj, str):
@@ -1384,7 +1384,7 @@ def get_user_language():
     """
     try:
         with current_app.app_context():
-            return session.get('lang', 'en') if has_request_context() else 'en'
+            return flask_session.get('lang', 'en') if has_request_context() else 'en'
     except Exception:
         return 'en'
 
@@ -1403,7 +1403,7 @@ def log_user_action(action, details=None, user_id=None):
             from flask import request
             if user_id is None and current_user.is_authenticated:
                 user_id = current_user.id
-            session_id = session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'
+            session_id = flask_session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'
             log_entry = {
                 'user_id': user_id,
                 'session_id': session_id,
@@ -1673,7 +1673,7 @@ def get_all_recent_activities(user_id=None, is_admin_user=False, db=None, sessio
 
 # Export all functions and variables
 __all__ = [
-    'login_manager', 'clean_currency', 'log_tool_usage', 'flask_session', 'csrf', 'babel', 'compress', 'limiter',
+    'login_manager', 'clean_currency', 'log_tool_usage', 'flask_session_ext', 'csrf', 'babel', 'compress', 'limiter',
     'get_limiter', 'create_anonymous_session', 'trans_function', 'is_valid_email',
     'get_mongo_db', 'close_mongo_db', 'get_mail', 'requires_role', 'check_ficore_credit_balance',
     'get_user_query', 'is_admin', 'format_currency', 'format_date', 'sanitize_input',
