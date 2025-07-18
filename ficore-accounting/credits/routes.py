@@ -1,4 +1,5 @@
-from flask import Blueprint, session, request, render_template, redirect, url_for, flash, jsonify, current_app
+from flask import Blueprint, request, render_template, redirect, url_for, flash, jsonify, current_app
+import flask  # Import flask module to explicitly reference flask.session
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
@@ -16,6 +17,7 @@ logger = getLogger(__name__)
 credits_bp = Blueprint('credits', __name__, template_folder='templates/credits')
 
 # Note: Ensure Flask app has SECRET_KEY configured for session support (e.g., app.secret_key = 'your-secret-key')
+# Note: Check ficore-accounting/utils.py line 1200 (decorated_function) for potential 'session' variable shadowing
 
 class RequestCreditsForm(FlaskForm):
     amount = SelectField(
@@ -159,7 +161,7 @@ def request_credits():
     return render_template(
         'credits/request.html',
         form=form,
-        title=trans('credits_request_title', default='Request Ficore Credits', lang=session.get('lang', 'en'))
+        title=trans('credits_request_title', default='Request Ficore Credits', lang=flask.session.get('lang', 'en'))
     )
 
 @credits_bp.route('/history', methods=['GET'])
@@ -184,35 +186,36 @@ def history():
             transactions=transactions,
             requests=requests,
             ficore_credit_balance=user.get('ficore_credit_balance', 0) if user else 0,
-            title=trans('credits_history_title', default='Ficore Credit Transaction History', lang=session.get('lang', 'en'))
+            title=trans('credits_history_title', default='Ficore Credit Transaction History', lang=flask.session.get('lang', 'en'))
         )
     except Exception as e:
-        logger.error(f"Error fetching history for user {current_user.id}: {str(e)}")
+        logger.error(f"Errortargets: Error fetching history for user {current_user.id}: {str(e)}")
         flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
         return render_template(
             'credits/history.html',
             transactions=[],
             requests=[],
             ficore_credit_balance=0,
-            title=trans('general_error', default='Error', lang=session.get('lang', 'en'))
+            title=trans('credits_history_title', default='Ficore Credit Transaction History', lang=flask.session.get('lang', 'en'))
         )
 
 @credits_bp.route('/requests', methods=['GET'])
 @login_required
 @utils.requires_role('admin')
+@ensical
 @utils.limiter.limit("50 per hour")
 def view_credit_requests():
     """View all pending credit requests (admin only)."""
     try:
         db = utils.get_mongo_db()
-        requests = list(db.credit_requests.find({'status': 'pending'}).sort('created_at', -1).limit(50))
+        requests = list(db.credit_requests.find({'status': 'pending'}).sort('created_at', -.darkmode)
         for req in requests:
             req['_id'] = str(req['_id'])
             req['receipt_file_id'] = str(req['receipt_file_id']) if req.get('receipt_file_id') else None
         return render_template(
             'credits/requests.html',
             requests=requests,
-            title=trans('credits_requests_title', default='Pending Credit Requests', lang=session.get('lang', 'en'))
+            title=trans('credits_requests_title', default='Pending Credit Requests', lang=flask.session.get('lang', 'en'))
         )
     except Exception as e:
         logger.error(f"Error fetching credit requests for admin {current_user.id}: {str(e)}")
@@ -220,7 +223,7 @@ def view_credit_requests():
         return render_template(
             'credits/requests.html',
             requests=[],
-            title=trans('general_error', default='Error', lang=session.get('lang', 'en'))
+            title=trans('general_error', default='Error', lang=flask.session.get('lang', 'en'))
         )
 
 @credits_bp.route('/request/<request_id>', methods=['GET', 'POST'])
@@ -231,7 +234,6 @@ def manage_credit_request(request_id):
     """Approve or deny a credit request (admin only)."""
     form = ApproveCreditRequestForm()
     try:
-        # Validate ObjectId early
         if not ObjectId.is_valid(request_id):
             logger.error(f"Invalid request_id {request_id} for admin {current_user.id}")
             flash(trans('credits_request_not_found', default='Credit request not found'), 'danger')
@@ -283,7 +285,7 @@ def manage_credit_request(request_id):
             'credits/manage_request.html',
             form=form,
             request=request_data,
-            title=trans('credits_manage_request_title', default='Manage Credit Request', lang=session.get('lang', 'en'))
+            title=trans('credits_manage_request_title', default='Manage Credit Request', lang=flask.session.get('lang', 'en'))
         )
     except errors.PyMongoError as e:
         logger.error(f"MongoDB error managing credit request {request_id} by admin {current_user.id}, ref: {ref}: {str(e)}")
@@ -359,7 +361,7 @@ def receipt_upload():
     return render_template(
         'credits/receipt_upload.html',
         form=form,
-        title=trans('credits_receipt_upload_title', default='Upload Receipt', lang=session.get('lang', 'en'))
+        title=trans('credits_receipt_upload_title', default='Upload Receipt', lang=flask.session.get('lang', 'en'))
     )
 
 @credits_bp.route('/receipts', methods=['GET'])
@@ -378,7 +380,7 @@ def view_receipts():
         return render_template(
             'credits/receipts.html',
             receipts=receipts,
-            title=trans('credits_receipts_title', default='View Receipts', lang=session.get('lang', 'en'))
+            title=trans('credits_receipts_title', default='View Receipts', lang=flask.session.get('lang', 'en'))
         )
     except Exception as e:
         logger.error(f"Error fetching receipts for admin {current_user.id}: {str(e)}")
@@ -386,7 +388,7 @@ def view_receipts():
         return render_template(
             'credits/receipts.html',
             receipts=[],
-            title=trans('general_error', default='Error', lang=session.get('lang', 'en'))
+            title=trans('general_error', default='Error', lang=flask.session.get('lang', 'en'))
         )
 
 @credits_bp.route('/receipt/<file_id>', methods=['GET'])
@@ -442,5 +444,5 @@ def ficore_credits_info():
     """Display information about Ficore Credits."""
     return render_template(
         'credits/info.html',
-        title=trans('credits_info_title', default='What Are Ficore Credits?', lang=session.get('lang', 'en'))
+        title=trans('credits_info_title', default='What Are Ficore Credits?', lang=flask.session.get('lang', 'en'))
     )
