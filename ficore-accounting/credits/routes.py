@@ -67,14 +67,14 @@ def credit_ficore_credits(user_id: str, amount: int, ref: str, type: str = 'add'
     db = utils.get_mongo_db()
     client = db.client
     user_query = utils.get_user_query(user_id)
-    with client.start_session() as session:
-        with session.start_transaction():
+    with client.start_session() as mongo_session:
+        with mongo_session.start_transaction():
             try:
                 if type == 'add':
                     result = db.users.update_one(
                         user_query,
                         {'$inc': {'ficore_credit_balance': amount}},
-                        session=session
+                        session=mongo_session
                     )
                     if result.matched_count == 0:
                         logger.error(f"No user found for ID {user_id} to credit Ficore Credits, ref: {ref}")
@@ -87,20 +87,20 @@ def credit_ficore_credits(user_id: str, amount: int, ref: str, type: str = 'add'
                     'payment_method': 'approved_request' if type == 'add' else None,
                     'facilitated_by_agent': admin_id or 'system',
                     'date': datetime.utcnow()
-                }, session=session)
+                }, session=mongo_session)
                 db.audit_logs.insert_one({
                     'admin_id': admin_id or 'system',
                     'action': f'credit_ficore_credits_{type}',
                     'details': {'user_id': user_id, 'amount': amount, 'ref': ref},
                     'timestamp': datetime.utcnow()
-                }, session=session)
+                }, session=mongo_session)
             except ValueError as e:
                 logger.error(f"Transaction aborted for ref {ref}: {str(e)}")
-                session.abort_transaction()
+                mongo_session.abort_transaction()
                 raise
             except errors.PyMongoError as e:
                 logger.error(f"MongoDB error during Ficore Credit transaction for user {user_id}, ref {ref}: {str(e)}")
-                session.abort_transaction()
+                mongo_session.abort_transaction()
                 raise
 
 @credits_bp.route('/request', methods=['GET', 'POST'])
@@ -121,15 +121,15 @@ def request_credits():
             ref = f"REQ_{datetime.utcnow().isoformat()}"
             receipt_file_id = None
 
-            with client.start_session() as session:
-                with session.start_transaction():
+            with client.start_session() as mongo_session:
+                with mongo_session.start_transaction():
                     if receipt_file:
                         receipt_file_id = fs.put(
                             receipt_file,
                             filename=receipt_file.filename,
                             user_id=str(current_user.id),
                             upload_date=datetime.utcnow(),
-                            session=session
+                            session=mongo_session
                         )
                     db.credit_requests.insert_one({
                         'user_id': str(current_user.id),
@@ -140,13 +140,13 @@ def request_credits():
                         'created_at': datetime.utcnow(),
                         'updated_at': datetime.utcnow(),
                         'admin_id': None
-                    }, session=session)
+                    }, session=mongo_session)
                     db.audit_logs.insert_one({
                         'admin_id': 'system',
                         'action': 'credit_request_submitted',
                         'details': {'user_id': str(current_user.id), 'amount': amount, 'ref': ref},
                         'timestamp': datetime.utcnow()
-                    }, session=session)
+                    }, session=mongo_session)
             flash(trans('credits_request_success', default='Ficore Credit request submitted successfully'), 'success')
             logger.info(f"User {current_user.id} submitted credit request for {amount} Ficore Credits via {payment_method}, ref: {ref}")
             return redirect(url_for('credits.history'))
@@ -231,7 +231,6 @@ def manage_credit_request(request_id):
     """Approve or deny a credit request (admin only)."""
     form = ApproveCreditRequestForm()
     try:
-        # Validate ObjectId early
         if not ObjectId.is_valid(request_id):
             logger.error(f"Invalid request_id {request_id} for admin {current_user.id}")
             flash(trans('credits_request_not_found', default='Credit request not found'), 'danger')
@@ -248,8 +247,8 @@ def manage_credit_request(request_id):
         if form.validate_on_submit():
             status = form.status.data
             ref = f"REQ_PROCESS_{datetime.utcnow().isoformat()}"
-            with client.start_session() as session:
-                with session.start_transaction():
+            with client.start_session() as mongo_session:
+                with mongo_session.start_transaction():
                     db.credit_requests.update_one(
                         {'_id': ObjectId(request_id)},
                         {
@@ -259,7 +258,7 @@ def manage_credit_request(request_id):
                                 'admin_id': str(current_user.id)
                             }
                         },
-                        session=session
+                        session=mongo_session
                     )
                     if status == 'approved':
                         credit_ficore_credits(
@@ -274,7 +273,7 @@ def manage_credit_request(request_id):
                         'action': f'credit_request_{status}',
                         'details': {'request_id': request_id, 'user_id': request_data['user_id'], 'amount': request_data['amount'], 'ref': ref},
                         'timestamp': datetime.utcnow()
-                    }, session=session)
+                    }, session=mongo_session)
             flash(trans(f'credits_request_{status}', default=f'Credit request {status} successfully'), 'success')
             logger.info(f"Admin {current_user.id} {status} credit request {request_id} for user {request_data['user_id']}, ref: {ref}")
             return redirect(url_for('credits.view_credit_requests'))
@@ -310,21 +309,21 @@ def receipt_upload():
             fs = GridFS(db)
             receipt_file = form.receipt.data
             ref = f"RECEIPT_UPLOAD_{datetime.utcnow().isoformat()}"
-            with client.start_session() as session:
-                with session.start_transaction():
+            with client.start_session() as mongo_session:
+                with mongo_session.start_transaction():
                     file_id = fs.put(
                         receipt_file,
                         filename=receipt_file.filename,
                         user_id=str(current_user.id),
                         upload_date=datetime.utcnow(),
-                        session=session
+                        session=mongo_session
                     )
                     if not utils.is_admin():
                         user_query = utils.get_user_query(str(current_user.id))
                         result = db.users.update_one(
                             user_query,
                             {'$inc': {'ficore_credit_balance': -1}},
-                            session=session
+                            session=mongo_session
                         )
                         if result.matched_count == 0:
                             logger.error(f"No user found for ID {current_user.id} to deduct Ficore Credits, ref: {ref}")
@@ -337,13 +336,13 @@ def receipt_upload():
                             'payment_method': None,
                             'facilitated_by_agent': 'system',
                             'date': datetime.utcnow()
-                        }, session=session)
+                        }, session=mongo_session)
                     db.audit_logs.insert_one({
                         'admin_id': 'system',
                         'action': 'receipt_upload',
                         'details': {'user_id': str(current_user.id), 'file_id': str(file_id), 'ref': ref},
                         'timestamp': datetime.utcnow()
-                    }, session=session)
+                    }, session=mongo_session)
             flash(trans('credits_receipt_uploaded', default='Receipt uploaded successfully'), 'success')
             logger.info(f"User {current_user.id} uploaded receipt {file_id}, ref: {ref}")
             return redirect(url_for('credits.history'))
