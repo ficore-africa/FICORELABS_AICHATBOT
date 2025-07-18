@@ -202,8 +202,7 @@ def history():
 @credits_bp.route('/requests', methods=['GET'])
 @login_required
 @utils.requires_role('admin')
-@ensical
-@utils.limiter.limit("50 per hour")
+@utils.limiter.limit("100 per hour")
 def view_credit_requests():
     """View all pending credit requests (admin only)."""
     try:
