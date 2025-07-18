@@ -73,7 +73,7 @@ translation_modules = {
     # Accounting Tools
     'admin': ADMIN_TRANSLATIONS,
     'agents': AGENTS_TRANSLATIONS,
-    'coins': FICORE_CREDITS_TRANSLATIONS,
+    'credits': FICORE_CREDITS_TRANSLATIONS,
     'creditors': CREDITORS_TRANSLATIONS,
     'debtors': DEBTORS_TRANSLATIONS,
     'inventory': INVENTORY_TRANSLATIONS,
@@ -101,7 +101,7 @@ KEY_PREFIX_TO_MODULE = {
     # Accounting Tools prefixes
     'admin_': 'admin',
     'agents_': 'agents',
-    'coins_': 'coins',
+    'credits_': 'coins',
     'creditors_': 'creditors',
     'debtors_': 'debtors',
     'inventory_': 'inventory',
