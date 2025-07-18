@@ -1481,6 +1481,10 @@ GENERAL_TRANSLATIONS = {
         'general_privacy_policy': 'Manufar Sirri',
         'credits_dashboard': 'Dashboard na Kiredit',
         'credits_dashboard_desc': 'Duba da sarrafa kiredit ɗin asusunku',
+        'credits_request_credits': 'Neman Kiredit',
+        'credits_transaction_history': 'Tarihin Maamala',
+        'credits_request_history': 'Tarihin Nema',
+        'credits_no_requests': 'Ba a Sami Buƙatun ba',
 
         # Misc
         'payment_locations_title': 'Wuraren Biyan Kuɗi',
