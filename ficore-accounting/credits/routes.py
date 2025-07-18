@@ -1,448 +1,446 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, Response, session
+from flask import Blueprint, session, request, render_template, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
-from wtforms import StringField, FloatField, TextAreaField, SubmitField
-from wtforms.validators import DataRequired, Optional
-from bson import ObjectId
-from datetime import datetime, timedelta
-import logging
-import io
-import re
-import urllib.parse
-import utils
+from flask_wtf.file import FileField, FileAllowed
+from gridfs import GridFS
+from wtforms import SelectField, SubmitField, validators
 from translations import trans
+import utils
+from bson import ObjectId
+from datetime import datetime
+from logging import getLogger
+from pymongo import errors
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
-# Placeholder functions for SMS/WhatsApp reminders (implement in utils.py or with external API)
-def send_sms_reminder(recipient, message):
-    """Placeholder for sending SMS reminder."""
-    logger.info(f"Simulating SMS to {recipient}: {message}")
-    return True, {'status': 'SMS sent successfully'}  # Replace with actual API call
+credits_bp = Blueprint('credits', __name__, template_folder='templates/credits')
 
-def send_whatsapp_reminder(recipient, message):
-    """Placeholder for sending WhatsApp reminder."""
-    logger.info(f"Simulating WhatsApp to {recipient}: {message}")
-    return True, {'status': 'WhatsApp sent successfully'}  # Replace with actual API call
+# Note: Ensure Flask app has SECRET_KEY configured for session support (e.g., app.secret_key = 'your-secret-key')
 
-class CreditorForm(FlaskForm):
-    name = StringField(trans('creditors_creditor_name', default='Creditor Name'), validators=[DataRequired()])
-    contact = StringField(trans('general_contact', default='Contact'), validators=[Optional()])
-    amount_owed = FloatField(trans('creditors_amount_owed', default='Amount Owed'), validators=[DataRequired()])
-    description = TextAreaField(trans('general_description', default='Description'), validators=[Optional()])
-    submit = SubmitField(trans('creditors_add_creditor', default='Add Creditor'))
+class RequestCreditsForm(FlaskForm):
+    amount = SelectField(
+        trans('credits_amount', default='Ficore Credit Amount'),
+        choices=[('10', '10 Ficore Credits'), ('50', '50 Ficore Credits'), ('100', '100 Ficore Credits')],
+        validators=[validators.DataRequired(message=trans('credits_amount_required', default='Ficore Credit amount is required'))],
+        render_kw={'class': 'form-select'}
+    )
+    payment_method = SelectField(
+        trans('general_payment_method', default='Payment Method'),
+        choices=[
+            ('card', trans('general_card', default='Credit/Debit Card')),
+            ('bank', trans('general_bank_transfer', default='Bank Transfer'))
+        ],
+        validators=[validators.DataRequired(message=trans('general_payment_method_required', default='Payment method is required'))],
+        render_kw={'class': 'form-select'}
+    )
+    receipt = FileField(
+        trans('credits_receipt', default='Receipt (Optional)'),
+        validators=[
+            FileAllowed(['jpg', 'png', 'pdf'], trans('credits_invalid_file_type', default='Only JPG, PNG, or PDF files are allowed'))
+        ],
+        render_kw={'class': 'form-control'}
+    )
+    submit = SubmitField(trans('credits_request', default='Request Ficore Credits'), render_kw={'class': 'btn btn-primary w-100'})
 
-creditors_bp = Blueprint('creditors', __name__, url_prefix='/creditors')
+class ApproveCreditRequestForm(FlaskForm):
+    status = SelectField(
+        trans('credits_request_status', default='Request Status'),
+        choices=[('approved', 'Approve'), ('denied', 'Deny')],
+        validators=[validators.DataRequired(message=trans('credits_status_required', default='Status is required'))],
+        render_kw={'class': 'form-select'}
+    )
+    submit = SubmitField(trans('credits_update_status', default='Update Request Status'), render_kw={'class': 'btn btn-primary w-100'})
 
-@creditors_bp.route('/')
+class ReceiptUploadForm(FlaskForm):
+    receipt = FileField(
+        trans('credits_receipt', default='Receipt'),
+        validators=[
+            FileAllowed(['jpg', 'png', 'pdf'], trans('credits_invalid_file_type', default='Only JPG, PNG, or PDF files are allowed')),
+            validators.DataRequired(message=trans('credits_receipt_required', default='Receipt file is required'))
+        ],
+        render_kw={'class': 'form-control'}
+    )
+    submit = SubmitField(trans('credits_upload_receipt', default='Upload Receipt'), render_kw={'class': 'btn btn-primary w-100'})
+
+def credit_ficore_credits(user_id: str, amount: int, ref: str, type: str = 'add', admin_id: str = None) -> None:
+    """Credit or log Ficore Credits with MongoDB transaction."""
+    db = utils.get_mongo_db()
+    client = db.client
+    user_query = utils.get_user_query(user_id)
+    with client.start_session() as session:
+        with session.start_transaction():
+            try:
+                if type == 'add':
+                    result = db.users.update_one(
+                        user_query,
+                        {'$inc': {'ficore_credit_balance': amount}},
+                        session=session
+                    )
+                    if result.matched_count == 0:
+                        logger.error(f"No user found for ID {user_id} to credit Ficore Credits, ref: {ref}")
+                        raise ValueError(f"No user found for ID {user_id}")
+                db.ficore_credit_transactions.insert_one({
+                    'user_id': user_id,
+                    'amount': amount,
+                    'type': type,
+                    'ref': ref,
+                    'payment_method': 'approved_request' if type == 'add' else None,
+                    'facilitated_by_agent': admin_id or 'system',
+                    'date': datetime.utcnow()
+                }, session=session)
+                db.audit_logs.insert_one({
+                    'admin_id': admin_id or 'system',
+                    'action': f'credit_ficore_credits_{type}',
+                    'details': {'user_id': user_id, 'amount': amount, 'ref': ref},
+                    'timestamp': datetime.utcnow()
+                }, session=session)
+            except ValueError as e:
+                logger.error(f"Transaction aborted for ref {ref}: {str(e)}")
+                session.abort_transaction()
+                raise
+            except errors.PyMongoError as e:
+                logger.error(f"MongoDB error during Ficore Credit transaction for user {user_id}, ref {ref}: {str(e)}")
+                session.abort_transaction()
+                raise
+
+@credits_bp.route('/request', methods=['GET', 'POST'])
 @login_required
-@utils.requires_role('trader')
-def index():
-    """List all creditor records for the current user."""
+@utils.requires_role(['trader', 'personal'])
+@utils.limiter.limit("50 per hour")
+def request_credits():
+    """Handle Ficore Credit request submissions."""
+    form = RequestCreditsForm()
+    if form.validate_on_submit():
+        try:
+            db = utils.get_mongo_db()
+            client = db.client
+            fs = GridFS(db)
+            amount = int(form.amount.data)
+            payment_method = form.payment_method.data
+            receipt_file = form.receipt.data
+            ref = f"REQ_{datetime.utcnow().isoformat()}"
+            receipt_file_id = None
+
+            with client.start_session() as session:
+                with session.start_transaction():
+                    if receipt_file:
+                        receipt_file_id = fs.put(
+                            receipt_file,
+                            filename=receipt_file.filename,
+                            user_id=str(current_user.id),
+                            upload_date=datetime.utcnow(),
+                            session=session
+                        )
+                    db.credit_requests.insert_one({
+                        'user_id': str(current_user.id),
+                        'amount': amount,
+                        'payment_method': payment_method,
+                        'receipt_file_id': receipt_file_id,
+                        'status': 'pending',
+                        'created_at': datetime.utcnow(),
+                        'updated_at': datetime.utcnow(),
+                        'admin_id': None
+                    }, session=session)
+                    db.audit_logs.insert_one({
+                        'admin_id': 'system',
+                        'action': 'credit_request_submitted',
+                        'details': {'user_id': str(current_user.id), 'amount': amount, 'ref': ref},
+                        'timestamp': datetime.utcnow()
+                    }, session=session)
+            flash(trans('credits_request_success', default='Ficore Credit request submitted successfully'), 'success')
+            logger.info(f"User {current_user.id} submitted credit request for {amount} Ficore Credits via {payment_method}, ref: {ref}")
+            return redirect(url_for('credits.history'))
+        except errors.PyMongoError as e:
+            logger.error(f"MongoDB error submitting credit request for user {current_user.id}, ref {ref}: {str(e)}")
+            flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
+        except Exception as e:
+            logger.error(f"Unexpected error submitting credit request for user {current_user.id}, ref {ref}: {str(e)}")
+            flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
+    return render_template(
+        'credits/request.html',
+        form=form,
+        title=trans('credits_request_title', default='Request Ficore Credits', lang=session.get('lang', 'en'))
+    )
+
+@credits_bp.route('/history', methods=['GET'])
+@login_required
+@utils.limiter.limit("100 per hour")
+def history():
+    """View Ficore Credit transaction and request history."""
     try:
         db = utils.get_mongo_db()
-        # TEMPORARY: Allow admin to view all creditors during testing
-        # TODO: Restore original user_id filter {'user_id': str(current_user.id), 'type': 'creditor'} for production
-        query = {'type': 'creditor'} if utils.is_admin() else {'user_id': str(current_user.id), 'type': 'creditor'}
-        creditors = list(db.records.find(query).sort('created_at', -1))
+        user_query = utils.get_user_query(str(current_user.id))
+        user = db.users.find_one(user_query)
+        query = {} if utils.is_admin() else {'user_id': str(current_user.id)}
+        transactions = list(db.ficore_credit_transactions.find(query).sort('date', -1).limit(50))
+        requests = list(db.credit_requests.find(query).sort('created_at', -1).limit(50))
+        for tx in transactions:
+            tx['_id'] = str(tx['_id'])
+        for req in requests:
+            req['_id'] = str(req['_id'])
+            req['receipt_file_id'] = str(req['receipt_file_id']) if req.get('receipt_file_id') else None
+        return render_template(
+            'credits/history.html',
+            transactions=transactions,
+            requests=requests,
+            ficore_credit_balance=user.get('ficore_credit_balance', 0) if user else 0,
+            title=trans('credits_history_title', default='Ficore Credit Transaction History', lang=session.get('lang', 'en'))
+        )
+    except Exception as e:
+        logger.error(f"Error fetching history for user {current_user.id}: {str(e)}")
+        flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
+        return render_template(
+            'credits/history.html',
+            transactions=[],
+            requests=[],
+            ficore_credit_balance=0,
+            title=trans('general_error', default='Error', lang=session.get('lang', 'en'))
+        )
+
+@credits_bp.route('/requests', methods=['GET'])
+@login_required
+@utils.requires_role('admin')
+@utils.limiter.limit("50 per hour")
+def view_credit_requests():
+    """View all pending credit requests (admin only)."""
+    try:
+        db = utils.get_mongo_db()
+        requests = list(db.credit_requests.find({'status': 'pending'}).sort('created_at', -1).limit(50))
+        for req in requests:
+            req['_id'] = str(req['_id'])
+            req['receipt_file_id'] = str(req['receipt_file_id']) if req.get('receipt_file_id') else None
+        return render_template(
+            'credits/requests.html',
+            requests=requests,
+            title=trans('credits_requests_title', default='Pending Credit Requests', lang=session.get('lang', 'en'))
+        )
+    except Exception as e:
+        logger.error(f"Error fetching credit requests for admin {current_user.id}: {str(e)}")
+        flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
+        return render_template(
+            'credits/requests.html',
+            requests=[],
+            title=trans('general_error', default='Error', lang=session.get('lang', 'en'))
+        )
+
+@credits_bp.route('/request/<request_id>', methods=['GET', 'POST'])
+@login_required
+@utils.requires_role('admin')
+@utils.limiter.limit("20 per hour")
+def manage_credit_request(request_id):
+    """Approve or deny a credit request (admin only)."""
+    form = ApproveCreditRequestForm()
+    try:
+        # Validate ObjectId early
+        if not ObjectId.is_valid(request_id):
+            logger.error(f"Invalid request_id {request_id} for admin {current_user.id}")
+            flash(trans('credits_request_not_found', default='Credit request not found'), 'danger')
+            return redirect(url_for('credits.view_credit_requests'))
+
+        db = utils.get_mongo_db()
+        client = db.client
+        request_data = db.credit_requests.find_one({'_id': ObjectId(request_id)})
+        if not request_data:
+            logger.error(f"Credit request {request_id} not found for admin {current_user.id}")
+            flash(trans('credits_request_not_found', default='Credit request not found'), 'danger')
+            return redirect(url_for('credits.view_credit_requests'))
+
+        if form.validate_on_submit():
+            status = form.status.data
+            ref = f"REQ_PROCESS_{datetime.utcnow().isoformat()}"
+            with client.start_session() as session:
+                with session.start_transaction():
+                    db.credit_requests.update_one(
+                        {'_id': ObjectId(request_id)},
+                        {
+                            '$set': {
+                                'status': status,
+                                'updated_at': datetime.utcnow(),
+                                'admin_id': str(current_user.id)
+                            }
+                        },
+                        session=session
+                    )
+                    if status == 'approved':
+                        credit_ficore_credits(
+                            user_id=request_data['user_id'],
+                            amount=request_data['amount'],
+                            ref=ref,
+                            type='add',
+                            admin_id=str(current_user.id)
+                        )
+                    db.audit_logs.insert_one({
+                        'admin_id': str(current_user.id),
+                        'action': f'credit_request_{status}',
+                        'details': {'request_id': request_id, 'user_id': request_data['user_id'], 'amount': request_data['amount'], 'ref': ref},
+                        'timestamp': datetime.utcnow()
+                    }, session=session)
+            flash(trans(f'credits_request_{status}', default=f'Credit request {status} successfully'), 'success')
+            logger.info(f"Admin {current_user.id} {status} credit request {request_id} for user {request_data['user_id']}, ref: {ref}")
+            return redirect(url_for('credits.view_credit_requests'))
         
         return render_template(
-            'creditors/index.html',
-            creditors=creditors
+            'credits/manage_request.html',
+            form=form,
+            request=request_data,
+            title=trans('credits_manage_request_title', default='Manage Credit Request', lang=session.get('lang', 'en'))
         )
+    except errors.PyMongoError as e:
+        logger.error(f"MongoDB error managing credit request {request_id} by admin {current_user.id}, ref: {ref}: {str(e)}")
+        flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
     except Exception as e:
-        logger.error(f"Error fetching creditors for user {current_user.id}: {str(e)}")
-        flash(trans('creditors_fetch_error', default='An error occurred'), 'danger')
-        return redirect(url_for('dashboard.index'))
+        logger.error(f"Unexpected error managing credit request {request_id} by admin {current_user.id}, ref: {ref}: {str(e)}")
+        flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
+    return redirect(url_for('credits.view_credit_requests'))
 
-@creditors_bp.route('/manage')
+@credits_bp.route('/receipt_upload', methods=['GET', 'POST'])
 @login_required
-@utils.requires_role('trader')
-def manage():
-    """List all creditor records for management (edit/delete) by the current user."""
-    try:
-        db = utils.get_mongo_db()
-        # TEMPORARY: Allow admin to view all creditors during testing
-        # TODO: Restore original user_id filter for production
-        query = {'type': 'creditor'} if utils.is_admin() else {'user_id': str(current_user.id), 'type': 'creditor'}
-        creditors = list(db.records.find(query).sort('created_at', -1))
-        
-        return render_template(
-            'creditors/manage_creditors.html',
-            creditors=creditors,
-            format_currency=utils.format_currency,
-            title=trans('creditors_manage_title', default='Manage Creditors', lang=session.get('lang', 'en'))
-        )
-    except Exception as e:
-        logger.error(f"Error fetching creditors for manage page for user {current_user.id}: {str(e)}")
-        flash(trans('creditors_fetch_error', default='An error occurred'), 'danger')
-        return redirect(url_for('creditors.index'))
-
-@creditors_bp.route('/view/<id>')
-@login_required
-@utils.requires_role('trader')
-def view(id):
-    """View detailed information about a specific creditor (JSON API)."""
-    try:
-        db = utils.get_mongo_db()
-        # TEMPORARY: Allow admin to view any creditor during testing
-        # TODO: Restore original user_id filter for production
-        query = {'_id': ObjectId(id), 'type': 'creditor'} if utils.is_admin() else {'_id': ObjectId(id), 'user_id': str(current_user.id), 'type': 'creditor'}
-        creditor = db.records.find_one(query)
-        if not creditor:
-            return jsonify({'error': trans('creditors_record_not_found', default='Record not found')}), 404
-        
-        creditor['_id'] = str(creditor['_id'])
-        creditor['created_at'] = creditor['created_at'].isoformat() if creditor.get('created_at') else None
-        creditor['reminder_count'] = creditor.get('reminder_count', 0)
-        
-        return jsonify(creditor)
-    except Exception as e:
-        logger.error(f"Error fetching creditor {id} for user {current_user.id}: {str(e)}")
-        return jsonify({'error': trans('creditors_fetch_error', default='An error occurred')}), 500
-
-@creditors_bp.route('/view_page/<id>')
-@login_required
-@utils.requires_role('trader')
-def view_page(id):
-    """Render a detailed view page for a specific creditor."""
-    try:
-        db = utils.get_mongo_db()
-        # TEMPORARY: Allow admin to view any creditor during testing
-        # TODO: Restore original user_id filter for production
-        query = {'_id': ObjectId(id), 'type': 'creditor'} if utils.is_admin() else {'_id': ObjectId(id), 'user_id': str(current_user.id), 'type': 'creditor'}
-        creditor = db.records.find_one(query)
-        if not creditor:
-            flash(trans('creditors_record_not_found', default='Record not found'), 'danger')
-            return redirect(url_for('creditors.index'))
-        
-        return render_template(
-            'creditors/view.html',
-            creditor=creditor
-        )
-    except Exception as e:
-        logger.error(f"Error rendering creditor view page {id} for user {current_user.id}: {str(e)}")
-        flash(trans('creditors_view_error', default='An error occurred'), 'danger')
-        return redirect(url_for('creditors.index'))
-
-@creditors_bp.route('/share/<id>')
-@login_required
-@utils.requires_role('trader')
-def share(id):
-    """Generate a WhatsApp link to share IOU details."""
-    try:
-        db = utils.get_mongo_db()
-        # TEMPORARY: Allow admin to share any creditor during testing
-        # TODO: Restore original user_id filter for production
-        query = {'_id': ObjectId(id), 'type': 'creditor'} if utils.is_admin() else {'_id': ObjectId(id), 'user_id': str(current_user.id), 'type': 'creditor'}
-        creditor = db.records.find_one(query)
-        if not creditor:
-            return jsonify({'success': False, 'message': trans('creditors_record_not_found', default='Record not found')}), 404
-        if not creditor.get('contact'):
-            return jsonify({'success': False, 'message': trans('creditors_no_contact', default='No contact provided for sharing')}), 400
-        if not utils.is_admin() and not utils.check_ficore_credit_balance(1):
-            return jsonify({'success': False, 'message': trans('debtors_insufficient_credits', default='Insufficient credits to share IOU')}), 400
-        
-        contact = re.sub(r'\D', '', creditor['contact'])
-        if contact.startswith('0'):
-            contact = '234' + contact[1:]
-        elif not contact.startswith('+'):
-            contact = '234' + contact
-        
-        message = f"Hi {creditor['name']}, this is an IOU for {utils.format_currency(creditor['amount_owed'])} recorded on FiCore Records on {utils.format_date(creditor['created_at'])}. Details: {creditor.get('description', 'No description provided')}."
-        whatsapp_link = f"https://wa.me/{contact}?text={urllib.parse.quote(message)}"
-        
-        if not utils.is_admin():
-            user_query = utils.get_user_query(str(current_user.id))
-            db.users.update_one(user_query, {'$inc': {'ficore_credit_balance': -1}})
-            db.credit_transactions.insert_one({
-                'user_id': str(current_user.id),
-                'amount': -1,
-                'type': 'spend',
-                'date': datetime.utcnow(),
-                'ref': f"IOU shared for {creditor['name']} (Ficore Credits)"
-            })
-        
-        return jsonify({'success': True, 'whatsapp_link': whatsapp_link})
-    except Exception as e:
-        logger.error(f"Error sharing IOU for creditor {id}: {str(e)}")
-        return jsonify({'success': False, 'message': trans('creditors_share_error', default='An error occurred')}), 500
-
-@creditors_bp.route('/send_reminder', methods=['POST'])
-@login_required
-@utils.requires_role('trader')
-def send_reminder():
-    """Send delivery reminder to creditor via SMS/WhatsApp or set snooze."""
-    try:
-        data = request.get_json()
-        debt_id = data.get('debtId')
-        recipient = data.get('recipient')
-        message = data.get('message')
-        send_type = data.get('type', 'sms')
-        snooze_days = data.get('snooze_days', 0)
-        
-        if not debt_id or (not recipient and not snooze_days):
-            return jsonify({'success': False, 'message': trans('creditors_missing_fields', default='Missing required fields')}), 400
-        
-        db = utils.get_mongo_db()
-        # TEMPORARY: Allow admin to send reminders for any creditor during testing
-        # TODO: Restore original user_id filter for production
-        query = {'_id': ObjectId(debt_id), 'type': 'creditor'} if utils.is_admin() else {'_id': ObjectId(debt_id), 'user_id': str(current_user.id), 'type': 'creditor'}
-        creditor = db.records.find_one(query)
-        
-        if not creditor:
-            return jsonify({'success': False, 'message': trans('creditors_record_not_found', default='Record not found')}), 404
-        
-        credit_cost = 2 if recipient else 1
-        if not utils.is_admin() and not utils.check_ficore_credit_balance(credit_cost):
-            return jsonify({'success': False, 'message': trans('debtors_insufficient_credits', default='Insufficient credits to send reminder')}), 400
-        
-        update_data = {'$inc': {'reminder_count': 1}}
-        if snooze_days:
-            update_data['$set'] = {'reminder_date': datetime.utcnow() + timedelta(days=snooze_days)}
-        
-        success = True
-        api_response = {}
-        
-        if recipient:
-            if send_type == 'sms':
-                success, api_response = send_sms_reminder(recipient, message)
-            elif send_type == 'whatsapp':
-                success, api_response = send_whatsapp_reminder(recipient, message)
-        
-        if success:
-            db.records.update_one({'_id': ObjectId(debt_id)}, update_data)
-            
-            if not utils.is_admin():
-                user_query = utils.get_user_query(str(current_user.id))
-                db.users.update_one(user_query, {'$inc': {'ficore_credit_balance': -credit_cost}})
-                db.credit_transactions.insert_one({
-                    'user_id': str(current_user.id),
-                    'amount': -credit_cost,
-                    'type': 'spend',
-                    'date': datetime.utcnow(),
-                    'ref': f"{'Reminder sent' if recipient else 'Snooze set'} for {creditor['name']} (Ficore Credits)"
-                })
-            
-            db.reminder_logs.insert_one({
-                'user_id': str(current_user.id),
-                'debt_id': debt_id,
-                'recipient': recipient or 'N/A',
-                'message': message or 'Snooze',
-                'type': send_type if recipient else 'snooze',
-                'sent_at': datetime.utcnow(),
-                'api_response': api_response if recipient else {'status': f'Snoozed for {snooze_days} days'}
-            })
-            
-            return jsonify({'success': True, 'message': trans('creditors_reminder_sent' if recipient else 'creditors_snooze_set', default='Reminder sent successfully' if recipient else 'Snooze set successfully')})
-        else:
-            return jsonify({'success': False, 'message': trans('creditors_reminder_failed', default='Failed to send reminder'), 'details': api_response}), 500
-            
-    except Exception as e:
-        logger.error(f"Error sending reminder: {str(e)}")
-        return jsonify({'success': False, 'message': trans('creditors_reminder_error', default='An error occurred')}), 500
-
-@creditors_bp.route('/generate_iou/<id>')
-@login_required
-@utils.requires_role('trader')
-def generate_iou(id):
-    """Generate PDF IOU for a creditor."""
-    try:
-        from reportlab.lib.pagesizes import letter
-        from reportlab.pdfgen import canvas
-        from reportlab.lib.units import inch
-        
-        db = utils.get_mongo_db()
-        # TEMPORARY: Allow admin to generate IOU for any creditor during testing
-        # TODO: Restore original user_id filter for production
-        query = {'_id': ObjectId(id), 'type': 'creditor'} if utils.is_admin() else {'_id': ObjectId(id), 'user_id': str(current_user.id), 'type': 'creditor'}
-        creditor = db.records.find_one(query)
-        
-        if not creditor:
-            flash(trans('creditors_record_not_found', default='Record not found'), 'danger')
-            return redirect(url_for('creditors.index'))
-        
-        if not utils.is_admin() and not utils.check_ficore_credit_balance(1):
-            flash(trans('debtors_insufficient_credits', default='Insufficient credits to generate IOU'), 'danger')
-            return redirect(url_for('credits.request_credits'))
-        
-        buffer = io.BytesIO()
-        p = canvas.Canvas(buffer, pagesize=letter)
-        width, height = letter
-        
-        p.setFont("Helvetica-Bold", 24)
-        p.drawString(inch, height - inch, "FiCore Records - IOU")
-        
-        p.setFont("Helvetica", 12)
-        y_position = height - inch - 0.5 * inch
-        p.drawString(inch, y_position, f"Creditor: {creditor['name']}")
-        y_position -= 0.3 * inch
-        p.drawString(inch, y_position, f"Amount Owed: {utils.format_currency(creditor['amount_owed'])}")
-        y_position -= 0.3 * inch
-        p.drawString(inch, y_position, f"Contact: {creditor.get('contact', 'N/A')}")
-        y_position -= 0.3 * inch
-        p.drawString(inch, y_position, f"Description: {creditor.get('description', 'No description provided')}")
-        y_position -= 0.3 * inch
-        p.drawString(inch, y_position, f"Date Recorded: {utils.format_date(creditor['created_at'])}")
-        y_position -= 0.3 * inch
-        p.drawString(inch, y_position, f"Reminders Sent: {creditor.get('reminder_count', 0)}")
-        
-        p.setFont("Helvetica-Oblique", 10)
-        p.drawString(inch, inch, "This document serves as an IOU recorded on FiCore Records.")
-        
-        p.showPage()
-        p.save()
-        
-        if not utils.is_admin():
-            user_query = utils.get_user_query(str(current_user.id))
-            db.users.update_one(user_query, {'$inc': {'ficore_credit_balance': -1}})
-            db.credit_transactions.insert_one({
-                'user_id': str(current_user.id),
-                'amount': -1,
-                'type': 'spend',
-                'date': datetime.utcnow(),
-                'ref': f"IOU generated for {creditor['name']} (Ficore Credits)"
-            })
-        
-        buffer.seek(0)
-        return Response(
-            buffer.getvalue(),
-            mimetype='application/pdf',
-            headers={
-                'Content-Disposition': f'attachment; filename=FiCore_IOU_{creditor["name"]}.pdf'
-            }
-        )
-        
-    except Exception as e:
-        logger.error(f"Error generating IOU for creditor {id}: {str(e)}")
-        flash(trans('creditors_iou_generation_error', default='An error occurred'), 'danger')
-        return redirect(url_for('creditors.index'))
-
-@creditors_bp.route('/add', methods=['GET', 'POST'])
-@login_required
-@utils.requires_role('trader')
-def add():
-    """Add a new creditor record."""
-    form = CreditorForm()
+@utils.requires_role(['trader', 'personal'])
+@utils.limiter.limit("10 per hour")
+def receipt_upload():
+    """Handle payment receipt uploads with transaction for Ficore Credit deduction."""
+    form = ReceiptUploadForm()
     if not utils.is_admin() and not utils.check_ficore_credit_balance(1):
-        flash(trans('debtors_insufficient_credits', default='Insufficient credits to create a creditor. Request more credits.'), 'danger')
+        flash(trans('credits_insufficient_credits', default='Insufficient Ficore Credits to upload receipt. Get more Ficore Credits.'), 'danger')
         return redirect(url_for('credits.request_credits'))
     if form.validate_on_submit():
         try:
             db = utils.get_mongo_db()
-            record = {
-                'user_id': str(current_user.id),
-                'type': 'creditor',
-                'name': form.name.data,
-                'contact': form.contact.data,
-                'amount_owed': form.amount_owed.data,
-                'description': form.description.data,
-                'reminder_count': 0,
-                'created_at': datetime.utcnow()
-            }
-            db.records.insert_one(record)
-            if not utils.is_admin():
-                user_query = utils.get_user_query(str(current_user.id))
-                db.users.update_one(
-                    user_query,
-                    {'$inc': {'ficore_credit_balance': -1}}
-                )
-                db.credit_transactions.insert_one({
-                    'user_id': str(current_user.id),
-                    'amount': -1,
-                    'type': 'spend',
-                    'date': datetime.utcnow(),
-                    'ref': f"Creditor creation: {record['name']} (Ficore Credits)"
-                })
-            flash(trans('creditors_create_success', default='Creditor created successfully'), 'success')
-            return redirect(url_for('creditors.index'))
+            client = db.client
+            fs = GridFS(db)
+            receipt_file = form.receipt.data
+            ref = f"RECEIPT_UPLOAD_{datetime.utcnow().isoformat()}"
+            with client.start_session() as session:
+                with session.start_transaction():
+                    file_id = fs.put(
+                        receipt_file,
+                        filename=receipt_file.filename,
+                        user_id=str(current_user.id),
+                        upload_date=datetime.utcnow(),
+                        session=session
+                    )
+                    if not utils.is_admin():
+                        user_query = utils.get_user_query(str(current_user.id))
+                        result = db.users.update_one(
+                            user_query,
+                            {'$inc': {'ficore_credit_balance': -1}},
+                            session=session
+                        )
+                        if result.matched_count == 0:
+                            logger.error(f"No user found for ID {current_user.id} to deduct Ficore Credits, ref: {ref}")
+                            raise ValueError(f"No user found for ID {current_user.id}")
+                        db.ficore_credit_transactions.insert_one({
+                            'user_id': str(current_user.id),
+                            'amount': -1,
+                            'type': 'spend',
+                            'ref': ref,
+                            'payment_method': None,
+                            'facilitated_by_agent': 'system',
+                            'date': datetime.utcnow()
+                        }, session=session)
+                    db.audit_logs.insert_one({
+                        'admin_id': 'system',
+                        'action': 'receipt_upload',
+                        'details': {'user_id': str(current_user.id), 'file_id': str(file_id), 'ref': ref},
+                        'timestamp': datetime.utcnow()
+                    }, session=session)
+            flash(trans('credits_receipt_uploaded', default='Receipt uploaded successfully'), 'success')
+            logger.info(f"User {current_user.id} uploaded receipt {file_id}, ref: {ref}")
+            return redirect(url_for('credits.history'))
+        except ValueError as e:
+            logger.error(f"User not found for receipt upload, ref: {ref}: {str(e)}")
+            flash(trans('general_user_not_found', default='User not found'), 'danger')
+        except errors.PyMongoError as e:
+            logger.error(f"MongoDB error uploading receipt for user {current_user.id}, ref: {ref}: {str(e)}")
+            flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
         except Exception as e:
-            logger.error(f"Error creating creditor for user {current_user.id}: {str(e)}")
-            flash(trans('creditors_create_error', default='An error occurred'), 'danger')
-    
+            logger.error(f"Unexpected error uploading receipt for user {current_user.id}, ref: {ref}: {str(e)}")
+            flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
     return render_template(
-        'creditors/add.html',
-        form=form
+        'credits/receipt_upload.html',
+        form=form,
+        title=trans('credits_receipt_upload_title', default='Upload Receipt', lang=session.get('lang', 'en'))
     )
 
-@creditors_bp.route('/edit/<id>', methods=['GET', 'POST'])
+@credits_bp.route('/receipts', methods=['GET'])
 @login_required
-@utils.requires_role('trader')
-def edit(id):
-    """Edit an existing creditor record."""
+@utils.requires_role('admin')
+@utils.limiter.limit("50 per hour")
+def view_receipts():
+    """View all uploaded receipts (admin only)."""
     try:
         db = utils.get_mongo_db()
-        # TEMPORARY: Allow admin to edit any creditor during testing
-        # TODO: Restore original user_id filter for production
-        query = {'_id': ObjectId(id), 'type': 'creditor'} if utils.is_admin() else {'_id': ObjectId(id), 'user_id': str(current_user.id), 'type': 'creditor'}
-        creditor = db.records.find_one(query)
-        if not creditor:
-            flash(trans('creditors_record_not_found', default='Record not found'), 'danger')
-            return redirect(url_for('creditors.index'))
-        form = CreditorForm(data={
-            'name': creditor['name'],
-            'contact': creditor['contact'],
-            'amount_owed': creditor['amount_owed'],
-            'description': creditor['description']
-        })
-        if form.validate_on_submit():
-            try:
-                updated_record = {
-                    'name': form.name.data,
-                    'contact': form.contact.data,
-                    'amount_owed': form.amount_owed.data,
-                    'description': form.description.data,
-                    'updated_at': datetime.utcnow()
-                }
-                db.records.update_one(
-                    {'_id': ObjectId(id)},
-                    {'$set': updated_record}
-                )
-                flash(trans('creditors_edit_success', default='Creditor updated successfully'), 'success')
-                return redirect(url_for('creditors.index'))
-            except Exception as e:
-                logger.error(f"Error updating creditor {id} for user {current_user.id}: {str(e)}")
-                flash(trans('creditors_edit_error', default='An error occurred'), 'danger')
-        
+        fs = GridFS(db)
+        receipts = list(fs.find().sort('upload_date', -1).limit(50))
+        for receipt in receipts:
+            receipt['_id'] = str(receipt['_id'])
+            receipt['user_id'] = receipt.get('user_id', 'Unknown')
         return render_template(
-            'creditors/edit.html',
-            form=form,
-            creditor=creditor
+            'credits/receipts.html',
+            receipts=receipts,
+            title=trans('credits_receipts_title', default='View Receipts', lang=session.get('lang', 'en'))
         )
     except Exception as e:
-        logger.error(f"Error fetching creditor {id} for user {current_user.id}: {str(e)}")
-        flash(trans('creditors_record_not_found', default='Record not found'), 'danger')
-        return redirect(url_for('creditors.index'))
+        logger.error(f"Error fetching receipts for admin {current_user.id}: {str(e)}")
+        flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
+        return render_template(
+            'credits/receipts.html',
+            receipts=[],
+            title=trans('general_error', default='Error', lang=session.get('lang', 'en'))
+        )
 
-@creditors_bp.route('/delete/<id>', methods=['POST'])
+@credits_bp.route('/receipt/<file_id>', methods=['GET'])
 @login_required
-@utils.requires_role('trader')
-def delete(id):
-    """Delete a creditor record."""
+@utils.requires_role('admin')
+@utils.limiter.limit("20 per hour")
+def view_receipt(file_id):
+    """Serve a specific receipt file (admin only)."""
+    try:
+        if not ObjectId.is_valid(file_id):
+            logger.error(f"Invalid file_id {file_id} for admin {current_user.id}")
+            flash(trans('credits_receipt_not_found', default='Receipt not found'), 'danger')
+            return redirect(url_for('credits.view_receipts'))
+
+        db = utils.get_mongo_db()
+        fs = GridFS(db)
+        file = fs.get(ObjectId(file_id))
+        response = current_app.response_class(
+            file.read(),
+            mimetype=file.content_type or 'application/octet-stream',
+            direct_passthrough=True
+        )
+        response.headers.set('Content-Disposition', 'inline', filename=file.filename)
+        logger.info(f"Admin {current_user.id} viewed receipt {file_id}")
+        return response
+    except errors.PyMongoError as e:
+        logger.error(f"MongoDB error serving receipt {file_id} for admin {current_user.id}: {str(e)}")
+        flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
+    except Exception as e:
+        logger.error(f"Unexpected error serving receipt {file_id} for admin {current_user.id}: {str(e)}")
+        flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
+    return redirect(url_for('credits.view_receipts'))
+
+@credits_bp.route('/api/balance', methods=['GET'])
+@login_required
+@utils.limiter.limit("100 per hour")
+def get_balance():
+    """API endpoint to get current user's Ficore Credit balance."""
     try:
         db = utils.get_mongo_db()
-        # TEMPORARY: Allow admin to delete any creditor during testing
-        # TODO: Restore original user_id filter for production
-        query = {'_id': ObjectId(id), 'type': 'creditor'} if utils.is_admin() else {'_id': ObjectId(id), 'user_id': str(current_user.id), 'type': 'creditor'}
-        creditor = db.records.find_one(query)
-        if not creditor:
-            flash(trans('creditors_record_not_found', default='Record not found'), 'danger')
-            return redirect(url_for('creditors.index'))
-        result = db.records.delete_one(query)
-        if result.deleted_count:
-            db.credit_transactions.insert_one({
-                'user_id': str(current_user.id),
-                'creditor_id': str(creditor['_id']),
-                'creditor_name': creditor['name'],
-                'type': 'delete',
-                'amount_change': 0,
-                'date': datetime.utcnow(),
-                'ref': f"Deleted creditor: {creditor['name']} (Ficore Credits)"
-            })
-            flash(trans('creditors_delete_success', default='Creditor deleted successfully'), 'success')
-        else:
-            flash(trans('creditors_record_not_found', default='Record not found'), 'danger')
+        user_query = utils.get_user_query(str(current_user.id))
+        user = db.users.find_one(user_query)
+        balance = user.get('ficore_credit_balance', 0) if user else 0
+        return jsonify({'balance': balance})
     except Exception as e:
-        logger.error(f"Error deleting creditor {id} for user {current_user.id}: {str(e)}")
-        flash(trans('creditors_delete_error', default='An error occurred'), 'danger')
-    return redirect(url_for('creditors.index'))
+        logger.error(f"Error fetching Ficore Credit balance for user {current_user.id}: {str(e)}")
+        return jsonify({'error': 'Failed to fetch balance'}), 500
+
+@credits_bp.route('/info', methods=['GET'])
+@login_required
+@utils.limiter.limit("100 per hour")
+def ficore_credits_info():
+    """Display information about Ficore Credits."""
+    return render_template(
+        'credits/info.html',
+        title=trans('credits_info_title', default='What Are Ficore Credits?', lang=session.get('lang', 'en'))
+    )
