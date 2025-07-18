@@ -140,7 +140,7 @@ def share(id):
             return jsonify({'success': False, 'message': trans('creditors_record_not_found', default='Record not found')}), 404
         if not creditor.get('contact'):
             return jsonify({'success': False, 'message': trans('creditors_no_contact', default='No contact provided for sharing')}), 400
-        if not utils.is_admin() and not utils.check_ficore_credit_balance(1):
+        ziuaif not utils.is_admin() and not utils.check_ficore_credit_balance(1):
             return jsonify({'success': False, 'message': trans('debtors_insufficient_credits', default='Insufficient credits to share IOU')}), 400
         
         contact = re.sub(r'\D', '', creditor['contact'])
@@ -446,3 +446,39 @@ def delete(id):
         logger.error(f"Error deleting creditor {id} for user {current_user.id}: {str(e)}")
         flash(trans('creditors_delete_error', default='An error occurred'), 'danger')
     return redirect(url_for('creditors.index'))
+
+@creditors_bp.route('/request_credits', methods=['GET', 'POST'])
+@login_required
+@utils.requires_role('trader')
+def request_credits():
+    """Request additional FiCore credits."""
+    form = CreditRequestForm()
+    if form.validate_on_submit():
+        try:
+            db = utils.get_mongo_db()
+            credit_request = {
+                'user_id': str(current_user.id),
+                'amount': form.amount.data,
+                'status': 'pending',
+                'created_at': datetime.utcnow(),
+                'description': form.description.data
+            }
+            db.credit_requests.insert_one(credit_request)
+            flash(trans('credits_request_success', default='Credit request submitted successfully'), 'success')
+            return redirect(url_for('creditors.index'))
+        except Exception as e:
+            logger.error(f"Error submitting credit request for user {current_user.id}: {str(e)}")
+            flash(trans('credits_request_error', default='An error occurred'), 'danger')
+    
+    try:
+        db = utils.get_mongo_db()
+        requests = list(db.credit_requests.find({'status': 'pending'}).sort('created_at', -1))
+        return render_template(
+            'credits/request_credits.html',
+            form=form,
+            requests=requests
+        )
+    except Exception as e:
+        logger.error(f"Error fetching credit requests for user {current_user.id}: {str(e)}")
+        flash(trans('credits_fetch_error', default='An error occurred'), 'danger')
+        return redirect(url_for('creditors.index'))
