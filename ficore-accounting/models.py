@@ -31,7 +31,7 @@ def get_db():
 
 def initialize_app_data(app):
     """
-    Initialize MongoDB collections, indexes, and learning materials (courses and quizzes).
+    Initialize MongoDB collections and indexes.
     
     Args:
         app: Flask application instance
@@ -163,29 +163,6 @@ def initialize_app_data(app):
                     'indexes': [
                         {'key': [('user_id', ASCENDING), ('type', ASCENDING)]},
                         {'key': [('created_at', DESCENDING)]}
-                    ]
-                },
-                'inventory': {
-                    'validator': {
-                        '$jsonSchema': {
-                            'bsonType': 'object',
-                            'required': ['user_id', 'item_name', 'qty', 'unit', 'buying_price', 'selling_price'],
-                            'properties': {
-                                'user_id': {'bsonType': 'string'},
-                                'item_name': {'bsonType': 'string'},
-                                'qty': {'bsonType': 'int', 'minimum': 0},
-                                'unit': {'bsonType': 'string'},
-                                'buying_price': {'bsonType': 'number', 'minimum': 0},
-                                'selling_price': {'bsonType': 'number', 'minimum': 0},
-                                'threshold': {'bsonType': 'int', 'minimum': 0},
-                                'created_at': {'bsonType': 'date'},
-                                'updated_at': {'bsonType': ['date', 'null']}
-                            }
-                        }
-                    },
-                    'indexes': [
-                        {'key': [('user_id', ASCENDING)]},
-                        {'key': [('item_name', ASCENDING)]}
                     ]
                 },
                 'ficore_credit_transactions': {
@@ -412,50 +389,6 @@ def initialize_app_data(app):
                         {'key': [('timestamp', DESCENDING)]}
                     ]
                 },
-                'news_articles': {
-                    'validator': {
-                        '$jsonSchema': {
-                            'bsonType': 'object',
-                            'required': ['title', 'content', 'source_type', 'published_at'],
-                            'properties': {
-                                'title': {'bsonType': 'string'},
-                                'content': {'bsonType': 'string'},
-                                'source_type': {'bsonType': 'string'},
-                                'published_at': {'bsonType': 'date'},
-                                'is_verified': {'bsonType': 'bool'},
-                                'is_active': {'bsonType': 'bool'},
-                                'session_id': {'bsonType': ['string', 'null']}
-                            }
-                        }
-                    },
-                    'indexes': [
-                        {'key': [('published_at', DESCENDING)]},
-                        {'key': [('session_id', ASCENDING)]}
-                    ]
-                },
-                'financial_health_scores': {
-                    'validator': {
-                        '$jsonSchema': {
-                            'bsonType': 'object',
-                            'required': ['user_id', 'score', 'status', 'created_at'],
-                            'properties': {
-                                'user_id': {'bsonType': 'string'},
-                                'session_id': {'bsonType': ['string', 'null']},
-                                'score': {'bsonType': 'number', 'minimum': 0, 'maximum': 100},
-                                'status': {'bsonType': 'string'},
-                                'debt_to_income': {'bsonType': 'number'},
-                                'savings_rate': {'bsonType': 'number'},
-                                'interest_burden': {'bsonType': 'number'},
-                                'badges': {'bsonType': ['array', 'null']},
-                                'created_at': {'bsonType': 'date'}
-                            }
-                        }
-                    },
-                    'indexes': [
-                        {'key': [('user_id', ASCENDING), ('created_at', DESCENDING)]},
-                        {'key': [('session_id', ASCENDING), ('created_at', DESCENDING)]}
-                    ]
-                },
                 'budgets': {
                     'validator': {
                         '$jsonSchema': {
@@ -513,118 +446,6 @@ def initialize_app_data(app):
                         {'key': [('user_id', ASCENDING), ('due_date', ASCENDING)]},
                         {'key': [('session_id', ASCENDING), ('due_date', ASCENDING)]},
                         {'key': [('status', ASCENDING)]}
-                    ]
-                },
-                'net_worth_data': {
-                    'validator': {
-                        '$jsonSchema': {
-                            'bsonType': 'object',
-                            'required': ['user_id', 'total_assets', 'total_liabilities', 'net_worth', 'created_at'],
-                            'properties': {
-                                'user_id': {'bsonType': 'string'},
-                                'session_id': {'bsonType': ['string', 'null']},
-                                'cash_savings': {'bsonType': 'number', 'minimum': 0},
-                                'investments': {'bsonType': 'number', 'minimum': 0},
-                                'property': {'bsonType': 'number', 'minimum': 0},
-                                'loans': {'bsonType': 'number', 'minimum': 0},
-                                'total_assets': {'bsonType': 'number', 'minimum': 0},
-                                'total_liabilities': {'bsonType': 'number', 'minimum': 0},
-                                'net_worth': {'bsonType': 'number'},
-                                'badges': {'bsonType': ['array', 'null']},
-                                'created_at': {'bsonType': 'date'}
-                            }
-                        }
-                    },
-                    'indexes': [
-                        {'key': [('user_id', ASCENDING), ('created_at', DESCENDING)]},
-                        {'key': [('session_id', ASCENDING), ('created_at', DESCENDING)]}
-                    ]
-                },
-                'emergency_funds': {
-                    'validator': {
-                        '$jsonSchema': {
-                            'bsonType': 'object',
-                            'required': ['user_id', 'monthly_expenses', 'current_savings', 'target_amount', 'created_at'],
-                            'properties': {
-                                'user_id': {'bsonType': 'string'},
-                                'session_id': {'bsonType': ['string', 'null']},
-                                'monthly_expenses': {'bsonType': 'number', 'minimum': 0},
-                                'monthly_income': {'bsonType': 'number', 'minimum': 0},
-                                'current_savings': {'bsonType': 'number', 'minimum': 0},
-                                'risk_tolerance_level': {'bsonType': ['string', 'null']},
-                                'dependents': {'bsonType': 'number', 'minimum': 0},
-                                'timeline': {'bsonType': 'number', 'minimum': 0},
-                                'recommended_months': {'bsonType': 'number', 'minimum': 0},
-                                'target_amount': {'bsonType': 'number', 'minimum': 0},
-                                'savings_gap': {'bsonType': 'number', 'minimum': 0},
-                                'monthly_savings': {'bsonType': 'number', 'minimum': 0},
-                                'percent_of_income': {'bsonType': ['number', 'null']},
-                                'badges': {'bsonType': ['array', 'null']},
-                                'created_at': {'bsonType': 'date'}
-                            }
-                        }
-                    },
-                    'indexes': [
-                        {'key': [('user_id', ASCENDING), ('created_at', DESCENDING)]},
-                        {'key': [('session_id', ASCENDING), ('created_at', DESCENDING)]}
-                    ]
-                },
-                'learning_materials': {
-                    'validator': {
-                        '$jsonSchema': {
-                            'bsonType': 'object',
-                            'required': ['type'],
-                            'properties': {
-                                'type': {'enum': ['course', 'quiz', 'progress']},
-                                'id': {'bsonType': 'string'},
-                                'user_id': {'bsonType': ['string', 'null']},
-                                'session_id': {'bsonType': ['string', 'null']},
-                                'course_id': {'bsonType': ['string', 'null']},
-                                'title_key': {'bsonType': ['string', 'null']},
-                                'title_en': {'bsonType': ['string', 'null']},
-                                'title_ha': {'bsonType': ['string', 'null']},
-                                'description_en': {'bsonType': ['string', 'null']},
-                                'description_ha': {'bsonType': ['string', 'null']},
-                                'is_premium': {'bsonType': ['bool', 'null']},
-                                'roles': {'bsonType': ['array', 'null']},
-                                'modules': {'bsonType': ['array', 'null']},
-                                'questions': {'bsonType': ['array', 'null']},
-                                'lessons_completed': {'bsonType': ['array', 'null']},
-                                'quiz_scores': {'bsonType': ['object', 'null']},
-                                'current_lesson': {'bsonType': ['string', 'null']},
-                                'coins_earned': {'bsonType': ['int', 'null'], 'minimum': 0},
-                                'badges_earned': {'bsonType': ['array', 'null']},
-                                'created_at': {'bsonType': 'date'},
-                                'updated_at': {'bsonType': ['date', 'null']}
-                            }
-                        }
-                    },
-                    'indexes': [
-                        {'key': [('type', ASCENDING)]},
-                        {'key': [('user_id', ASCENDING), ('course_id', ASCENDING)]},
-                        {'key': [('session_id', ASCENDING), ('course_id', ASCENDING)]}
-                    ]
-                },
-                'quiz_responses': {
-                    'validator': {
-                        '$jsonSchema': {
-                            'bsonType': 'object',
-                            'required': ['user_id', 'personality', 'score', 'created_at'],
-                            'properties': {
-                                'user_id': {'bsonType': 'string'},
-                                'session_id': {'bsonType': ['string', 'null']},
-                                'personality': {'bsonType': 'string'},
-                                'score': {'bsonType': 'number', 'minimum': 0, 'maximum': 100},
-                                'badges': {'bsonType': ['array', 'null']},
-                                'insights': {'bsonType': ['array', 'null']},
-                                'tips': {'bsonType': ['array', 'null']},
-                                'created_at': {'bsonType': 'date'}
-                            }
-                        }
-                    },
-                    'indexes': [
-                        {'key': [('user_id', ASCENDING), ('created_at', DESCENDING)]},
-                        {'key': [('session_id', ASCENDING), ('created_at', DESCENDING)]}
                     ]
                 },
                 'bill_reminders': {
@@ -755,10 +576,6 @@ def initialize_app_data(app):
                 except OperationFailure as e:
                     logger.error(f"Failed to insert VAT rules: {str(e)}", exc_info=True, extra={'session_id': 'no-session-id'})
                     raise
-            
-            # Initialize courses and quizzes (to be handled by learning hub's init_learning_materials)
-            from learning_hub.models import init_learning_materials
-            init_learning_materials(app)
             
         except Exception as e:
             logger.error(f"{trans('general_database_initialization_failed', default='Failed to initialize database')}: {str(e)}", 
@@ -1071,24 +888,6 @@ def update_agent(db, agent_id, status):
                     exc_info=True, extra={'session_id': 'no-session-id'})
         raise
 
-def get_financial_health(db, filter_kwargs):
-    """
-    Retrieve financial health records based on filter criteria.
-    
-    Args:
-        db: MongoDB database instance
-        filter_kwargs: Dictionary of filter criteria
-    
-    Returns:
-        list: List of financial health records
-    """
-    try:
-        return list(db.financial_health_scores.find(filter_kwargs).sort('created_at', DESCENDING))
-    except Exception as e:
-        logger.error(f"{trans('general_financial_health_fetch_error', default='Error getting financial health')}: {str(e)}", 
-                    exc_info=True, extra={'session_id': 'no-session-id'})
-        raise
-
 def get_budgets(db, filter_kwargs):
     """
     Retrieve budget records based on filter criteria.
@@ -1122,78 +921,6 @@ def get_bills(db, filter_kwargs):
         return list(db.bills.find(filter_kwargs).sort('due_date', ASCENDING))
     except Exception as e:
         logger.error(f"{trans('general_bills_fetch_error', default='Error getting bills')}: {str(e)}", 
-                    exc_info=True, extra={'session_id': 'no-session-id'})
-        raise
-
-def get_net_worth(db, filter_kwargs):
-    """
-    Retrieve net worth records based on filter criteria.
-    
-    Args:
-        db: MongoDB database instance
-        filter_kwargs: Dictionary of filter criteria
-    
-    Returns:
-        list: List of net worth records
-    """
-    try:
-        return list(db.net_worth_data.find(filter_kwargs).sort('created_at', DESCENDING))
-    except Exception as e:
-        logger.error(f"{trans('general_net_worth_fetch_error', default='Error getting net worth')}: {str(e)}", 
-                    exc_info=True, extra={'session_id': 'no-session-id'})
-        raise
-
-def get_emergency_funds(db, filter_kwargs):
-    """
-    Retrieve emergency fund records based on filter criteria.
-    
-    Args:
-        db: MongoDB database instance
-        filter_kwargs: Dictionary of filter criteria
-    
-    Returns:
-        list: List of emergency fund records
-    """
-    try:
-        return list(db.emergency_funds.find(filter_kwargs).sort('created_at', DESCENDING))
-    except Exception as e:
-        logger.error(f"{trans('general_emergency_funds_fetch_error', default='Error getting emergency funds')}: {str(e)}", 
-                    exc_info=True, extra={'session_id': 'no-session-id'})
-        raise
-
-def get_quiz_results(db, filter_kwargs):
-    """
-    Retrieve quiz result records based on filter criteria.
-    
-    Args:
-        db: MongoDB database instance
-        filter_kwargs: Dictionary of filter criteria
-    
-    Returns:
-        list: List of quiz result records
-    """
-    try:
-        return list(db.quiz_responses.find(filter_kwargs).sort('created_at', DESCENDING))
-    except Exception as e:
-        logger.error(f"{trans('general_quiz_results_fetch_error', default='Error getting quiz results')}: {str(e)}", 
-                    exc_info=True, extra={'session_id': 'no-session-id'})
-        raise
-
-def get_news_articles(db, filter_kwargs):
-    """
-    Retrieve news article records based on filter criteria.
-    
-    Args:
-        db: MongoDB database instance
-        filter_kwargs: Dictionary of filter criteria
-    
-    Returns:
-        list: List of news article records
-    """
-    try:
-        return list(db.news_articles.find(filter_kwargs).sort('published_at', DESCENDING))
-    except Exception as e:
-        logger.error(f"{trans('general_news_articles_fetch_error', default='Error getting news articles')}: {str(e)}", 
                     exc_info=True, extra={'session_id': 'no-session-id'})
         raise
 
@@ -1332,32 +1059,6 @@ def log_tool_usage(db, tool_name, user_id=None, session_id=None, action=None):
     except Exception as e:
         logger.error(f"{trans('general_tool_usage_log_error', default='Error logging tool usage')}: {str(e)}", 
                     exc_info=True, extra={'session_id': session_id or 'no-session-id'})
-        raise
-
-def create_news_article(db, article_data):
-    """
-    Create a new news article in the news_articles collection.
-    
-    Args:
-        db: MongoDB database instance
-        article_data: Dictionary containing news article information
-    
-    Returns:
-        str: ID of the created article
-    """
-    try:
-        required_fields = ['title', 'content', 'source_type', 'published_at']
-        if not all(field in article_data for field in required_fields):
-            raise ValueError(trans('general_missing_news_fields', default='Missing required news article fields'))
-        article_data.setdefault('is_verified', False)
-        article_data.setdefault('is_active', True)
-        result = db.news_articles.insert_one(article_data)
-        logger.info(f"{trans('general_news_article_created', default='Created news article with ID')}: {result.inserted_id}", 
-                   extra={'session_id': article_data.get('session_id', 'no-session-id')})
-        return str(result.inserted_id)
-    except Exception as e:
-        logger.error(f"{trans('general_news_article_creation_error', default='Error creating news article')}: {str(e)}", 
-                    exc_info=True, extra={'session_id': article_data.get('session_id', 'no-session-id')})
         raise
 
 def create_tax_rate(db, tax_rate_data):
@@ -1520,203 +1221,6 @@ def update_tax_reminder(db, reminder_id, update_data):
                     exc_info=True, extra={'session_id': 'no-session-id'})
         raise
 
-def to_dict_financial_health(record):
-    """Convert financial health record to dictionary."""
-    if not record:
-        return {'score': None, 'status': None}
-    return {
-        'id': str(record.get('_id', '')),
-        'score': record.get('score'),
-        'status': record.get('status'),
-        'debt_to_income': record.get('debt_to_income'),
-        'savings_rate': record.get('savings_rate'),
-        'interest_burden': record.get('interest_burden'),
-        'badges': record.get('badges', []),
-        'created_at': record.get('created_at')
-    }
-
-def to_dict_budget(record):
-    """Convert budget record to dictionary."""
-    if not record:
-        return {'surplus_deficit': None, 'savings_goal': None}
-    return {
-        'id': str(record.get('_id', '')),
-        'income': record.get('income', 0),
-        'fixed_expenses': record.get('fixed_expenses', 0),
-        'variable_expenses': record.get('variable_expenses', 0),
-        'savings_goal': record.get('savings_goal', 0),
-        'surplus_deficit': record.get('surplus_deficit', 0),
-        'housing': record.get('housing', 0),
-        'food': record.get('food', 0),
-        'transport': record.get('transport', 0),
-        'dependents': record.get('dependents', 0),
-        'miscellaneous': record.get('miscellaneous', 0),
-        'others': record.get('others', 0),
-        'created_at': record.get('created_at')
-    }
-
-def to_dict_bill(record):
-    """Convert bill record to dictionary."""
-    if not record:
-        return {'amount': None, 'status': None}
-    return {
-        'id': str(record.get('_id', '')),
-        'bill_name': record.get('bill_name', ''),
-        'amount': record.get('amount', 0),
-        'due_date': record.get('due_date'),
-        'frequency': record.get('frequency', ''),
-        'category': record.get('category', ''),
-        'status': record.get('status', ''),
-        'send_notifications': record.get('send_notifications', False),
-        'send_email': record.get('send_email', False),
-        'send_sms': record.get('send_sms', False),
-        'send_whatsapp': record.get('send_whatsapp', False),
-        'reminder_days': record.get('reminder_days'),
-        'user_email': record.get('user_email', ''),
-        'user_phone': record.get('user_phone', ''),
-        'first_name': record.get('first_name', '')
-    }
-
-def to_dict_net_worth(record):
-    """Convert net worth record to dictionary."""
-    if not record:
-        return {'net_worth': None, 'total_assets': None}
-    return {
-        'id': str(record.get('_id', '')),
-        'cash_savings': record.get('cash_savings', 0),
-        'investments': record.get('investments', 0),
-        'property': record.get('property', 0),
-        'loans': record.get('loans', 0),
-        'total_assets': record.get('total_assets', 0),
-        'total_liabilities': record.get('total_liabilities', 0),
-        'net_worth': record.get('net_worth', 0),
-        'badges': record.get('badges', []),
-        'created_at': record.get('created_at')
-    }
-
-def to_dict_emergency_fund(record):
-    """Convert emergency fund record to dictionary."""
-    if not record:
-        return {'target_amount': None, 'savings_gap': None}
-    return {
-        'id': str(record.get('_id', '')),
-        'monthly_expenses': record.get('monthly_expenses', 0),
-        'monthly_income': record.get('monthly_income', 0),
-        'current_savings': record.get('current_savings', 0),
-        'risk_tolerance_level': record.get('risk_tolerance_level', ''),
-        'dependents': record.get('dependents', 0),
-        'timeline': record.get('timeline', 0),
-        'recommended_months': record.get('recommended_months', 0),
-        'target_amount': record.get('target_amount', 0),
-        'savings_gap': record.get('savings_gap', 0),
-        'monthly_savings': record.get('monthly_savings', 0),
-        'percent_of_income': record.get('percent_of_income'),
-        'badges': record.get('badges', []),
-        'created_at': record.get('created_at')
-    }
-
-def to_dict_quiz_result(record):
-    """Convert quiz result record to dictionary."""
-    if not record:
-        return {'personality': None, 'score': None}
-    return {
-        'id': str(record.get('_id', '')),
-        'personality': record.get('personality', ''),
-        'score': record.get('score', 0),
-        'badges': record.get('badges', []),
-        'insights': record.get('insights', []),
-        'tips': record.get('tips', []),
-        'created_at': record.get('created_at')
-    }
-
-def to_dict_news_article(record):
-    """Convert news article record to dictionary."""
-    if not record:
-        return {'title': None, 'content': None}
-    return {
-        'id': str(record.get('_id', '')),
-        'title': record.get('title', ''),
-        'content': record.get('content', ''),
-        'source_type': record.get('source_type', ''),
-        'published_at': record.get('published_at'),
-        'is_verified': record.get('is_verified', False),
-        'is_active': record.get('is_active', True)
-    }
-
-def to_dict_tax_rate(record):
-    """Convert tax rate record to dictionary."""
-    if not record:
-        return {'role': None, 'rate': None}
-    return {
-        'id': str(record.get('_id', '')),
-        'role': record.get('role', ''),
-        'min_income': record.get('min_income', 0),
-        'max_income': record.get('max_income', 0),
-        'rate': record.get('rate', 0),
-        'description': record.get('description', '')
-    }
-
-def to_dict_vat_rule(record):
-    """Convert VAT rule record to dictionary."""
-    if not record:
-        return {'category': None, 'vat_exempt': None, 'description': None}
-    return {
-        'id': str(record.get('_id', '')),
-        'category': record.get('category', ''),
-        'vat_exempt': record.get('vat_exempt', False),
-        'description': record.get('description', '')
-    }
-
-def to_dict_payment_location(record):
-    """Convert payment location record to dictionary."""
-    if not record:
-        return {'name': None, 'address': None}
-    return {
-        'id': str(record.get('_id', '')),
-        'name': record.get('name', ''),
-        'address': record.get('address', ''),
-        'contact': record.get('contact', ''),
-        'coordinates': record.get('coordinates')
-    }
-
-def to_dict_tax_reminder(record):
-    """Convert tax reminder record to dictionary."""
-    if not record:
-        return {
-        'id': str(record.get('_id', '')),
-        'user_id': record.get('user_id', ''),
-        'tax_type': record.get('tax_type', ''),
-        'due_date': record.get('due_date'),
-        'amount': record.get('amount', 0),
-        'status': record.get('status', ''),
-        'created_at': record.get('created_at'),
-        'updated_at': record.get('updated_at')
-    }
-
-def create_financial_health(db, health_data):
-    """
-    Create a new financial health record in the financial_health_scores collection.
-    
-    Args:
-        db: MongoDB database instance
-        health_data: Dictionary containing financial health information
-    
-    Returns:
-        str: ID of the created financial health record
-    """
-    try:
-        required_fields = ['user_id', 'score', 'status', 'created_at']
-        if not all(field in health_data for field in required_fields):
-            raise ValueError(trans('general_missing_health_fields', default='Missing required financial health fields'))
-        result = db.financial_health_scores.insert_one(health_data)
-        logger.info(f"{trans('general_financial_health_created', default='Created financial health record with ID')}: {result.inserted_id}", 
-                   extra={'session_id': health_data.get('session_id', 'no-session-id')})
-        return str(result.inserted_id)
-    except Exception as e:
-        logger.error(f"{trans('general_financial_health_creation_error', default='Error creating financial health record')}: {str(e)}", 
-                    exc_info=True, extra={'session_id': health_data.get('session_id', 'no-session-id')})
-        raise
-
 def create_budget(db, budget_data):
     """
     Create a new budget record in the budgets collection.
@@ -1763,78 +1267,6 @@ def create_bill(db, bill_data):
     except Exception as e:
         logger.error(f"{trans('general_bill_creation_error', default='Error creating bill record')}: {str(e)}", 
                     exc_info=True, extra={'session_id': bill_data.get('session_id', 'no-session-id')})
-        raise
-
-def create_net_worth(db, net_worth_data):
-    """
-    Create a new net worth record in the net_worth_data collection.
-    
-    Args:
-        db: MongoDB database instance
-        net_worth_data: Dictionary containing net worth information
-    
-    Returns:
-        str: ID of the created net worth record
-    """
-    try:
-        required_fields = ['user_id', 'total_assets', 'total_liabilities', 'net_worth', 'created_at']
-        if not all(field in net_worth_data for field in required_fields):
-            raise ValueError(trans('general_missing_net_worth_fields', default='Missing required net worth fields'))
-        result = db.net_worth_data.insert_one(net_worth_data)
-        logger.info(f"{trans('general_net_worth_created', default='Created net worth record with ID')}: {result.inserted_id}", 
-                   extra={'session_id': net_worth_data.get('session_id', 'no-session-id')})
-        return str(result.inserted_id)
-    except Exception as e:
-        logger.error(f"{trans('general_net_worth_creation_error', default='Error creating net worth record')}: {str(e)}", 
-                    exc_info=True, extra={'session_id': net_worth_data.get('session_id', 'no-session-id')})
-        raise
-
-def create_emergency_fund(db, emergency_fund_data):
-    """
-    Create a new emergency fund record in the emergency_funds collection.
-    
-    Args:
-        db: MongoDB database instance
-        emergency_fund_data: Dictionary containing emergency fund information
-    
-    Returns:
-        str: ID of the created emergency fund record
-    """
-    try:
-        required_fields = ['user_id', 'monthly_expenses', 'current_savings', 'target_amount', 'created_at']
-        if not all(field in emergency_fund_data for field in required_fields):
-            raise ValueError(trans('general_missing_emergency_fund_fields', default='Missing required emergency fund fields'))
-        result = db.emergency_funds.insert_one(emergency_fund_data)
-        logger.info(f"{trans('general_emergency_fund_created', default='Created emergency fund record with ID')}: {result.inserted_id}", 
-                   extra={'session_id': emergency_fund_data.get('session_id', 'no-session-id')})
-        return str(result.inserted_id)
-    except Exception as e:
-        logger.error(f"{trans('general_emergency_fund_creation_error', default='Error creating emergency fund record')}: {str(e)}", 
-                    exc_info=True, extra={'session_id': emergency_fund_data.get('session_id', 'no-session-id')})
-        raise
-
-def create_quiz_result(db, quiz_result_data):
-    """
-    Create a new quiz result record in the quiz_responses collection.
-    
-    Args:
-        db: MongoDB database instance
-        quiz_result_data: Dictionary containing quiz result information
-    
-    Returns:
-        str: ID of the created quiz result record
-    """
-    try:
-        required_fields = ['user_id', 'personality', 'score', 'created_at']
-        if not all(field in quiz_result_data for field in required_fields):
-            raise ValueError(trans('general_missing_quiz_result_fields', default='Missing required quiz result fields'))
-        result = db.quiz_responses.insert_one(quiz_result_data)
-        logger.info(f"{trans('general_quiz_result_created', default='Created quiz result record with ID')}: {result.inserted_id}", 
-                   extra={'session_id': quiz_result_data.get('session_id', 'no-session-id')})
-        return str(result.inserted_id)
-    except Exception as e:
-        logger.error(f"{trans('general_quiz_result_creation_error', default='Error creating quiz result record')}: {str(e)}", 
-                    exc_info=True, extra={'session_id': quiz_result_data.get('session_id', 'no-session-id')})
         raise
 
 def create_bill_reminder(db, reminder_data):
@@ -1943,48 +1375,6 @@ def create_cashflow(db, cashflow_data):
     except Exception as e:
         logger.error(f"{trans('general_cashflow_creation_error', default='Error creating cashflow record')}: {str(e)}", 
                     exc_info=True, extra={'session_id': cashflow_data.get('session_id', 'no-session-id')})
-        raise
-
-def get_inventory(db, filter_kwargs):
-    """
-    Retrieve inventory records based on filter criteria.
-    
-    Args:
-        db: MongoDB database instance
-        filter_kwargs: Dictionary of filter criteria
-    
-    Returns:
-        list: List of inventory records
-    """
-    try:
-        return list(db.inventory.find(filter_kwargs).sort('created_at', DESCENDING))
-    except Exception as e:
-        logger.error(f"{trans('general_inventory_fetch_error', default='Error getting inventory')}: {str(e)}", 
-                    exc_info=True, extra={'session_id': 'no-session-id'})
-        raise
-
-def create_inventory(db, inventory_data):
-    """
-    Create a new inventory record in the inventory collection.
-    
-    Args:
-        db: MongoDB database instance
-        inventory_data: Dictionary containing inventory information
-    
-    Returns:
-        str: ID of the created inventory record
-    """
-    try:
-        required_fields = ['user_id', 'item_name', 'qty', 'unit', 'buying_price', 'selling_price']
-        if not all(field in inventory_data for field in required_fields):
-            raise ValueError(trans('general_missing_inventory_fields', default='Missing required inventory fields'))
-        result = db.inventory.insert_one(inventory_data)
-        logger.info(f"{trans('general_inventory_created', default='Created inventory record with ID')}: {result.inserted_id}", 
-                   extra={'session_id': inventory_data.get('session_id', 'no-session-id')})
-        return str(result.inserted_id)
-    except Exception as e:
-        logger.error(f"{trans('general_inventory_creation_error', default='Error creating inventory record')}: {str(e)}", 
-                    exc_info=True, extra={'session_id': inventory_data.get('session_id', 'no-session-id')})
         raise
 
 def get_ficore_credit_transactions(db, filter_kwargs):
@@ -2137,23 +1527,6 @@ def to_dict_cashflow(record):
         'updated_at': record.get('updated_at')
     }
 
-def to_dict_inventory(record):
-    """Convert inventory record to dictionary."""
-    if not record:
-        return {'item_name': None, 'qty': None}
-    return {
-        'id': str(record.get('_id', '')),
-        'user_id': record.get('user_id', ''),
-        'item_name': record.get('item_name', ''),
-        'qty': record.get('qty', 0),
-        'unit': record.get('unit', ''),
-        'buying_price': record.get('buying_price', 0),
-        'selling_price': record.get('selling_price', 0),
-        'threshold': record.get('threshold', 0),
-        'created_at': record.get('created_at'),
-        'updated_at': record.get('updated_at')
-    }
-
 def to_dict_ficore_credit_transaction(record):
     """Convert ficore credit transaction record to dictionary."""
     if not record:
@@ -2199,6 +1572,98 @@ def to_dict_user(user):
         'ficore_credit_balance': user.ficore_credit_balance,
         'language': user.language,
         'dark_mode': user.dark_mode
+    }
+
+def to_dict_budget(record):
+    """Convert budget record to dictionary."""
+    if not record:
+        return {'surplus_deficit': None, 'savings_goal': None}
+    return {
+        'id': str(record.get('_id', '')),
+        'income': record.get('income', 0),
+        'fixed_expenses': record.get('fixed_expenses', 0),
+        'variable_expenses': record.get('variable_expenses', 0),
+        'savings_goal': record.get('savings_goal', 0),
+        'surplus_deficit': record.get('surplus_deficit', 0),
+        'housing': record.get('housing', 0),
+        'food': record.get('food', 0),
+        'transport': record.get('transport', 0),
+        'dependents': record.get('dependents', 0),
+        'miscellaneous': record.get('miscellaneous', 0),
+        'others': record.get('others', 0),
+        'created_at': record.get('created_at')
+    }
+
+def to_dict_bill(record):
+    """Convert bill record to dictionary."""
+    if not record:
+        return {'amount': None, 'status': None}
+    return {
+        'id': str(record.get('_id', '')),
+        'bill_name': record.get('bill_name', ''),
+        'amount': record.get('amount', 0),
+        'due_date': record.get('due_date'),
+        'frequency': record.get('frequency', ''),
+        'category': record.get('category', ''),
+        'status': record.get('status', ''),
+        'send_notifications': record.get('send_notifications', False),
+        'send_email': record.get('send_email', False),
+        'send_sms': record.get('send_sms', False),
+        'send_whatsapp': record.get('send_whatsapp', False),
+        'reminder_days': record.get('reminder_days'),
+        'user_email': record.get('user_email', ''),
+        'user_phone': record.get('user_phone', ''),
+        'first_name': record.get('first_name', '')
+    }
+
+def to_dict_tax_rate(record):
+    """Convert tax rate record to dictionary."""
+    if not record:
+        return {'role': None, 'rate': None}
+    return {
+        'id': str(record.get('_id', '')),
+        'role': record.get('role', ''),
+        'min_income': record.get('min_income', 0),
+        'max_income': record.get('max_income', 0),
+        'rate': record.get('rate', 0),
+        'description': record.get('description', '')
+    }
+
+def to_dict_vat_rule(record):
+    """Convert VAT rule record to dictionary."""
+    if not record:
+        return {'category': None, 'vat_exempt': None, 'description': None}
+    return {
+        'id': str(record.get('_id', '')),
+        'category': record.get('category', ''),
+        'vat_exempt': record.get('vat_exempt', False),
+        'description': record.get('description', '')
+    }
+
+def to_dict_payment_location(record):
+    """Convert payment location record to dictionary."""
+    if not record:
+        return {'name': None, 'address': None}
+    return {
+        'id': str(record.get('_id', '')),
+        'name': record.get('name', ''),
+        'address': record.get('address', ''),
+        'contact': record.get('contact', ''),
+        'coordinates': record.get('coordinates')
+    }
+
+def to_dict_tax_reminder(record):
+    """Convert tax reminder record to dictionary."""
+    if not record:
+        return {
+        'id': str(record.get('_id', '')),
+        'user_id': record.get('user_id', ''),
+        'tax_type': record.get('tax_type', ''),
+        'due_date': record.get('due_date'),
+        'amount': record.get('amount', 0),
+        'status': record.get('status', ''),
+        'created_at': record.get('created_at'),
+        'updated_at': record.get('updated_at')
     }
 
 def to_dict_bill_reminder(record):
