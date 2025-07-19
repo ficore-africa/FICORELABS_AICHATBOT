@@ -22,7 +22,6 @@ from models import (
     get_tax_deadlines, to_dict_budget, to_dict_bill, to_dict_tax_rate,
     to_dict_payment_location, to_dict_tax_reminder, to_dict_vat_rule, initialize_app_data
 )
-from learning_hub.models import get_progress, to_dict_learning_progress
 import utils
 from session_utils import create_anonymous_session
 from translations import register_translation, trans, get_translations, get_all_translations, get_module_translations
@@ -41,7 +40,6 @@ from flask_wtf.csrf import CSRFProtect
 from flask_babel import Babel
 from flask_compress import Compress
 import requests
-from learning_hub import init_learning_materials
 from business_finance import business
 
 # Load environment variables
@@ -404,7 +402,7 @@ def create_app():
                     logger.error(f'Error shutting down scheduler: {str(e)}', exc_info=True)
 
             personal_finance_collections = [
-                'budgets', 'bills', 'learning_materials', 'bill_reminders',
+                'budgets', 'bills', 'bill_reminders',
                 'tax_rates', 'payment_locations', 'tax_reminders', 'vat_rules', 'tax_deadlines'
             ]
             db = app.extensions['mongo']['ficodb']
@@ -422,8 +420,6 @@ def create_app():
                 db.budgets.create_index([('user_id', 1), ('created_at', -1)])
                 db.budgets.create_index([('session_id', 1), ('created_at', -1)])
                 db.budgets.create_index([('created_at', -1)])
-                db.learning_materials.create_index([('user_id', 1), ('course_id', 1)])
-                db.learning_materials.create_index([('session_id', 1), ('course_id', 1)])
                 db.bill_reminders.create_index([('user_id', 1), ('sent_at', -1)])
                 db.bill_reminders.create_index([('notification_id', 1)])
                 db.records.create_index([('user_id', 1), ('type', 1), ('created_at', -1)])
@@ -444,10 +440,12 @@ def create_app():
                 logger.warning(f'Some indexes may already exist: {str(e)}')
             
             try:
-                init_learning_materials(app)
-                logger.info('Learning Hub storage initialized successfully')
+                db.tax_rates.create_index([('role', 1)])
+                db.tax_rates.create_index([('min_income', 1)])
+                db.tax_rates.create_index([('session_id', 1)])
+                logger.info('Created tax rates indexes')
             except Exception as e:
-                logger.error(f'Failed to initialize Learning Hub storage: {str(e)}', exc_info=True)
+                logger.warning(f'Tax rates indexes may already exist: {str(e)}')
             
             try:
                 with app.app_context():
@@ -504,7 +502,6 @@ def create_app():
     from general.routes import general_bp
     from admin.routes import admin_bp
     from taxation.routes import taxation_bp
-    from learning_hub import learning_hub_bp
     from ai import ai_bp
     
     app.register_blueprint(users_bp, url_prefix='/users')
@@ -541,8 +538,6 @@ def create_app():
     logger.info('Registered personal blueprint with url_prefix="/personal"')
     app.register_blueprint(general_bp, url_prefix='/general')
     logger.info('Registered general blueprint')
-    app.register_blueprint(learning_hub_bp, url_prefix='/learning_hub')
-    logger.info('Registered learning hub blueprint with url_prefix="/learning_hub"')
     app.register_blueprint(business, url_prefix='/business')
     logger.info('Registered business blueprint with url_prefix="/business"')
     app.register_blueprint(ai_bp)
