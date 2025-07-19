@@ -2977,3 +2977,7 @@ df-messenger {
         overflow-y: auto; /* Allow scrolling */
     }
 }
+/* Add to styles.css */
+.welcome-section-card {
+    z-index: 900; /* Below navbar-collapse.show */
+}
