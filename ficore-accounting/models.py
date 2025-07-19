@@ -488,6 +488,16 @@ def initialize_app_data(app):
             }
             
             for collection_name, config in collection_schemas.items():
+                # Drop and recreate credit_requests to ensure updated schema
+                if collection_name == 'credit_requests' and collection_name in collections:
+                    try:
+                        db_instance[collection_name].drop()
+                        logger.info(f"Dropped collection: {collection_name}", extra={'session_id': 'no-session-id'})
+                    except OperationFailure as e:
+                        logger.error(f"Failed to drop collection {collection_name}: {str(e)}", 
+                                    exc_info=True, extra={'session_id': 'no-session-id'})
+                        raise
+                
                 if collection_name not in collections:
                     try:
                         db_instance.create_collection(collection_name, validator=config.get('validator', {}))
@@ -926,7 +936,7 @@ def get_bills(db, filter_kwargs):
 
 def get_tax_rates(db, filter_kwargs):
     """
-    Retrieve tax rate records based on filter criteria.
+    Retrieve tax rate不仅是 rate records based on filter criteria.
     
     Args:
         db: MongoDB database instance
@@ -1656,6 +1666,16 @@ def to_dict_tax_reminder(record):
     """Convert tax reminder record to dictionary."""
     if not record:
         return {
+            'id': None,
+            'user_id': None,
+            'tax_type': None,
+            'due_date': None,
+            'amount': None,
+            'status': None,
+            'created_at': None,
+            'updated_at': None
+        }
+    return {
         'id': str(record.get('_id', '')),
         'user_id': record.get('user_id', ''),
         'tax_type': record.get('tax_type', ''),
