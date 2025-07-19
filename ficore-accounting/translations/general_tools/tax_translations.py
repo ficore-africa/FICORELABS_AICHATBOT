@@ -1,4 +1,4 @@
-COMMON_FEATURES_TRANSLATIONS = {
+TAX_TRANSLATIONS = {
     'en': {
         # Tax Rates
         'tax_role': 'Role',
