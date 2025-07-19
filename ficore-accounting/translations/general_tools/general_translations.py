@@ -10,6 +10,9 @@ GENERAL_TRANSLATIONS = {
         'general_profile': 'Profile',
         'general_settings': 'Settings',
         'credits_request_credits': 'Request Credits',
+        'general_language_toggle_tooltip': 'Toggle to switch between available languages',
+        'general_language_toggle': 'Switch Language',
+        'session_timeout': 'Your session has expired. Please log in again.',
         'credits_transaction_history': 'Transaction History',
         'credits_request_history': 'Request History',
         'credits_no_requests': 'No Requests Found',
@@ -1485,6 +1488,9 @@ GENERAL_TRANSLATIONS = {
         'credits_transaction_history': 'Tarihin Maamala',
         'credits_request_history': 'Tarihin Nema',
         'credits_no_requests': 'Ba a Sami Buƙatun ba',
+        'general_language_toggle_tooltip': 'Togglar don canzawa tsakanin harsuna masu samuwa',
+        'general_language_toggle': 'Canza Harshe',
+        'session_timeout': 'Zaman ku ya ƙare. Da fatan za a sake shiga.',
 
         # Misc
         'payment_locations_title': 'Wuraren Biyan Kuɗi',
