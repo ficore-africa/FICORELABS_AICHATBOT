@@ -9,7 +9,7 @@ from flask_wtf.file import FileField, FileAllowed
 from gridfs import GridFS
 from wtforms import SelectField, SubmitField, validators
 from translations import trans
-from .. import utils
+import utils
 from bson import ObjectId
 from datetime import datetime
 from logging import getLogger
