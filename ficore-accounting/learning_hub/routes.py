@@ -32,28 +32,6 @@ def allowed_file(filename):
 
 learning_hub_bp = Blueprint('learning_hub', __name__, template_folder='templates/learning_hub')
 
-@learning_hub_bp.route('/')
-def main():
-    """Render the main Learning Hub landing page."""
-    if 'sid' not in session:
-        create_anonymous_session()
-        session.permanent = True
-        session.modified = True
-    
-    lang = session.get('lang', 'en')
-    try:
-        return render_template(
-            'learning_hub/index.html',
-            t=trans,
-            lang=lang,
-            get_explore_features=get_explore_features,
-            tool_title=trans('learning_hub_title', default='Learning Hub', lang=lang)
-        )
-    except Exception as e:
-        logger.error(f"Error rendering main page: {str(e)}", exc_info=True, extra={'session_id': session.get('sid', 'no-session-id')})
-        flash(trans('learning_hub_error_loading', default='Error loading Learning Hub'), 'danger')
-        return render_template('personal/GENERAL/error.html', error=str(e), title=trans('error', lang=lang)), 500
-
 @learning_hub_bp.route('/personal')
 def personal():
     """Render the Personal Finance Learning page."""
