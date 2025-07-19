@@ -369,17 +369,21 @@
 .notification-time {
     font-size: 0.8rem;
 }
+/* Ensure tooltips don't interfere with navbar */
+[data-bs-toggle="tooltip"] {
+    z-index: 1000; /* Lower than navbar (z-index: 1020) */
+}
 </style>
-{% endblock %}
 
 {% block extra_scripts %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha384-9eS8W0ZGx0dZF9eT3uXZmz3C9G3B8+ZQc6KHg5Xb7dCkJ7M3v0pAn3uY8eQ3p3J2" crossorigin="anonymous">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize tooltips
+    // Initialize tooltips with explicit touch handling
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(tooltipTriggerEl => {
-        new bootstrap.Tooltip(tooltipTriggerEl);
+        new bootstrap.Tooltip(tooltipTriggerEl, {
+            trigger: 'hover focus', // Avoid click events to prevent interference with navbar
+            container: 'body' // Ensure tooltips don't affect navbar layout
+        });
     });
 
     // Debug icons
@@ -395,7 +399,8 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             new bootstrap.Carousel(carousel, {
                 interval: 5000,
-                ride: 'carousel'
+                ride: 'carousel',
+                touch: true // Ensure touch support for carousel
             });
         } catch (error) {
             console.error('Failed to initialize carousel:', error);
@@ -419,6 +424,39 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
         const counterInterval = setInterval(updateCounter, 50);
+    }
+
+    // Enhanced navbar touch handling
+    const navbarToggler = document.querySelector('.navbar-toggler');
+    const navbarCollapse = document.querySelector('#navbarNav');
+    if (navbarToggler && navbarCollapse) {
+        // Ensure navbar closes on link click
+        document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (navbarCollapse.classList.contains('show')) {
+                    navbarToggler.click(); // Programmatically close navbar
+                }
+            });
+        });
+
+        // Handle touch outside navbar to close
+        document.addEventListener('touchstart', (event) => {
+            if (!navbarCollapse.contains(event.target) && !navbarToggler.contains(event.target) && navbarCollapse.classList.contains('show')) {
+                navbarToggler.click();
+            }
+        });
+
+        // Debug navbar toggle state
+        navbarCollapse.addEventListener('show.bs.collapse', () => {
+            console.log('Navbar opened');
+            navbarToggler.setAttribute('aria-expanded', 'true');
+        });
+        navbarCollapse.addEventListener('hide.bs.collapse', () => {
+            console.log('Navbar closed');
+            navbarToggler.setAttribute('aria-expanded', 'false');
+        });
+    } else {
+        console.warn('Navbar toggler or collapse element not found');
     }
 });
 
