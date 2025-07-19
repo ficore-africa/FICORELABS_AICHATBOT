@@ -119,18 +119,19 @@ def ensure_session_id(f):
             if 'sid' not in session or not session.get('sid'):
                 if not current_user.is_authenticated:
                     utils.create_anonymous_session()
-                    logger.info(f'New anonymous session created: {session["sid"]}', 
-                               extra={'ip_address': request.remote_addr})
+                    logger.info(f'New anonymous session created: {session["sid"]}',
+                                extra={'ip_address': request.remote_addr})
                 else:
                     user_id = getattr(current_user, 'id', 'unknown-user')
                     session['sid'] = str(uuid.uuid4())
                     session['is_anonymous'] = False
                     session.modified = True
-                    logger.info(f'New session ID generated for authenticated user {user_id}: {session["sid"]}', 
-                               extra={'ip_address': request.remote_addr})
+                    logger.info(f'New session ID generated for authenticated user {user_id}: {session["sid"]}',
+                                extra={'ip_address': request.remote_addr})
             else:
                 # Validate session in MongoDB
                 session_id = session.get('sid')
+                # Ensure current_app.extensions['mongo']['ficodb'] is correctly initialized
                 mongo_session = current_app.extensions['mongo']['ficodb']['sessions'].find_one({'_id': session_id})
                 if not mongo_session and current_user.is_authenticated:
                     logger.info(f'Invalid or expired session {session_id} for user {current_user.id}, logging out')
@@ -139,14 +140,34 @@ def ensure_session_id(f):
                     session['lang'] = session.get('lang', 'en')
                     utils.create_anonymous_session()
                     flash(utils.trans('session_timeout', default='Your session has timed out.'), 'warning')
-                    return redirect(url_for('users.login'))
+
+                    # Clear client-side cookie
+                    response = make_response(redirect(url_for('users.login')))
+                    response.set_cookie(
+                        current_app.config['SESSION_COOKIE_NAME'],
+                        '',
+                        expires=0,
+                        httponly=True,
+                        secure=current_app.config.get('SESSION_COOKIE_SECURE', True)
+                    )
+                    return response
+
         except Exception as e:
             logger.error(f'Session operation failed: {str(e)}', exc_info=True)
             session.clear()
             session['lang'] = session.get('lang', 'en')
             utils.create_anonymous_session()
             flash(utils.trans('session_error', default='An error occurred with your session. Please log in again.'), 'danger')
-            return redirect(url_for('users.login'))
+            # Clear client-side cookie on error
+            response = make_response(redirect(url_for('users.login')))
+            response.set_cookie(
+                current_app.config['SESSION_COOKIE_NAME'],
+                '',
+                expires=0,
+                httponly=True,
+                secure=current_app.config.get('SESSION_COOKIE_SECURE', True)
+            )
+            return response
         return f(*args, **kwargs)
     return decorated_function
 
