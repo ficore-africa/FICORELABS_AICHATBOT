@@ -63,6 +63,7 @@
     --gradient-hero: linear-gradient(135deg, #f3e8ff, #bfdbfe); /* Added for hero section */
     --gradient-card: linear-gradient(135deg, #f9f9f9, #f8fafc); /* Added for card sections */
     --transition-base: all 0.3s ease;
+    --dropdown-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
 }
 
 /* --- Dark Mode Overrides --- */
@@ -120,6 +121,7 @@
     --gradient-accent: linear-gradient(135deg, #4b6cb7, #182848);
     --gradient-hero: linear-gradient(135deg, #1e293b, #4b6cb7); /* Dark mode hero gradient */
     --gradient-card: linear-gradient(135deg, #1e293b, #334155); /* Dark mode card gradient */
+    --dropdown-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
 
 /* --- General Styles --- */
@@ -2590,12 +2592,12 @@ h2.card-title {
 
 .dropdown-menu {
     position: absolute !important;
-    background: var(--card-bg);
+    background: var(--navbar-bg);
     border: 1px solid var(--card-border);
     border-radius: 10px;
-    box-shadow: var(--card-shadow);
-    min-width: 100%;
-    max-height: 150px;
+    box-shadow: var(--dropdown-shadow);
+    min-width: 160%;
+    max-height: 200px;
     z-index: 9999;
     overflow-y: auto;
     overflow-x: hidden;
@@ -2615,8 +2617,11 @@ h2.card-title {
     white-space: normal; /* allows wrapping */
     border-radius: 6px; /* optional: for nicer hover effect */
     cursor: pointer;
+    background: rgba(255, 255, 255, 0.5);
 }
-
+.dark-mode .dropdown-item {
+    background: rgba(255, 255, 255, 0.1); /* Slight background for dark mode */
+}
 .dropdown-item:hover,
 .dropdown-item:focus {
     background: var(--button-secondary-hover);
@@ -2629,35 +2634,18 @@ h2.card-title {
     z-index: 9999;
 }
 
+@media (max-width: 576px) {
+    .dropdown-menu {
+        min-width: 140px; /* Slightly smaller for mobile */
+        background: var(--navbar-bg); /* Ensure solid background */
+        box-shadow: var(--dropdown-shadow);
+        padding: 0.75rem;
+    }
 
-
-/* === Dropdown Override Fixes === */
-
-.dropdown-container {
-  position: absolute !important;
-  top: 100% !important;
-  left: 0 !important;
-  z-index: 9999 !important;
-  background-color: #fff !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-  padding: 0.5rem 0 !important;
-  border-radius: 6px !important;
-  min-width: 160px !important;
-  overflow: visible !important;
-}
-
-.dropdown-item {
-  color: var(--text-color) !important;
-  padding: 0.5rem 1rem !important;
-  font-size: clamp(0.875rem, 2vw, 0.9375rem) !important;
-  transition: var(--transition-base) !important;
-  white-space: normal !important;
-}
-
-.dropdown-item:hover,
-.dropdown-item:focus {
-  background-color: var(--button-secondary-hover) !important;
-  color: var(--accent-blue) !important;
+    .dropdown-item {
+        padding: 0.4rem 0.75rem;
+        font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+    }
 }
 
 /* Optional: Parent override to prevent clipping */
