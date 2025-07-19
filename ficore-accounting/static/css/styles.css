@@ -2590,64 +2590,6 @@ h2.card-title {
     font-size: 1.1rem;
 }
 
-.dropdown-menu {
-    position: absolute !important;
-    background: var(--navbar-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 10px;
-    box-shadow: var(--dropdown-shadow);
-    min-width: 160%;
-    max-height: 200px;
-    z-index: 9999;
-    overflow-y: auto;
-    overflow-x: hidden;
-    left: 0;
-    right: auto;
-    white-space: nowrap; /* prevent wrapping of items */
-    padding: 0.5rem; /* add space inside the dropdown */
-    transition: all 0.2s ease-in-out;
-}
-
-
-.dropdown-item {
-    color: var(--text-color);
-    padding: 0.5rem 1rem;
-    font-size: clamp(0.875rem, 2vw, 0.9375rem);
-    transition: var(--transition-base);
-    white-space: normal; /* allows wrapping */
-    border-radius: 6px; /* optional: for nicer hover effect */
-    cursor: pointer;
-    background: rgba(255, 255, 255, 0.5);
-}
-.dark-mode .dropdown-item {
-    background: rgba(255, 255, 255, 0.1); /* Slight background for dark mode */
-}
-.dropdown-item:hover,
-.dropdown-item:focus {
-    background: var(--button-secondary-hover);
-    color: var(--accent-blue);
-}
-
-.dropdown-container {
-    position: relative;
-    overflow: visible;
-    z-index: 9999;
-}
-
-@media (max-width: 576px) {
-    .dropdown-menu {
-        min-width: 140px; /* Slightly smaller for mobile */
-        background: var(--navbar-bg); /* Ensure solid background */
-        box-shadow: var(--dropdown-shadow);
-        padding: 0.75rem;
-    }
-
-    .dropdown-item {
-        padding: 0.4rem 0.75rem;
-        font-size: clamp(0.75rem, 1.5vw, 0.875rem);
-    }
-}
-
 /* Optional: Parent override to prevent clipping */
 body, .app, .main-wrapper, .top-header {
   overflow: visible !important;
@@ -2781,4 +2723,200 @@ df-messenger {
 .language-toggle a:hover {
     color: #2563eb; /* Darker blue */
     text-decoration: underline;
+}
+/* Header Toggles for Authenticated Users (top-header) */
+.header-actions .notification-bell,
+.header-actions .language-toggle,
+.header-actions #darkModeToggle {
+    background: var(--button-primary-bg);
+    color: #ffffff; /* White text for contrast */
+    border-radius: 50%;
+    padding: 0.5rem;
+    font-size: 1.25rem;
+    transition: var(--transition-base);
+}
+
+.header-actions .notification-bell:hover,
+.header-actions .language-toggle:hover,
+.header-actions #darkModeToggle:hover {
+    background: var(--button-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow-hover);
+}
+
+/* Adjust language toggle text for consistency */
+.header-actions .language-toggle span {
+    font-size: 0.9rem;
+    color: #ffffff; /* Ensure text is white for contrast */
+}
+
+/* Ensure notification badge contrasts with primary background */
+.header-actions .notification-bell .notification-badge {
+    background: var(--button-danger-bg);
+    color: #ffffff;
+    font-size: 0.625rem;
+    width: 1rem;
+    height: 1rem;
+    top: 0.125rem;
+    right: 0.125rem;
+}
+
+/* Navbar Toggles for Unauthenticated Users (navbar) */
+.navbar .language-toggle,
+.navbar #darkModeToggle {
+    background: var(--button-primary-bg);
+    color: #ffffff; /* White text for contrast */
+    border-radius: 50%;
+    padding: 0.5rem;
+    font-size: 1rem;
+    transition: var(--transition-base);
+}
+
+.navbar .language-toggle:hover,
+.navbar #darkModeToggle:hover {
+    background: var(--button-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow-hover);
+}
+
+.navbar .language-toggle span {
+    font-size: 0.9rem;
+    color: #ffffff; /* Ensure text is white for contrast */
+}
+
+/* Dark Mode Overrides */
+.dark-mode .header-actions .notification-bell,
+.dark-mode .header-actions .language-toggle,
+.dark-mode .header-actions #darkModeToggle,
+.dark-mode .navbar .language-toggle,
+.dark-mode .navbar #darkModeToggle {
+    color: #ffffff; /* Maintain white text for contrast */
+}
+
+/* Responsive Adjustments */
+@media (max-width: 767.98px) {
+    .header-actions .notification-bell,
+    .header-actions .language-toggle,
+    .header-actions #darkModeToggle {
+        padding: 0.375rem;
+        font-size: 1.1rem;
+    }
+
+    .header-actions .language-toggle span {
+        font-size: 0.8rem;
+    }
+
+    .navbar .language-toggle,
+    .navbar #darkModeToggle {
+        padding: 0.375rem;
+        font-size: 0.9rem;
+    }
+
+    .navbar .language-toggle span {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .header-actions .notification-bell,
+    .header-actions .language-toggle,
+    .header-actions #darkModeToggle {
+        padding: 0.25rem;
+        font-size: 1rem;
+    }
+
+    .header-actions .language-toggle span {
+        font-size: 0.75rem;
+    }
+
+    .navbar .language-toggle,
+    .navbar #darkModeToggle {
+        padding: 0.25rem;
+        font-size: 0.8rem;
+    }
+
+    .navbar .language-toggle span {
+        font-size: 0.75rem;
+    }
+}
+/* Dropdown Menu Styling */
+.dropdown-menu {
+    position: absolute !important;
+    background: var(--navbar-bg); /* Fallback background when not active */
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    box-shadow: var(--dropdown-shadow);
+    min-width: 160px; /* Adjusted for better fit */
+    max-height: 200px;
+    z-index: 9999;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.5rem;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Active Dropdown Menu (when clicked/open) */
+.dropdown-menu.show {
+    background: #1e3a8a; /* Dark blue background when open */
+    color: #ffffff; /* White text for contrast */
+}
+
+/* Dropdown Items */
+.dropdown-item {
+    color: var(--text-color);
+    padding: 0.5rem 1rem;
+    font-size: clamp(0.875rem, 2vw, 0.9375rem);
+    transition: var(--transition-base);
+    border-radius: 6px;
+    cursor: pointer;
+    background: transparent; /* Ensure items don't override the dark blue */
+}
+
+/* Dropdown Items in Active Dropdown */
+.dropdown-menu.show .dropdown-item {
+    color: #ffffff; /* White text for contrast against dark blue */
+}
+
+/* Hover and Focus States for Dropdown Items */
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background: rgba(255, 255, 255, 0.1); /* Slight white overlay for hover in dark blue menu */
+    color: #ffffff; /* Maintain white text on hover */
+}
+
+/* Dark Mode Overrides */
+.dark-mode .dropdown-menu {
+    background: var(--navbar-bg); /* Fallback for dark mode when not active */
+}
+
+.dark-mode .dropdown-menu.show {
+    background: #1e3a8a; /* Consistent dark blue when open */
+}
+
+.dark-mode .dropdown-item {
+    background: transparent;
+    color: #ffffff;
+}
+
+.dark-mode .dropdown-item:hover,
+.dark-mode .dropdown-item:focus {
+    background: rgba(255, 255, 255, 0.1); /* Consistent hover effect */
+    color: #ffffff;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 576px) {
+    .dropdown-menu {
+        min-width: 140px;
+        padding: 0.75rem;
+    }
+
+    .dropdown-menu.show {
+        background: #1e3a8a; /* Ensure dark blue on mobile */
+    }
+
+    .dropdown-item {
+        padding: 0.4rem 0.75rem;
+        font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+    }
 }
