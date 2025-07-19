@@ -91,7 +91,7 @@ _PERSONAL_TOOLS = [
         "icon": "bi-calculator"
     },
     {
-        "endpoint": "credits.history",
+        "endpoint": "credits.request_credits",
         "label": "Ficore Credits",
         "label_key": "credits_dashboard",
         "description_key": "credits_dashboard_desc",
@@ -161,7 +161,7 @@ _PERSONAL_EXPLORE_FEATURES = [
         "icon": "bi-wallet"
     },
     {
-        "endpoint": "credits.history",
+        "endpoint": "credits.request_credits",
         "label": "Ficore Credits",
         "label_key": "credits_dashboard",
         "description_key": "credits_dashboard_desc",
@@ -212,7 +212,7 @@ _BUSINESS_TOOLS = [
         "icon": "bi-calculator"
     },
     {
-        "endpoint": "credits.history",
+        "endpoint": "credits.request_credits",
         "label": "Ficore Credits",
         "label_key": "credits_dashboard",
         "description_key": "credits_dashboard_desc",
@@ -258,7 +258,7 @@ _BUSINESS_NAV = [
 
 _BUSINESS_EXPLORE_FEATURES = [
     {
-        "endpoint": "credits.history",
+        "endpoint": "credits.request_credits",
         "label": "Ficore Credits",
         "label_key": "credits_dashboard",
         "description_key": "credits_dashboard_desc",
