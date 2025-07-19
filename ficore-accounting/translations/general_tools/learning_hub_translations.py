@@ -1,4 +1,5 @@
-LEARNING_HUB_TRANSLATIONS = {
+# Translations for 'learning_hub' module
+learning_hub_translations = {
     'en': {
         # Core UI Translations
         'learning_hub_title': 'Learning Hub',
@@ -6,9 +7,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'business_learning_title': 'Business Learning',
         'agent_learning_title': 'Agent Learning',
         'compliance_learning_title': 'Compliance Learning',
-        'learning_hub_title': 'Learning Hub',
-        'personal_finance_learning_title': 'Personal Finance Learning',
-        'business_learning_title': 'Business Learning',
         'learning_hub_role_filter': 'Role Filter',
         'learning_hub_content_title': 'Content Title',
         'learning_hub_content_description': 'Content Description',
@@ -20,8 +18,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'learning_hub_trader': 'Trader',
         'learning_hub_personal': 'Personal',
         'learning_hub_agent': 'Agent',
-        'agent_learning_title': 'Agent Learning',
-        'personal_finance_learning_title': 'Personal Finance Learning',
         'personal_welcome': 'Welcome to Your Learning Journey',
         'personal_courses': 'Your Courses',
         'course_budgeting_title': 'Budgeting Basics',
@@ -42,7 +38,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'learning_hub_agents_desc': 'Training materials for agents to enhance their services',
         'learning_hub_compliance_desc': 'Understand compliance and regulatory requirements',
         'learning_hub_tool_tutorials_desc': 'Tutorials for using our financial tools',
-        'tool_tutorials_title': 'Tool Tutorials',
         'learning_hub_welcome': 'Welcome to your journey of financial empowerment and digital literacy tailored for Northern Nigeria!',
         'learning_hub_error_loading': 'Error loading Learning Hub',
         'learning_hub_nav': 'Learning Hub Navigation',
@@ -61,7 +56,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'explore_courses': 'Explore our courses to improve your financial literacy!',
         'browse_courses': 'Browse Courses',
         'view_course': 'View Course',
-        'start_course': 'Start Course',
         'back_to_courses': 'Back to Courses',
         'mark_complete': 'Mark as Complete',
         'completed': 'Completed',
@@ -71,7 +65,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'courses': 'Courses',
         'quizzes': 'Quizzes',
         'resources': 'Resources',
-
         # Learning Hub Sections
         'learning_hub_personal_title': 'Personal Finance Learning',
         'personal_welcome': 'Master your personal finances with practical skills for saving, budgeting, and Halal wealth creation in Northern Nigeria.',
@@ -88,7 +81,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'learning_hub_tool_tutorials_title': 'Tool Tutorials',
         'tool_tutorials_welcome': 'Master digital tools for financial management, optimized for low-bandwidth access in Northern Nigeria.',
         'tool_tutorials_courses': 'Tool Tutorial Courses',
-
         # Course Titles and Descriptions (Personal Finance)
         'course_budgeting_title': 'Budgeting for Your Family',
         'course_budgeting_desc': 'Learn to create a family budget using Naira, plan for school fees, and save for emergencies in Kano or Kaduna.',
@@ -96,7 +88,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'course_islamic_finance_desc': 'Understand Halal investments, Zakat calculations, and ethical saving practices aligned with Sharia principles.',
         'course_saving_title': 'Saving for the Future',
         'course_saving_desc': 'Discover strategies to save for Hajj, marriage, or children’s education in a Northern Nigerian context.',
-
         # Course Titles and Descriptions (Business)
         'course_business_budgeting_title': 'Budgeting for Small Businesses',
         'course_business_budgeting_desc': 'Learn to manage finances for your shop in Kano’s Sabon Gari market or Kaduna’s Central Market.',
@@ -104,7 +95,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'course_marketing_desc': 'Discover how to promote your products using WhatsApp and local radio in Northern Nigeria.',
         'course_compliance_title': 'Business Compliance Basics',
         'course_compliance_desc': 'Understand CAC registration and tax obligations for small businesses in Nigeria.',
-
         # Course Titles and Descriptions (Agents)
         'course_mobile_banking_title': 'Mobile Banking Basics',
         'course_mobile_banking_desc': 'Learn to facilitate mobile transactions for customers in rural Northern Nigeria using platforms like M-Pesa.',
@@ -112,7 +102,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'course_customer_service_desc': 'Develop skills to assist customers in Hausa and English with trust and professionalism.',
         'course_fraud_prevention_title': 'Fraud Prevention',
         'course_fraud_prevention_desc': 'Identify and prevent financial scams targeting communities in Northern Nigeria.',
-
         # Course Titles and Descriptions (Compliance)
         'course_tax_reforms_title': 'Tax Reforms 2025',
         'course_tax_reforms_desc': 'Understand the 2025 Nigerian tax reforms and how they affect businesses in Kano and Kaduna.',
@@ -120,7 +109,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'course_regulatory_compliance_desc': 'Learn about CAC registration and other regulatory requirements for Northern Nigerian businesses.',
         'course_aml_title': 'Anti-Money Laundering Basics',
         'course_aml_desc': 'Understand AML regulations to protect your business and community from financial crimes.',
-
         # Course Titles and Descriptions (Tool Tutorials)
         'course_digital_foundations_title': 'Digital Foundations',
         'course_digital_foundations_desc': 'Learn to use mobile apps like WhatsApp for business communication in low-bandwidth areas.',
@@ -128,7 +116,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'course_spreadsheets_desc': 'Master Google Sheets to track expenses for your household or business in Northern Nigeria.',
         'course_online_banking_title': 'Online Banking Basics',
         'course_online_banking_desc': 'Learn to use Nigerian banking apps securely for transactions and savings.',
-
         # Modules and Lessons
         'learning_hub_module_income_title': 'Understanding Income',
         'learning_hub_lesson_income_sources_title': 'Sources of Income',
@@ -154,7 +141,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'learning_hub_module_quiz_title': 'Financial Assessment',
         'learning_hub_lesson_quiz_intro_title': 'Quiz Introduction',
         'learning_hub_lesson_quiz_intro_content': 'This comprehensive quiz will help assess your current financial knowledge and identify areas where you can improve your financial literacy.',
-
         # Quiz Content
         'learning_hub_quiz_income_q1': 'Which of the following is a source of income?',
         'learning_hub_quiz_income_opt_salary': 'Salary',
@@ -175,7 +161,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'learning_hub_quiz_results': 'Your Results',
         'learning_hub_quiz_recommendation': 'We recommend starting with the Digital Foundations course to build your ICT skills!',
         'learning_hub_quiz_perfect': 'Great job! You have strong ICT basics!',
-
         # Gamification
         'gamification_start': 'Earn coins and badges as you learn!',
         'gamification_personal': 'Earn coins by completing lessons and unlock the “Wise Saver” badge!',
@@ -183,7 +168,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'gamification_agents': 'Earn coins and unlock the “Trusted Agent” badge by completing agent courses!',
         'gamification_compliance': 'Earn coins and unlock the “Compliance Champion” badge by mastering compliance courses!',
         'gamification_tools': 'Earn coins and unlock the “Digital Pro” badge by mastering tool tutorials!',
-
         # Progress and Profile
         'progress_summary': 'Your Learning Progress',
         'total_courses': 'Total Courses: {0}',
@@ -204,7 +188,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'learning_hub_unsubscribed_success': 'Successfully unsubscribed from emails',
         'learning_hub_unsubscribe_failed': 'Failed to unsubscribe. Email not found or already unsubscribed.',
         'learning_hub_unsubscribe_error': 'Error processing unsubscribe request',
-
         # Admin and Upload
         'admin_manage_learning_hub': 'Manage Learning Hub Progress',
         'admin_no_learning_progress': 'No learning progress found',
@@ -226,7 +209,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'learning_hub_upload_success': 'Content uploaded successfully',
         'learning_hub_upload_failed': 'Failed to upload content',
         'learning_hub_invalid_file_type': 'Invalid file type. Allowed: mp4, pdf, txt, md',
-
         # Role Filter
         'role_filter': 'Filter by Role',
         'role_all': 'All',
@@ -236,14 +218,12 @@ LEARNING_HUB_TRANSLATIONS = {
         'learning_hub_role_updated': 'Role filter updated',
         'learning_hub_invalid_role': 'Invalid role selected',
         'learning_hub_role_error': 'Error updating role filter',
-
         # Webinar
         'webinar_registration': 'Register for Upcoming Webinar',
         'register': 'Register',
         'learning_hub_webinar_registered': 'Successfully registered for the webinar!',
         'learning_hub_webinar_error': 'Error registering for webinar',
         'general_email_required': 'Email is required',
-
         # Course and Lesson Actions
         'learning_hub_course_not_found': 'Course not found',
         'learning_hub_lesson_not_found': 'Lesson not found',
@@ -262,6 +242,15 @@ LEARNING_HUB_TRANSLATIONS = {
         'learning_hub_lesson_marked': 'Lesson marked as completed!',
         'learning_hub_lesson_done': 'You have finished all lessons in this course.',
         'next_lesson': 'Next Lesson',
+        # New keys added
+        'gamification_agents_credits': 'Earn Ficore Credits and unlock the “Trusted Agent” badge by completing agent courses!',
+        'gamification_business_credits': 'Earn Ficore Credits and unlock the “Market Master” badge by completing business courses!',
+        'gamification_personal_credits': 'Earn Ficore Credits by completing lessons and unlock the “Wise Saver” badge!',
+        'gamification_compliance_credits': 'Earn Ficore Credits and unlock the “Compliance Champion” badge by mastering compliance courses!',
+        'gamification_tools_credits': 'Earn Ficore Credits and unlock the “Digital Pro” badge by mastering tool tutorials!',
+        'gamification_main_credits': 'Earn Ficore Credits by completing lessons and unlock badges!',
+        'learning_hub_agents_title': 'Agent Learning',
+        'agents_welcome': 'Become a trusted financial agent in Northern Nigeria, serving communities with mobile banking and financial advice.',
     },
     'ha': {
         # Core UI Translations
@@ -292,7 +281,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'courses': 'Kwasuna',
         'quizzes': 'Tambayoyi',
         'resources': 'Albarkatu',
-
         # Learning Hub Sections
         'learning_hub_personal_title': 'Ilmantarwa na Kuɗin Kai',
         'personal_welcome': 'Ƙware a sarrafa kuɗin ka tare da ƙwarewar ajiya, tsarin kuɗi, da samar da dukiya ta Halal a Arewacin Najeriya.',
@@ -309,7 +297,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'learning_hub_tool_tutorials_title': 'Koyarwar Kayan Aiki',
         'tool_tutorials_welcome': 'Ƙware a kayan aikin dijital don sarrafa kuɗi, wanda aka inganta don samun damar ƙarancin bandwidth a Arewacin Najeriya.',
         'tool_tutorials_courses': 'Kwasunan Koyarwar Kayan Aiki',
-
         # Course Titles and Descriptions (Personal Finance)
         'course_budgeting_title': 'Tsarin Kuɗi don Iyalinka',
         'course_budgeting_desc': 'Koyi yadda ake ƙirƙirar kasafin kuɗin iyali ta amfani da Naira, shirya kuɗin makaranta, da ajiya don yanayin gaggawa a Kano ko Kaduna.',
@@ -317,7 +304,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'course_islamic_finance_desc': 'Fahimci zuba jari na Halal, lissafin Zakat, da ajiyar da ta dace da ƙa’idodin Sharia.',
         'course_saving_title': 'Ajiya don Gaba',
         'course_saving_desc': 'Gano dabarun ajiya don Hajji, aure, ko ilimin yara a yanayin Arewacin Najeriya.',
-
         # Course Titles and Descriptions (Business)
         'course_business_budgeting_title': 'Tsarin Kuɗi don Ƙananan Kasuwanci',
         'course_business_budgeting_desc': 'Koyi yadda ake sarrafa kuɗaɗen shago a kasuwar Sabon Gari ta Kano ko Kasuwar Tsakiya ta Kaduna.',
@@ -325,7 +311,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'course_marketing_desc': 'Gano yadda ake tallata kayayyakin ka ta amfani da WhatsApp da rediyon gida a Arewacin Najeriya.',
         'course_compliance_title': 'Asalin Yarda da Kasuwanci',
         'course_compliance_desc': 'Fahimci rajistar CAC da wajibcin haraji ga ƙananan kasuwanci a Najeriya.',
-
         # Course Titles and Descriptions (Agents)
         'course_mobile_banking_title': 'Asalin Bankin Wayar Hannu',
         'course_mobile_banking_desc': 'Koyi yadda ake sauƙaƙe mu’amalar wayar hannu ga abokan ciniki a yankunan karkara na Arewacin Najeriya ta amfani da dandamali kamar M-Pesa.',
@@ -333,7 +318,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'course_customer_service_desc': 'Haɓaka ƙwarewar taimakawa abokan ciniki cikin Hausa da Turanci tare da amana da ƙwarewa.',
         'course_fraud_prevention_title': 'Rigakafin Zamba',
         'course_fraud_prevention_desc': 'Gano da hana zambacewar kuɗi da ke cin gajiyar al’ummomi a Arewacin Najeriya.',
-
         # Course Titles and Descriptions (Compliance)
         'course_tax_reforms_title': 'Gyaran Haraji na 2025',
         'course_tax_reforms_desc': 'Fahimci gyaran harajin Najeriya na 2025 da yadda suke shafar kasuwanci a Kano da Kaduna.',
@@ -341,7 +325,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'course_regulatory_compliance_desc': 'Koyi game da rajistar CAC da sauran buƙatun ƙa’ida ga kasuwancin Arewacin Najeriya.',
         'course_aml_title': 'Asalin Hana Haramtacciyar Kuɗi',
         'course_aml_desc': 'Fahimci ƙa’idodin AML don kare kasuwancinka da al’umma daga laifukan kuɗi.',
-
         # Course Titles and Descriptions (Tool Tutorials)
         'course_digital_foundations_title': 'Tushen Dijital',
         'course_digital_foundations_desc': 'Koyi yadda ake amfani da manhajar wayar hannu kamar WhatsApp don sadarwar kasuwanci a yankunan ƙarancin bandwidth.',
@@ -349,7 +332,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'course_spreadsheets_desc': 'Ƙware a Google Sheets don bin diddigin kuɗaɗen gida ko kasuwanci a Arewacin Najeriya.',
         'course_online_banking_title': 'Asalin Bankin Kan Layi',
         'course_online_banking_desc': 'Koyi yadda ake amfani da manhajar bankin Najeriya cikin aminci don mu’amala da ajiya.',
-
         # Modules and Lessons
         'learning_hub_module_income_title': 'Fahimtar Kuɗin Shiga',
         'learning_hub_lesson_income_sources_title': 'Tushen Kuɗin Shiga',
@@ -375,7 +357,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'learning_hub_module_quiz_title': 'Ƙimar Kuɗi',
         'learning_hub_lesson_quiz_intro_title': 'Gabatarwar Jarabawa',
         'learning_hub_lesson_quiz_intro_content': 'Wannan jarabawa mai cikakke zai taimaka wajen tantance ilimin ku na kuɗi na yanzu kuma ya gano wuraren da za ku iya inganta ilimin ku na kuɗi.',
-
         # Quiz Content
         'learning_hub_quiz_income_q1': 'Wanne daga cikin waɗannan ne tushen kuɗin shiga?',
         'learning_hub_quiz_income_opt_salary': 'Albashi',
@@ -396,7 +377,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'learning_hub_quiz_results': 'Sakamakonku',
         'learning_hub_quiz_recommendation': 'Muna ba da shawarar farawa da Kwas ɗin Tushen Dijital don gina ƙwarewar ICT!',
         'learning_hub_quiz_perfect': 'Aiki mai kyau! Kuna da ƙwarewar ICT mai ƙarfi!',
-
         # Gamification
         'gamification_start': 'Sami tsabar kudi da alamu yayin da kuke koyo!',
         'gamification_personal': 'Sami tsabar kudi ta hanyar kammala darasi kuma buɗe alamar “Mai Ajiya Mai Hikima”!',
@@ -404,7 +384,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'gamification_agents': 'Sami tsabar kudi kuma buɗe alamar “Wakili Mai Aminci” ta kammala kwasa-kwasan wakili!',
         'gamification_compliance': 'Sami tsabar kudi kuma buɗe alamar “Zakaran Yarda” ta ƙware a kwasa-kwasan yarda!',
         'gamification_tools': 'Sami tsabar kudi kuma buɗe alamar “Ƙwararren Dijital” ta ƙware a koyarwar kayan aiki!',
-
         # Progress and Profile
         'progress_summary': 'Ci gaban Koyonku',
         'total_courses': 'Jimillar Kwasuna: {0}',
@@ -425,7 +404,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'learning_hub_unsubscribed_success': 'An cire rajista daga imel cikin nasara',
         'learning_hub_unsubscribe_failed': 'An kasa cire rajista. Ba a sami imel ba ko an cire rajista tuni.',
         'learning_hub_unsubscribe_error': 'Kuskure wajen sarrafa buƙatar cire rajista',
-
         # Admin and Upload
         'admin_manage_learning_hub': 'Sarrafa Ci gaban Gidan Ilmantarwa',
         'admin_no_learning_progress': 'Ba a sami ci gaban koyo ba',
@@ -447,7 +425,6 @@ LEARNING_HUB_TRANSLATIONS = {
         'learning_hub_upload_success': 'An loda abun ciki cikin nasara',
         'learning_hub_upload_failed': 'An kasa loda abun ciki',
         'learning_hub_invalid_file_type': 'Nau’in fayil mara inganci. An yarda: mp4, pdf, txt, md',
-
         # Role Filter
         'role_filter': 'Tace ta Matsayi',
         'role_all': 'Duk',
@@ -457,41 +434,23 @@ LEARNING_HUB_TRANSLATIONS = {
         'learning_hub_role_updated': 'An sabunta tacewar matsayi',
         'learning_hub_invalid_role': 'An zaɓi matsayi mara inganci',
         'learning_hub_role_error': 'Kuskure wajen sabunta tacewar matsayi',
-
         # Webinar
         'webinar_registration': 'Yi Rajista don Taron Yanar Gizo Mai Zuwa',
         'register': 'Yi Rajista',
         'learning_hub_webinar_registered': 'An yi rajista cikin nasara don taron yanar gizo!',
         'learning_hub_webinar_error': 'Kuskure wajen rajista don taron yanar gizo',
         'general_email_required': 'Ana buƙatar imel',
-
         # Course and Lesson Actions
         'learning_hub_course_not_found': 'Ba a samu kwas ba',
         'learning_hub_lesson_not_found': 'Ba a samu darasi ba',
         'learning_hub_quiz_not_found': 'Ba a samu gwaji ba',
         'learning_hub_lesson_completed': 'An alama darasin a matsayin an kammala',
-        'learning_hub_roles': 'Matsayin Mai Amfani',
-        'learning_hub_theme': 'Jigon Manhaja',
         'learning_hub_lesson_already_completed': 'An riga an kammala darasin',
         'learning_hub_invalid_action': 'Aiki mara inganci',
         'learning_hub_action_error': 'Kuskure wajen sarrafa aiki',
         'learning_hub_quiz_submitted': 'An gabatar da gwaji cikin nasara',
         'learning_hub_quiz_error': 'Kuskure wajen sarrafa gwaji',
         'learning_hub_course_load_error': 'Kuskure wajen loda kwas',
-        'learning_hub_title': 'Cibiyar Koyo',
-        'personal_finance_learning_title': 'Koyon Kuɗin Kai',
-        'business_learning_title': 'Koyon Kasuwanci',
-        'agent_learning_title': 'Koyon Wakili',
-        'compliance_learning_title': 'Koyon Yarda da Dokoki',
-        'tool_tutorials_title': 'Koyarwar Kayan Aiki',
-        'learning_hub_main': 'Cibiyar Koyo',
-        'learning_hub_desc': 'Bincika albarkatun ilimi don inganta ilimin kuɗinku',
-        'learning_hub_explore': 'Bincika Cibiyar Koyo',
-        'learning_hub_personal_desc': 'Koyi yadda ake sarrafa kuɗin kanku yadda ya kamata',
-        'learning_hub_business_desc': 'Albarkatu don haɓaka ƙwarewar kuɗin kasuwanci',
-        'learning_hub_agents_desc': 'Kayan horo ga wakilai don haɓaka ayyukansu',
-        'learning_hub_compliance_desc': 'Fahimci buƙatun yarda da ƙa’idodi',
-        'learning_hub_tool_tutorials_desc': 'Koyarwa don amfani da kayan aikin kuɗi',
         'learning_hub_lesson_load_error': 'Kuskure wajen loda darasi',
         'learning_hub_quiz_load_error': 'Kuskure wajen loda gwaji',
         'learning_hub_what_you_learn': 'Abin da Zaka Koya',
@@ -499,32 +458,14 @@ LEARNING_HUB_TRANSLATIONS = {
         'learning_hub_lesson_marked': 'An alama darasin a matsayin an kammala!',
         'learning_hub_lesson_done': 'Ka gama dukkan darussa a wannan kwas.',
         'next_lesson': 'Darasi na Gaba',
-        'personal_finance_learning_title': 'Koyon Kuɗin Keɓaɓɓe',
-        'personal_welcome': 'Barka da Zuwa Tafiyar Koyon Ka',
-        'personal_courses': 'Kwasussuwanka',
-        'course_budgeting_title': 'Tushe na Kasafi',
-        'learning_hub_role_filter': 'Tace Matsayi',
-        'learning_hub_all_roles': 'Duk Matsayin',
-        'learning_hub_trader': 'Ma\'aikacin Gwamnati',
-        'learning_hub_content_title': 'Taken Abun Ciki',
-        'learning_hub_content_description': 'Bayanin Abun Ciki',
-        'learning_hub_content_video': 'Abun Ciki na Bidiyo',
-        'learning_hub_content_pdf': 'Abun Ciki na PDF',
-        'learning_hub_content_text': 'Abun Ciki na Rubutu',
-        'learning_hub_add_content': 'Ƙara Abun Ciki',
-        'learning_hub_personal': 'personal',
-        'learning_hub_agent': 'Wakili',
-        'course_budgeting_desc': 'Koyi yadda ake ƙirƙira da sarrafa kasafin kuɗi na keɓaɓɓe cikin inganci.',
-        'start_course': 'Fara Kwasa',
-        'course_islamic_finance_title': 'Gabatarwa ga Kuɗin Musulunci',
-        'course_islamic_finance_desc': 'Fahimci ƙa\'idodin kuɗin Musulunci da yadda suke amfani da dukiyar mutum.',
-        'course_saving_title': 'Ajiye don Makomarka',
-        'course_saving_desc': 'Ƙware a fasahar ajiye kuɗi tare da shawarwari masu amfani da dabaru.',
-        'gamification_personal': 'Samu Lada don Koyo',
-        'personal_finance_learning_title': 'Koyon Kuɗin Kai',
-        'business_learning_title': 'Koyon Kasuwanci',
-        'agent_learning_title': 'Koyon Wakili',
-        'compliance_learning_title': 'Koyon Yarda da Dokoki',
-        'tool_tutorials_title': 'Koyarwar Kayan Aiki',
+        # New keys added
+        'gamification_agents_credits': 'Sami Kiredit na Ficore kuma ka buɗe alamar “Amincin Wakili” ta hanyar kammala darussan wakili!',
+        'gamification_business_credits': 'Sami Kiredit na Ficore kuma ka buɗe alamar “Jagoran Kasuwa” ta hanyar kammala darussan kasuwanci!',
+        'gamification_personal_credits': 'Sami Kiredit na Ficore ta hanyar kammala darussa kuma ka buɗe alamar “Mai Cetar Hikima”!',
+        'gamification_compliance_credits': 'Sami Kiredit na Ficore kuma ka buɗe alamar “Gwarzon Yarda” ta hanyar ƙware a darussan yarda!',
+        'gamification_tools_credits': 'Sami Kiredit na Ficore kuma ka buɗe alamar “ƙwararren Dijital” ta hanyar ƙware a darussan kayan aiki!',
+        'gamification_main_credits': 'Sami Kiredit na Ficore ta hanyar kammala darussa kuma ka buɗe alamomi!',
+        'learning_hub_agents_title': 'Koyon Wakili',
+        'agents_welcome': 'Zama wakilin kuɗi mai aminci a Arewacin Najeriya, yana bauta wa al’ummomi tare da bankin hannu da shawarwarin kuɗi.',
     }
 }
