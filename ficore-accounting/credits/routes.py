@@ -14,6 +14,72 @@ from bson import ObjectId
 from datetime import datetime
 from logging import getLogger
 from pymongo import errors
+from pymongo import MongoClient
+
+# Try importing from models.py, with fallback to avoid NameError
+try:
+    from models import get_user, get_ficore_credit_transactions, get_credit_requests, to_dict_ficore_credit_transaction, to_dict_credit_request
+except ImportError as e:
+    logger.error(f"Failed to import models: {str(e)}")
+    # Define fallback functions to avoid breaking the endpoint
+    def get_user(db, user_id):
+        try:
+            user_doc = db.users.find_one({'_id': user_id})
+            if user_doc:
+                return {
+                    'id': user_doc['_id'],
+                    'is_admin': user_doc.get('is_admin', False),
+                    'ficore_credit_balance': user_doc.get('ficore_credit_balance', 0)
+                }
+            return None
+        except Exception as e:
+            logger.error(f"Fallback get_user failed for {user_id}: {str(e)}")
+            return None
+
+    def get_ficore_credit_transactions(db, filter_kwargs):
+        try:
+            return list(db.ficore_credit_transactions.find(filter_kwargs).sort('date', -1).limit(50))
+        except Exception as e:
+            logger.error(f"Fallback get_ficore_credit_transactions failed: {str(e)}")
+            return []
+
+    def get_credit_requests(db, filter_kwargs):
+        try:
+            return list(db.credit_requests.find(filter_kwargs).sort('created_at', -1).limit(50))
+        except Exception as e:
+            logger.error(f"Fallback get_credit_requests failed: {str(e)}")
+            return []
+
+    def to_dict_ficore_credit_transaction(record):
+        if not record:
+            return {'amount': None, 'type': None}
+        return {
+            'id': str(record.get('_id', '')),
+            'user_id': record.get('user_id', ''),
+            'amount': record.get('amount', 0),
+            'type': record.get('type', ''),
+            'ref': record.get('ref', ''),
+            'date': record.get('date'),
+            'facilitated_by_agent': record.get('facilitated_by_agent', ''),
+            'payment_method': record.get('payment_method', ''),
+            'cash_amount': record.get('cash_amount', 0),
+            'notes': record.get('notes', '')
+        }
+
+    def to_dict_credit_request(record):
+        if not record:
+            return {'user_id': None, 'amount': None, 'status': None}
+        return {
+            'id': str(record.get('_id', '')),
+            'user_id': record.get('user_id', ''),
+            'amount': record.get('amount', 0),
+            'payment_method': record.get('payment_method', ''),
+            'receipt_file_id': str(record.get('receipt_file_id', '')) if record.get('receipt_file_id') else None,
+            'status': record.get('status', ''),
+            'created_at': record.get('created_at'),
+            'updated_at': record.get('updated_at'),
+            'admin_id': record.get('admin_id')
+        }
 
 logger = getLogger(__name__)
 
@@ -202,20 +268,34 @@ def request_credits():
 def history():
     """View Ficore Credit transaction and request history."""
     try:
-        db = get_db()
+        # Connect to MongoDB directly
+        client = MongoClient('mongodb://localhost:27017/')  # Replace with your MongoDB URI
+        db = client['ficore_db']  # Replace with your database name
+        logger.debug(f"Connected to database: {db.name}")
+
+        # Fetch user
         user = get_user(db, str(current_user.id))
-        query = {} if (user and user.is_admin) else {'user_id': str(current_user.id)}
+        query = {} if (user and user.get('is_admin', False)) else {'user_id': str(current_user.id)}
+        logger.debug(f"Query for user {current_user.id}: {query}")
+
+        # Fetch transactions and requests
         transactions = get_ficore_credit_transactions(db, query)
         requests = get_credit_requests(db, query)
+        logger.debug(f"Fetched {len(transactions)} transactions and {len(requests)} requests")
+
+        # Format data
         formatted_transactions = [to_dict_ficore_credit_transaction(tx) for tx in transactions]
         formatted_requests = [to_dict_credit_request(req) for req in requests]
+
+        # Check for empty results
         if not transactions and not requests:
             flash(trans('credits_no_history', default='No transaction or request history found'), 'info')
+
         return render_template(
             'credits/history.html',
             transactions=formatted_transactions,
             requests=formatted_requests,
-            ficore_credit_balance=user.ficore_credit_balance if user else 0,
+            ficore_credit_balance=user.get('ficore_credit_balance', 0) if user else 0,
             title=trans('credits_history_title', default='Ficore Credit Transaction History', lang=session.get('lang', 'en'))
         )
     except Exception as e:
@@ -228,6 +308,10 @@ def history():
             ficore_credit_balance=0,
             title=trans('general_error', default='Error', lang=session.get('lang', 'en'))
         )
+    finally:
+        if 'client' in locals():
+            client.close()
+            logger.debug("Closed MongoDB connection")
 
 @credits_bp.route('/requests', methods=['GET'])
 @login_required
@@ -266,9 +350,9 @@ def manage_credit_request(request_id):
             flash(trans('credits_request_not_found', default='Credit request not found'), 'danger')
             return redirect(url_for('credits.view_credit_requests'))
 
-        db = utils.get_mongo_db()
-        client = db.client
-        request_data = db.credit_requests.find_one({'_id': ObjectId(request_id)})
+        conn = utils.get_mongo_db()
+        client = conn.client
+        request_data = conn.credit_requests.find_one({'_id': ObjectId(request_id)})
         if not request_data:
             logger.error(f"Credit request {request_id} not found for admin {current_user.id}")
             flash(trans('credits_request_not_found', default='Credit request not found'), 'danger')
@@ -279,7 +363,7 @@ def manage_credit_request(request_id):
             ref = f"REQ_PROCESS_{datetime.utcnow().isoformat()}"
             with client.start_session() as mongo_session:
                 with mongo_session.start_transaction():
-                    update_credit_request(db, request_id, {
+                    update_credit_request(conn, request_id, {
                         'status': status,
                         'admin_id': str(current_user.id)
                     })
@@ -291,7 +375,7 @@ def manage_credit_request(request_id):
                             type='add',
                             admin_id=str(current_user.id)
                         )
-                    db.audit_logs.insert_one({
+                    conn.audit_logs.insert_one({
                         'admin_id': str(current_user.id),
                         'action': f'credit_request_{status}',
                         'details': {'request_id': request_id, 'user_id': request_data['user_id'], 'amount': request_data['amount'], 'ref': ref},
