@@ -164,7 +164,7 @@ def to_dict_ficore_credit_transaction(record):
 
 @reports_bp.route('/')
 @login_required
-@utils.requires_role('trader')
+@utils.requires_role('personal', 'trader', 'agent', 'admin')
 def index():
     """Display report selection page."""
     try:
@@ -179,7 +179,7 @@ def index():
 
 @reports_bp.route('/profit_loss', methods=['GET', 'POST'])
 @login_required
-@utils.requires_role('trader')
+@utils.requires_role('trader', 'admin')
 def profit_loss():
     """Generate profit/loss report with filters."""
     form = ReportForm()
@@ -231,7 +231,7 @@ def profit_loss():
 
 @reports_bp.route('/debtors_creditors', methods=['GET', 'POST'])
 @login_required
-@utils.requires_role('trader')
+@utils.requires_role('trader', 'admin')
 def debtors_creditors():
     """Generate debtors/creditors report with filters."""
     form = DebtorsCreditorsReportForm()
@@ -335,7 +335,7 @@ def tax_obligations():
 
 @reports_bp.route('/budget_performance', methods=['GET', 'POST'])
 @login_required
-@utils.requires_role('trader')
+@utils.requires_role('personal')
 def budget_performance():
     """Generate budget performance report with filters."""
     form = BudgetPerformanceReportForm()
@@ -409,7 +409,7 @@ def budget_performance():
 
 @reports_bp.route('/credit_usage', methods=['GET', 'POST'])
 @login_required
-@utils.requires_role('trader')
+@utils.requires_role('trader', 'personal')
 def credit_usage():
     """Generate credit usage report with filters."""
     form = CreditUsageReportForm()
