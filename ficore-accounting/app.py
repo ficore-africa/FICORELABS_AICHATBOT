@@ -25,7 +25,7 @@ from models import (
 from learning_hub.models import get_progress, to_dict_learning_progress
 import utils
 from session_utils import create_anonymous_session
-from translations import trans, get_translations, get_all_translations, get_module_translations
+from translations import register_translation, trans, get_translations, get_all_translations, get_module_translations
 from flask_login import LoginManager, login_required, current_user, UserMixin, logout_user
 from flask_wtf.csrf import CSRFError
 from jinja2.exceptions import TemplateNotFound
