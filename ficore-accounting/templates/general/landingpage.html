@@ -14,7 +14,6 @@
             <a href="{{ url_for('users.signup') }}" class="btn btn-outline-primary" data-bs-toggle="tooltip" data-bs-title="{{ t('general_signup_agent_tooltip', default='Sign up for agent services') | e }}">{{ t('general_signup_agent', default='Agent Sign Up') | e }}</a>
             <a href="{{ url_for('users.login') }}" class="btn btn-outline-primary" data-bs-toggle="tooltip" data-bs-title="{{ t('general_login_tooltip', default='Log in to your account') | e }}">{{ t('general_login', default='Log In') | e }}</a>
         </div>
-        <a href="{{ url_for('personal.quiz.main') }}" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-title="{{ t('quiz_take_quiz_tooltip', default='Take a quiz to assess your financial health') | e }}">{{ t('quiz_take_quiz', default='Take Our Quiz') | e }}</a>
     </div>
 
     <!-- Notifications Placeholder (Unauthenticated) -->
@@ -47,7 +46,7 @@
                 <div class="card mb-3">
                     <div class="card-body">
                         <h5>{{ t('general_personal', default='Personal Users') | e }}</h5>
-                        <p>{{ t('general_personal_desc', default='Plan budgets, track bills, and boost your financial health.') | e }}</p>
+                        <p>{{ t('general_personal_desc', default='Plan budgets and track bills with ease.') | e }}</p>
                         <a href="{{ url_for('users.signup') }}" class="btn btn-primary btn-sm" data-bs-toggle="tooltip" data-bs-title="{{ t('general_get_started_tooltip', default='Start your financial journey') | e }}">{{ t('general_get_started', default='Get Started') | e }}</a>
                     </div>
                 </div>
@@ -56,7 +55,7 @@
                 <div class="card mb-3">
                     <div class="card-body">
                         <h5>{{ t('general_trader', default='Business Owners') | e }}</h5>
-                        <p>{{ t('general_trader_desc', default='Streamline debtors, creditors, and inventory management.') | e }}</p>
+                        <p>{{ t('general_trader_desc', default='Streamline debtors, creditors, and financial reports.') | e }}</p>
                         <a href="{{ url_for('users.signup') }}" class="btn btn-primary btn-sm" data-bs-toggle="tooltip" data-bs-title="{{ t('general_get_started_tooltip', default='Start your financial journey') | e }}">{{ t('general_get_started', default='Get Started') | e }}</a>
                     </div>
                 </div>
@@ -132,7 +131,7 @@
             <div class="col">
                 <div class="why-item text-center">
                     <i class="bi bi-check-circle-fill text-success fs-3 mb-2"></i>
-                    <p class="text-muted">{{ t('general_secure', default='Advisary-only – we don’t access your funds') | e }}</p>
+                    <p class="text-muted">{{ t('general_secure', default='Advisory-only – we don’t access your funds') | e }}</p>
                 </div>
             </div>
             <div class="text-center mt-4">
@@ -150,21 +149,21 @@
                 <div class="carousel-item active">
                     <div class="testimonial text-center">
                         <img src="{{ url_for('static', filename='img/default_avatar.png') | e }}" alt="{{ t('general_testimonial_avatar', default='User Avatar') | e }}" class="avatar-circle gradient-bg mx-auto mb-3" data-initials="MU">
-                        <p class="text-muted">{{ t('general_impressed_features', default='FiCore’s tools are intuitive and perfect for managing my personal finances!') | e }}</p>
+                        <p class="text-muted">{{ t('general_impressed_features', default='FiCore’s budgeting and bill tracking tools are intuitive and perfect for managing my personal finances!') | e }}</p>
                         <p class="name fw-bold">Maisarata Uqubatu, {{ t('general_personal_user', default='Personal User') | e }}</p>
                     </div>
                 </div>
                 <div class="carousel-item">
                     <div class="testimonial text-center">
                         <img src="{{ url_for('static', filename='img/default_avatar.png') | e }}" alt="{{ t('general_testimonial_avatar', default='User Avatar') | e }}" class="avatar-circle gradient-bg mx-auto mb-3" data-initials="AA">
-                        <p class="text-muted">{{ t('general_ficore_praise', default='Managing my business’s debtors and inventory has never been easier!') | e }}</p>
+                        <p class="text-muted">{{ t('general_ficore_praise', default='Managing my business’s debtors, creditors, and reports has never been easier!') | e }}</p>
                         <p class="name fw-bold">Abubakar Abdulkadir, {{ t('general_business_owner', default='Business Owner') | e }}</p>
                     </div>
                 </div>
                 <div class="carousel-item">
                     <div class="testimonial text-center">
                         <img src="{{ url_for('static', filename='img/default_avatar.png') | e }}" alt="{{ t('general_testimonial_avatar', default='User Avatar') | e }}" class="avatar-circle gradient-bg mx-auto mb-3" data-initials="ASU">
-                        <p class="text-muted">{{ t('general_potential_support', default='As an agent, FiCore makes onboarding traders seamless and efficient.') | e }}</p>
+                        <p class="text-muted">{{ t('general_potential_support', default='As an agent, FiCore makes onboarding traders and managing tokens seamless and efficient.') | e }}</p>
                         <p class="name fw-bold">Aminu Sani Usman, {{ t('general_agent', default='Agent') | e }}</p>
                     </div>
                 </div>
@@ -186,9 +185,7 @@
     <!-- FAQ Section -->
     <div class="section-card faq-section mt-5">
         <h2 class="section-title text-center"><i class="bi bi-question-circle-fill me-2 text-primary"></i>{{ t('general_faq', default='Frequently Asked Questions') | e }}</h2>
-        <div class="
-
-accordion" id="faqAccordion">
+        <div class="accordion" id="faqAccordion">
             <div class="accordion-item">
                 <h3 class="accordion-header" id="faqFundHandling">
                     <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFundHandling" aria-expanded="true" aria-controls="collapseFundHandling">
@@ -209,7 +206,7 @@ accordion" id="faqAccordion">
                 </h3>
                 <div id="collapseRoles" class="accordion-collapse collapse" aria-labelledby="faqRoles" data-bs-parent="#faqAccordion">
                     <div class="accordion-body">
-                        {{ t('general_faq_roles_answer', default='FiCore supports personal users with budgeting and financial health tools, business owners with debtor and inventory management, and agents with trader onboarding and token management.') | e }}
+                        {{ t('general_faq_roles_answer', default='FiCore supports personal users with budgeting and bill tracking tools, business owners with debtor, creditor, and report management, and agents with trader onboarding and token management.') | e }}
                     </div>
                 </div>
             </div>
@@ -221,7 +218,7 @@ accordion" id="faqAccordion">
                 </h3>
                 <div id="collapseBusinessAgent" class="accordion-collapse collapse" aria-labelledby="faqBusinessAgent" data-bs-parent="#faqAccordion">
                     <div class="accordion-body">
-                        {{ t('general_faq_business_agent_answer', default='Business owners can track debtors, creditors, and inventory, while agents can register traders and manage tokens. Sign up to explore these tools.') | e }}
+                        {{ t('general_faq_business_agent_answer', default='Business owners can track debtors, creditors, and generate reports, while agents can register traders and manage tokens. Sign up to explore these tools.') | e }}
                     </div>
                 </div>
             </div>
@@ -269,7 +266,7 @@ accordion" id="faqAccordion">
                 </h3>
                 <div id="collapseUseFCs" class="accordion-collapse collapse" aria-labelledby="faqUseFCs" data-bs-parent="#faqAccordion">
                     <div class="accordion-body">
-                        {{ t('general_faq_use_fcs_answer', default='FCs are used for actions like adding debtors, creating budgets, sending reminders, tracking payments, and accessing premium features.') | e }}
+                        {{ t('general_faq_use_fcs_answer', default='FCs are used for actions like adding debtors, creating budgets, sending reminders, tracking payments, and generating reports.') | e }}
                     </div>
                 </div>
             </div>
@@ -323,7 +320,6 @@ accordion" id="faqAccordion">
             <a href="{{ url_for('users.signup') }}" class="btn btn-outline-primary" data-bs-toggle="tooltip" data-bs-title="{{ t('general_signup_agent_tooltip', default='Sign up for agent services') | e }}">{{ t('general_signup_agent', default='Agent Sign Up') | e }}</a>
             <a href="{{ url_for('users.login') }}" class="btn btn-outline-primary" data-bs-toggle="tooltip" data-bs-title="{{ t('general_login_tooltip', default='Log in to your account') | e }}">{{ t('general_login', default='Log In') | e }}</a>
         </div>
-        <a href="{{ url_for('personal.quiz.main') }}" class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-title="{{ t('quiz_take_quiz_tooltip', default='Take a quiz to assess your financial health') | e }}">{{ t('quiz_take_quiz', default='Take Our Quiz') | e }}</a>
     </div>
 </div>
 
