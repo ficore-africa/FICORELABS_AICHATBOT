@@ -120,8 +120,15 @@ def request_credits():
             payment_method = form.payment_method.data
             receipt_file = form.receipt.data
             ref = f"REQ_{datetime.utcnow().isoformat()}"
-            receipt_file_id = None
 
+            # Validate payment_method against allowed values
+            valid_payment_methods = ['card', 'cash', 'bank']
+            if payment_method not in valid_payment_methods:
+                logger.error(f"Invalid payment method {payment_method} for user {current_user.id}, ref {ref}")
+                flash(trans('general_invalid_payment_method', default='Invalid payment method selected'), 'danger')
+                return redirect(url_for('credits.request_credits'))
+
+            receipt_file_id = None
             # Step 1: Handle file upload outside the transaction
             if receipt_file:
                 try:
