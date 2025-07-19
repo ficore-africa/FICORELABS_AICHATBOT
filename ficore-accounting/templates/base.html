@@ -47,7 +47,7 @@
             </div>
         </header>
     {% else %}
-        <nav class="navbar navbar-expand-lg">
+        <nav class="navbar navbar-expand-lg bg-light fixed-top">
             <div class="container-fluid">
                 <a class="navbar-brand" href="{{ url_for('personal.index') if request.blueprint == 'personal' else url_for('general_bp.home') | e }}" aria-label="{{ t('general_ficore_africa', default='FiCore Africa') | e }}">
                     <img src="{{ url_for('static', filename='img/ficore_logo.png') | e }}" alt="{{ t('general_ficore_africa_logo', default='FiCore Africa Logo') | e }}" class="logo">
@@ -59,7 +59,7 @@
                 <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                     <ul class="navbar-nav">
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == ('personal.index' if request.blueprint == 'personal' else 'general_bp.home') %}active{% endif %}" href="{{ url_for('personal.index') if request.blueprint == 'personal' else url_for('general_bp.home') | e }}" data-bs-toggle="tooltip" data-bs-title="{{ t('general_home_tooltip', default='Go to homepage') | e }}" aria-current="{% if request.endpoint == ('personal.index' if request.blueprint == 'personal' else 'general_bp.home') %}page{% endif %}">{{ t('general_home', default='Home') | e }}</a>
+                            <a class="nav-link {% if request.endpoint == ('personal.index' if request.blueprint == 'personal' else 'general_bp.home') %}active{% endif %}" href="{{ url_for('personal.index') if request.blueprint == 'personal' else url_for('general_bp.home') | e }}" data-bs-toggle="tooltip" odal" data-bs-title="{{ t('general_home_tooltip', default='Go to homepage') | e }}" aria-current="{% if request.endpoint == ('personal.index' if request.blueprint == 'personal' else 'general_bp.home') %}page{% endif %}">{{ t('general_home', default='Home') | e }}</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint == 'general_bp.about' %}active{% endif %}" href="{{ url_for('general_bp.about') | e }}" data-bs-toggle="tooltip" data-bs-title="{{ t('general_about_tooltip', default='Learn more about FiCore') | e }}" aria-current="{% if request.endpoint == 'general_bp.about' %}page{% endif %}">{{ t('general_about', default='About') | e }}</a>
@@ -280,6 +280,19 @@
                         bottom: computedStyle.bottom
                     });
                 }
+            }
+
+            // Navbar collapse fix: Close menu on link click for mobile
+            const navbarToggler = document.querySelector('.navbar-toggler');
+            const navbarCollapse = document.querySelector('#navbarNav');
+            if (navbarToggler && navbarCollapse) {
+                document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+                    link.addEventListener('click', () => {
+                        if (navbarCollapse.classList.contains('show')) {
+                            navbarToggler.click(); // Programmatically trigger toggler click to close menu
+                        }
+                    });
+                });
             }
 
             // Dark mode initialization
