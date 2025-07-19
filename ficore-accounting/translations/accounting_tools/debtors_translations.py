@@ -168,12 +168,12 @@ DEBTORS_TRANSLATIONS = {
         'debtors_no_recent_debtors': 'Babu Masu Bashi na Kwanan Nan',
         'debtors_no_debtors': 'Ba a sami masu bin bashi ba',
         'debtors_search_debtors': 'Nemo masu bin bashi...',
-        'debtors_create_what_they_owe_you': 'Ƙirƙiri Abin da Suke Binka',
+        'debtors_create_what_they_owe_you': 'Ƙirƙiri Abinda Kake Bi',
         'debtors_tooltip': 'Bincika da sarrafa masu bashi',
-        'debtors_what_they_owe_you': 'Abin da Suke Binka',
-        'debtors_what_they_owe_you_subtext': 'Bi diddigin basusukan da ake bin ka',
-        'debtors_no_what_they_owe_you': 'Babu basusuka da ake bin ka',
-        'debtors_dashboard_desc': 'Duba bayanan wadanda kuke bi bashi.',
+        'debtors_what_they_owe_you': 'Abin da Kake Bi',
+        'debtors_what_they_owe_you_subtext': 'Bi diddigin basusukan da aake bi',
+        'debtors_no_what_they_owe_you': 'Babu basusuka da kake bi',
+        'debtors_dashboard_desc': 'Duba bayanan wadanda kake bi bashi.',
         # Debtors
         'debtors_amount_owed': 'Adadin Bashi',
     }
