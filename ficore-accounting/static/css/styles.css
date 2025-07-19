@@ -2770,3 +2770,22 @@ df-messenger {
     z-index: 99999 !important; /* Ensure it's on top of everything */
     display: block !important; /* Just in case */
 }
+
+/* Language Toggle */
+.language-toggle {
+    margin: 1rem 0;
+    text-align: center;
+}
+
+.language-toggle a {
+    color: var(--accent-blue);
+    text-decoration: none;
+    margin: 0 0.5rem;
+    font-size: clamp(0.875rem, 2vw, 0.9375rem);
+    transition: var(--transition-base);
+}
+
+.language-toggle a:hover {
+    color: #2563eb; /* Darker blue */
+    text-decoration: underline;
+}
