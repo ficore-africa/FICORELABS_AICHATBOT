@@ -1,4 +1,8 @@
 from flask import Blueprint, session, request, render_template, redirect, url_for, flash, jsonify, current_app
+from models import (
+    get_user, get_user_by_email, create_credit_request, update_credit_request,
+    get_credit_requests, to_dict_credit_request, get_ficore_credit_transactions, to_dict_ficore_credit_transaction
+)
 from flask_login import login_required, current_user
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
