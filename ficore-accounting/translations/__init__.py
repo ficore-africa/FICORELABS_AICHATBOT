@@ -86,7 +86,7 @@ KEY_PREFIX_TO_MODULE = {
     # Accounting Tools prefixes
     'admin_': 'admin',
     'agents_': 'agents',
-    'credits_': 'coins',
+    'credits_': 'credits',
     'creditors_': 'creditors',
     'debtors_': 'debtors',
     'payments_': 'payments',
