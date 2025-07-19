@@ -2602,14 +2602,25 @@ h2.card-title {
     left: 0;
     right: auto;
     white-space: nowrap; /* prevent wrapping of items */
+    padding: 0.5rem; /* add space inside the dropdown */
+    transition: all 0.2s ease-in-out;
 }
+
 
 .dropdown-item {
     color: var(--text-color);
     padding: 0.5rem 1rem;
     font-size: clamp(0.875rem, 2vw, 0.9375rem);
     transition: var(--transition-base);
-    white-space: normal; /* allow text wrapping if needed */
+    white-space: normal; /* allows wrapping */
+    border-radius: 6px; /* optional: for nicer hover effect */
+    cursor: pointer;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background: var(--button-secondary-hover);
+    color: var(--accent-blue);
 }
 
 .dropdown-container {
@@ -2618,10 +2629,6 @@ h2.card-title {
     z-index: 9999;
 }
 
-.dropdown-item:hover, .dropdown-item:focus {
-    background: var(--button-secondary-hover);
-    color: var(--accent-blue);
-}
 
 
 /* === Dropdown Override Fixes === */
