@@ -124,14 +124,14 @@ _PERSONAL_NAV = [
         "description_key": "bill_bill_desc",
         "tooltip_key": "bill_tooltip",
         "icon": "bi-receipt"
-    },    
+    },   
     {
-        "endpoint": "learning_hub.main",
-        "label": "Learning Hub",
-        "label_key": "learning_hub_main",
-        "description_key": "learning_hub_desc",
-        "tooltip_key": "learning_hub_tooltip",
-        "icon": "bi-book"
+        "endpoint": "credits.request_credits",
+        "label": "Request Credits",
+        "label_key": "request_credits_dashboard",
+        "description_key": "request_credits_dashboard_desc",
+        "tooltip_key": "request_credits_tooltip",
+        "icon": "bi-coin"
     },
     {
         "endpoint": "settings.profile",
@@ -152,6 +152,15 @@ _PERSONAL_EXPLORE_FEATURES = [
         "tooltip_key": "budget_tooltip",
         "icon": "bi-wallet"
     },
+    
+    {
+        "endpoint": "personal.bill.main",
+        "label": "Bills",
+        "label_key": "bill_bill_planner",
+        "description_key": "bill_bill_desc",
+        "tooltip_key": "bill_tooltip",
+        "icon": "bi-receipt"
+    },
     {
         "endpoint": "credits.request_credits",
         "label": "Ficore Credits",
@@ -160,7 +169,7 @@ _PERSONAL_EXPLORE_FEATURES = [
         "tooltip_key": "credits_tooltip",
         "icon": "bi-coin"
     },
-        {
+    {
         "endpoint": "credits.history",
         "label": "Ficore Credits",
         "label_key": "credits_your_wallet",
@@ -175,22 +184,6 @@ _PERSONAL_EXPLORE_FEATURES = [
         "description_key": "taxation_calculator_desc",
         "tooltip_key": "taxation_tooltip",
         "icon": "bi-calculator"
-    },
-    {
-        "endpoint": "personal.bill.main",
-        "label": "Bills",
-        "label_key": "bill_bill_planner",
-        "description_key": "bill_bill_desc",
-        "tooltip_key": "bill_tooltip",
-        "icon": "bi-receipt"
-    },
-    {
-        "endpoint": "learning_hub.main",
-        "label": "Learning Hub",
-        "label_key": "learning_hub_main",
-        "description_key": "learning_hub_desc",
-        "tooltip_key": "learning_hub_tooltip",
-        "icon": "bi-book"
     },
 ]
 
@@ -219,7 +212,7 @@ _BUSINESS_TOOLS = [
         "tooltip_key": "credits_tooltip",
         "icon": "bi-coin"
     },
-            {
+    {
         "endpoint": "credits.history",
         "label": "Ficore Credits",
         "label_key": "credits_your_wallet",
@@ -246,7 +239,7 @@ _BUSINESS_NAV = [
         "tooltip_key": "debtors_tooltip",
         "icon": "bi-person-plus"
     },
-        {
+    {
         "endpoint": "credits.history",
         "label": "Ficore Credits",
         "label_key": "credits_your_wallet",
@@ -265,7 +258,6 @@ _BUSINESS_NAV = [
 ]
 
 _BUSINESS_EXPLORE_FEATURES = [
-    
     {
         "endpoint": "receipts.index",
         "label": "MoneyIn",
@@ -281,14 +273,6 @@ _BUSINESS_EXPLORE_FEATURES = [
         "description_key": "payments_dashboard",
         "tooltip_key": "payments_tooltip",
         "icon": "bi-calculator"
-    },
-    {
-        "endpoint": "learning_hub.main",
-        "label": "Learning Hub",
-        "label_key": "learning_hub_main",
-        "description_key": "learning_hub_desc",
-        "tooltip_key": "learning_hub_tooltip",
-        "icon": "bi-book"
     },
     {
         "endpoint": "taxation_bp.calculate_tax",
@@ -314,7 +298,6 @@ _BUSINESS_EXPLORE_FEATURES = [
         "tooltip_key": "creditors_tooltip",
         "icon": "bi-arrow-up-circle"
     },
-    
     {
         "endpoint": "credits.request_credits",
         "label": "Ficore Credits",
@@ -349,14 +332,6 @@ _AGENT_TOOLS = [
         "description_key": "credits_dashboard_desc",
         "tooltip_key": "credits_tooltip",
         "icon": "bi-coin"
-    },
-    {
-        "endpoint": "learning_hub.main",
-        "label": "Learning Hub",
-        "label_key": "learning_hub_main",
-        "description_key": "learning_hub_desc",
-        "tooltip_key": "learning_hub_tooltip",
-        "icon": "bi-book"
     },
 ]
 
@@ -404,14 +379,6 @@ _AGENT_EXPLORE_FEATURES = [
         "tooltip_key": "credits_tooltip",
         "icon": "bi-coin"
     },
-    {
-        "endpoint": "learning_hub.main",
-        "label": "Learning Hub",
-        "label_key": "learning_hub_main",
-        "description_key": "learning_hub_desc",
-        "tooltip_key": "learning_hub_tooltip",
-        "icon": "bi-book"
-    },
 ]
 
 _ADMIN_TOOLS = [
@@ -438,14 +405,6 @@ _ADMIN_TOOLS = [
         "description_key": "admin_ficore_credits_desc",
         "tooltip_key": "admin_ficore_credits_tooltip",
         "icon": "bi-coin"
-    },
-    {
-        "endpoint": "learning_hub.main",
-        "label": "Learning Hub",
-        "label_key": "learning_hub_main",
-        "description_key": "learning_hub_desc",
-        "tooltip_key": "learning_hub_tooltip",
-        "icon": "bi-book"
     },
 ]
 
@@ -525,22 +484,6 @@ _ADMIN_EXPLORE_FEATURES = [
         "tooltip_key": "admin_manage_bills_tooltip",
         "icon": "bi-receipt"
     },
-    {
-        "endpoint": "admin.admin_learning_hub",
-        "label": "Manage Learning Hub",
-        "label_key": "admin_manage_learning_hub",
-        "description_key": "admin_manage_learning_hub_desc",
-        "tooltip_key": "admin_manage_learning_hub_tooltip",
-        "icon": "bi-book"
-    },
-    {
-        "endpoint": "learning_hub.main",
-        "label": "Learning Hub",
-        "label_key": "learning_hub_main",
-        "description_key": "learning_hub_desc",
-        "tooltip_key": "learning_hub_tooltip",
-        "icon": "bi-book"
-    },
 ]
 
 def get_explore_features():
@@ -583,60 +526,6 @@ def get_explore_features():
                     "tooltip_key": "agents_tooltip",
                     "icon": "bi-person-workspace",
                     "category": "Agent"
-                },
-                {
-                    "endpoint": "learning_hub.main",
-                    "label": "Learning Hub",
-                    "label_key": "learning_hub_main",
-                    "description_key": "learning_hub_desc",
-                    "tooltip_key": "learning_hub_tooltip",
-                    "icon": "bi-book",
-                    "category": "Learning"
-                },
-                {
-                    "endpoint": "learning_hub.personal",
-                    "label": "Personal Finance Learning",
-                    "label_key": "learning_hub_personal_title",
-                    "description_key": "learning_hub_personal_desc",
-                    "tooltip_key": "learning_hub_personal_tooltip",
-                    "icon": "bi-book",
-                    "category": "Learning"
-                },
-                {
-                    "endpoint": "learning_hub.business",
-                    "label": "Business Learning",
-                    "label_key": "learning_hub_business_title",
-                    "description_key": "learning_hub_business_desc",
-                    "tooltip_key": "learning_hub_business_tooltip",
-                    "icon": "bi-book",
-                    "category": "Learning"
-                },
-                {
-                    "endpoint": "learning_hub.agents",
-                    "label": "Agent Learning",
-                    "label_key": "learning_hub_agents_title",
-                    "description_key": "learning_hub_agents_desc",
-                    "tooltip_key": "learning_hub_agents_tooltip",
-                    "icon": "bi-book",
-                    "category": "Learning"
-                },
-                {
-                    "endpoint": "learning_hub.compliance",
-                    "label": "Compliance Learning",
-                    "label_key": "learning_hub_compliance_title",
-                    "description_key": "learning_hub_compliance_desc",
-                    "tooltip_key": "learning_hub_compliance_tooltip",
-                    "icon": "bi-book",
-                    "category": "Learning"
-                },
-                {
-                    "endpoint": "learning_hub.tool_tutorials",
-                    "label": "Tool Tutorials",
-                    "label_key": "learning_hub_tool_tutorials_title",
-                    "description_key": "learning_hub_tool_tutorials_desc",
-                    "tooltip_key": "learning_hub_tool_tutorials_tooltip",
-                    "icon": "bi-book",
-                    "category": "Learning"
                 },
             ]
             for feature in features:
@@ -1390,33 +1279,6 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None, session_id
                     'surplus_deficit': budget.get('surplus_deficit', 0)
                 },
                 'icon': 'bi-cash-coin'
-            })
-
-        # Fetch recent learning hub progress
-        learning_hub_progress = db.learning_materials.find({
-            **query,
-            'type': 'progress'
-        }).sort('updated_at', -1).limit(5)
-        for progress in learning_hub_progress:
-            if not progress.get('course_id') or not progress.get('updated_at'):
-                logger.warning(f"Skipping invalid learning hub progress record: {progress.get('_id')}", extra={'session_id': session_id or 'unknown', 'ip': request.remote_addr or 'unknown'})
-                continue
-            course = db.learning_materials.find_one({'type': 'course', 'id': progress.get('course_id')})
-            course_title = course.get('title_en', progress.get('course_id', 'Unknown')) if course else progress.get('course_id', 'Unknown')
-            activities.append({
-                'type': 'learning_hub',
-                'description': trans('recent_activity_learning_hub_progress', default='Made progress in course: {course_title}', course_title=course_title),
-                'timestamp': progress.get('updated_at', datetime.utcnow()).isoformat(),
-                'details': {
-                    'course_id': progress.get('course_id', 'N/A'),
-                    'course_title': course_title,
-                    'lessons_completed': len(progress.get('lessons_completed', [])),
-                    'current_lesson': progress.get('current_lesson', 'N/A'),
-                    'credits_earned': progress.get('credits_earned', 0),
-                    'badges_earned': progress.get('badges_earned', [])
-                },
-                'icon': 'bi-book',
-                'url': url_for('learning_hub.main', _external=True) if has_request_context() else '#'
             })
 
         activities.sort(key=lambda x: x['timestamp'], reverse=True)
