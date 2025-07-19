@@ -50,11 +50,11 @@
                 <tbody>
                     {% for t in transactions %}
                         <tr>
-                            <td data-label="{{ t('general_date', default='Date') }}">{{ format_date(t.date) }}</td>
-                            <td data-label="{{ t('general_type', default='Type') }}">{{ t(t.type, default=t.type) }}</td>
-                            <td data-label="{{ t('general_amount', default='Amount') }}">{{ t.amount }}</td>
-                            <td data-label="{{ t('general_reference', default='Reference') }}">{{ t.ref or '-' }}</td>
-                            <td data-label="{{ t('general_payment_method', default='Payment Method') }}">{{ t.payment_method or '-' }}</td>
+                            <td data-label="{{ t('general_date', default='Date') }}">{{ format_date(t['date']) }}</td>
+                            <td data-label="{{ t('general_type', default='Type') }}">{{ t(t['type'], default=t['type']) }}</td>
+                            <td data-label="{{ t('general_amount', default='Amount') }}">{{ t['amount'] }}</td>
+                            <td data-label="{{ t('general_reference', default='Reference') }}">{{ t['ref'] or '-' }}</td>
+                            <td data-label="{{ t('general_payment_method', default='Payment Method') }}">{{ t['payment_method'] or '-' }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
