@@ -219,6 +219,22 @@ _BUSINESS_TOOLS = [
         "description_key": "payments_dashboard",
         "tooltip_key": "payments_tooltip",
         "icon": "bi-calculator"
+    }, 
+    {
+        "endpoint": "credits.history",
+        "label": "Ficore Credits",
+        "label_key": "credits_your_wallet",
+        "description_key": "credits_your_wallet_desc",
+        "tooltip_key": "credits_your_wallet_tooltip",
+        "icon": "bi-coin"
+    },    
+    {
+        "endpoint": "reports.index",
+        "label": "Reports",
+        "label_key": "business_reports",
+        "description_key": "business_reports_desc",
+        "tooltip_key": "business_reports_tooltip",
+        "icon": "bi-journal-minus"
     },
 ]
 
