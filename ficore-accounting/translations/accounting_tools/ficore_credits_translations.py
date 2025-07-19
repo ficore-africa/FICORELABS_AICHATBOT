@@ -4,7 +4,7 @@ Ficore Credits management translations for accounting tools
 
 FICORE_CREDITS_TRANSLATIONS = {
     'en': {
-        'credits_dashboard': 'Ficore Credits Dashboard',
+        'credits_dashboard': 'Request Ficore Credits',
         'credits_portfolio': 'Portfolio',
         'credits_amount': 'Ficore Credit Amount',
         'credits_add': 'Add Ficore Credits',
@@ -27,7 +27,7 @@ FICORE_CREDITS_TRANSLATIONS = {
         'credits_amount_required': 'Ficore Credit amount is required',
         'credits_wallet_subtext': 'Add Ficore Credits to perform actions',
         'credits_title': 'Ficore Credits',
-        'credits_dashboard_desc': 'View your Ficore Credit transaction history and balance.',
+        'credits_dashboard_desc': 'Request for your Ficore Credits and view history and balance.',
         'credits_receipt_required': 'Receipt is required',
         'credits_your_wallet': 'Your Wallet',
         'credits_wallet_desc': 'Manage your wallet and track your Ficore Credit balance',
