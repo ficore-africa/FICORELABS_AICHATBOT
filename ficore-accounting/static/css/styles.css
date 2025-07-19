@@ -2920,3 +2920,60 @@ df-messenger {
         font-size: clamp(0.75rem, 1.5vw, 0.875rem);
     }
 }
+/* Mobile Dropdown Menu (Navbar Collapse) */
+.navbar-collapse.show {
+    background: var(--navbar-bg); /* Use navbar background for consistency */
+    border: 1px solid var(--card-border); /* Optional: subtle border */
+    border-radius: 10px; /* Match other dropdowns */
+    box-shadow: var(--dropdown-shadow); /* Consistent shadow */
+    padding: 1rem; /* Add padding for better spacing */
+    width: 100%; /* Ensure full width */
+    z-index: 9999; /* Ensure it appears above other elements */
+}
+
+/* Ensure navbar items are styled appropriately */
+.navbar-collapse.show .navbar-nav {
+    background: transparent; /* Prevent navbar-nav from overriding */
+}
+
+/* Style for nav items in the mobile dropdown */
+.navbar-collapse.show .nav-item {
+    padding: 0.5rem 0; /* Add spacing between items */
+}
+
+/* Dark Mode Overrides */
+.dark-mode .navbar-collapse.show {
+    background: var(--navbar-bg); /* Use dark mode navbar background */
+    border-color: var(--card-border); /* Match dark mode border */
+}
+
+/* Ensure text is readable */
+.navbar-collapse.show .nav-link {
+    color: var(--navbar-text-color); /* Use navbar text color */
+}
+
+/* Hover effect for nav items in mobile dropdown */
+.navbar-collapse.show .nav-link:hover,
+.navbar-collapse.show .nav-link:focus {
+    background: rgba(255, 255, 255, 0.1); /* Match dropdown-item hover */
+    color: var(--accent-blue);
+}
+
+/* Dark Mode Hover */
+.dark-mode .navbar-collapse.show .nav-link:hover,
+.dark-mode .navbar-collapse.show .nav-link:focus {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--accent-blue);
+}
+
+/* Responsive Adjustments for Mobile */
+@media (max-width: 991.98px) { /* Bootstrap's lg breakpoint */
+    .navbar-collapse.show {
+        position: absolute; /* Ensure it overlays content */
+        top: var(--navbar-height); /* Position below navbar */
+        left: 0;
+        width: 100%;
+        max-height: calc(100vh - var(--navbar-height)); /* Prevent overflow */
+        overflow-y: auto; /* Allow scrolling if content is long */
+    }
+}
