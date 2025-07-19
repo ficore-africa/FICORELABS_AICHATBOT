@@ -59,6 +59,11 @@
                     </div>
                 </div>
             </div>
+            <div class="mt-3 text-end">
+                <button class="btn btn-link" onclick="toggleAmountVisibility()" data-bs-toggle="tooltip" data-bs-title="{{ t('general_toggle_visibility', default='Toggle amount visibility') | e }}">
+                    <i id="visibilityIcon" class="bi bi-eye"></i>
+                </button>
+            </div>
         </div>
         <!-- Recent Activity -->
         <div class="section-card recent-activity">
@@ -210,7 +215,7 @@ const translations = {
     you_owe: '{{ t("general_you_owe", default="You owe") | e }}',
     balanced: '{{ t("general_balanced", default="Balanced") | e }}',
     no_recent_activity: '{{ t("general_no_recent_activity", default="No recent activity") | e }}',
-    start_by_adding_debt: '{{ t("general_start_by_adding_debt", default="Start by adding a debt or transaction") | e }}',
+    start_by_adding_debt: '{{ t("general_start_adding", default="Start by adding a debt or transaction") | e }}',
     no_notifications: '{{ t("general_no_notifications", default="No notifications") | e }}',
     check_back_later: '{{ t("general_check_back_later", default="Check back later") | e }}'
 };
@@ -370,7 +375,6 @@ function getActivityIcon(type) {
         'debt_settled': 'bi-check-circle',
         'money_in': 'bi-arrow-down-circle',
         'money_out': 'bi-arrow-up-circle',
-        'inventory_added': 'bi-box',
         'reminder_sent': 'bi-bell',
         'trader_registered': 'bi-person-plus'
     };
@@ -383,7 +387,6 @@ function getActivityColor(type) {
         'debt_settled': 'text-success',
         'money_in': 'text-success',
         'money_out': 'text-danger',
-        'inventory_added': 'text-info',
         'reminder_sent': 'text-warning',
         'trader_registered': 'text-primary'
     };
@@ -432,7 +435,7 @@ window.toggleAmountVisibility = function() {
         }
     });
 
-    icon.className = amountsVisible ? 'bi bi-eye' : 'bi bi-eye-slash';
+    icon.className = 'bi ' + (amountsVisible ? 'bi-eye' : 'bi-eye-slash');
 };
 
 function format_currency(value) {
