@@ -29,37 +29,6 @@
                     </div>
                 </div>
             </div>
-            <div class="net-position-card">
-                <div class="net-position-info">
-                    <span class="net-label fw-bold">{{ t('net_worth_net_worth', default='Net Worth') | e }}:</span>
-                    <span class="net-amount" id="netWorth" data-amount="0">₦0</span>
-                    <span class="net-status" id="netWorthStatus">(Balanced)</span>
-                </div>
-                <a href="{{ url_for('personal.net_worth.main') | e }}" class="btn btn-primary btn-sm" aria-label="{{ t('general_details', default='Details') | e }}">
-                    {{ t('general_details', default='Details') | e }}
-                </a>
-            </div>
-            <p class="spacer">Overview</p>
-            <div class="stat-cards-container">
-                <div class="stat-card financial-health">
-                    <div class="snapshot-icon">
-                        <i class="bi bi-heart-pulse text-success"></i>
-                    </div>
-                    <div class="snapshot-info">
-                        <div class="snapshot-label fw-bold">{{ t('financial_health_financial_health_score', default='Financial Health') | e }}</div>
-                        <div class="stat-card-value" id="financialHealthScore" data-original-text="0">0%</div>
-                    </div>
-                </div>
-                <div class="stat-card emergency-fund">
-                    <div class="snapshot-icon">
-                        <i class="bi bi-piggy-bank text-info"></i>
-                    </div>
-                    <div class="snapshot-info">
-                        <div class="snapshot-label fw-bold">{{ t('emergency_fund_savings', default='Emergency Fund') | e }}</div>
-                        <div class="stat-card-value" id="emergencyFund" data-original-text="₦0">₦0</div>
-                    </div>
-                </div>
-            </div>
             <div class="mt-3 text-end">
                 <button class="btn btn-link" onclick="toggleAmountVisibility()" data-bs-toggle="tooltip" data-bs-title="{{ t('general_toggle_visibility', default='Toggle amount visibility') | e }}">
                     <i id="visibilityIcon" class="bi bi-eye"></i>
@@ -94,7 +63,7 @@
         <div class="section-card notifications">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h3 class="section-title mb-0">{{ t('general_notifications', default='Notifications') | e }}</h3>
-                <span class="badge bg-primary rounded-pill" id="notificationCount">0</span>
+            <span class="badge bg-primary rounded-pill" id="notificationCount">0</span>
             </div>
             <div id="notificationList">
                 <div class="notification-card">
@@ -220,9 +189,6 @@ const translations = {
     minutes_ago: '{{ t("general_minutes_ago", default="m ago") | e }}',
     hours_ago: '{{ t("general_hours_ago", default="h ago") | e }}',
     days_ago: '{{ t("general_days_ago", default="d ago") | e }}',
-    positive_net_worth: '{{ t("general_positive_net_worth", default="Positive") | e }}',
-    negative_net_worth: '{{ t("general_negative_net_worth", default="Negative") | e }}',
-    balanced: '{{ t("general_balanced", default="Balanced") | e }}',
     no_recent_activity: '{{ t("general_no_recent_activity", default="No recent activity") | e }}',
     start_by_adding: '{{ t("general_start_by_adding", default="Start by adding a budget or bill") | e }}',
     no_notifications: '{{ t("general_no_notifications", default="No notifications") | e }}',
@@ -235,12 +201,9 @@ const translations = {
 function loadFinancialSummary() {
     Promise.all([
         fetch('{{ url_for("personal.summaries.budget_summary") | e }}').then(r => r.json()).catch(() => ({totalBudget: 0})),
-        fetch('{{ url_for("personal.summaries.bill_summary") | e }}').then(r => r.json()).catch(() => ({totalUpcomingBills: 0})),
-        fetch('{{ url_for("personal.summaries.net_worth_summary") | e }}').then(r => r.json()).catch(() => ({netWorth: 0})),
-        fetch('{{ url_for("personal.summaries.financial_health_summary") | e }}').then(r => r.json()).catch(() => ({score: 0})),
-        fetch('{{ url_for("personal.summaries.emergency_fund_summary") | e }}').then(r => r.json()).catch(() => ({totalSavings: 0}))
-    ]).then(([budgetData, billsData, netWorthData, healthData, emergencyFundData]) => {
-        updateFinancialSummary(budgetData, billsData, netWorthData, healthData, emergencyFundData);
+        fetch('{{ url_for("personal.summaries.bill_summary") | e }}').then(r => r.json()).catch(() => ({totalUpcomingBills: 0}))
+    ]).then(([budgetData, billsData]) => {
+        updateFinancialSummary(budgetData, billsData);
     }).catch(error => {
         console.error('Error loading financial data:', error);
     });
@@ -374,7 +337,7 @@ function loadNotifications() {
             });
 }
 
-function updateFinancialSummary(budgetData, billsData, netWorthData, healthData, emergencyFundData) {
+function updateFinancialSummary(budgetData, billsData) {
     const budgetStatusEl = document.querySelector('#budgetStatus .amount-value');
     budgetStatusEl.textContent = format_currency(budgetData.totalBudget || 0);
     budgetStatusEl.dataset.amount = budgetData.totalBudget || 0;
@@ -382,47 +345,13 @@ function updateFinancialSummary(budgetData, billsData, netWorthData, healthData,
     const upcomingBillsEl = document.querySelector('#upcomingBills .amount-value');
     upcomingBillsEl.textContent = format_currency(billsData.totalUpcomingBills || 0);
     upcomingBillsEl.dataset.amount = billsData.totalUpcomingBills || 0;
-
-    const netWorth = netWorthData.netWorth || 0;
-    const netWorthEl = document.getElementById('netWorth');
-    const netWorthStatusEl = document.getElementById('netWorthStatus');
-
-    netWorthEl.textContent = '₦' + format_currency(Math.abs(netWorth));
-    netWorthEl.dataset.amount = netWorth;
-
-    if (netWorth > 0) {
-        netWorthEl.className = 'net-amount text-success';
-        netWorthStatusEl.textContent = `(${translations.positive_net_worth})`;
-        netWorthStatusEl.className = 'net-status text-success';
-    } else if (netWorth < 0) {
-        netWorthEl.className = 'net-amount text-danger';
-        netWorthStatusEl.textContent = `(${translations.negative_net_worth})`;
-        netWorthStatusEl.className = 'net-status text-danger';
-    } else {
-        netWorthEl.className = 'net-amount text-muted';
-        netWorthStatusEl.textContent = `(${translations.balanced})`;
-        netWorthStatusEl.className = 'net-status text-muted';
-    }
-
-    const financialHealthEl = document.getElementById('financialHealthScore');
-    financialHealthEl.textContent = (healthData.score || 0) + '%';
-    financialHealthEl.dataset.originalText = (healthData.score || 0) + '%';
-
-    const emergencyFundEl = document.getElementById('emergencyFund');
-    emergencyFundEl.textContent = '₦' + format_currency(emergencyFundData.totalSavings || 0);
-    emergencyFundEl.dataset.originalText = '₦' + format_currency(emergencyFundData.totalSavings || 0);
 }
 
 function getActivityIcon(type) {
     const icons = {
         'budget': 'bi-pie-chart',
         'bill': 'bi-receipt',
-        'bill_paid': 'bi-check-circle',
-        'emergency_fund': 'bi-piggy-bank',
-        'net_worth': 'bi-wallet2',
-        'financial_health': 'bi-heart-pulse',
-        'quiz': 'bi-question-circle',
-        'learning_hub': 'bi-book'
+        'bill_paid': 'bi-check-circle'
     };
     return icons[type] || 'bi-circle';
 }
@@ -431,12 +360,7 @@ function getActivityColor(type) {
     const colors = {
         'budget': 'text-primary',
         'bill': 'text-warning',
-        'bill_paid': 'text-success',
-        'emergency_fund': 'text-info',
-        'net_worth': 'text-primary',
-        'financial_health': 'text-success',
-        'quiz': 'text-info',
-        'learning_hub': 'text-primary'
+        'bill_paid': 'text-success'
     };
     return colors[type] || 'text-muted';
 }
@@ -464,16 +388,12 @@ function formatTimeAgo(timestamp) {
 window.toggleAmountVisibility = function() {
     amountsVisible = !amountsVisible;
     const icon = document.getElementById('visibilityIcon');
-    const amounts = document.querySelectorAll('.amount-value, .net-amount, .stat-card-value');
+    const amounts = document.querySelectorAll('.amount-value');
 
     amounts.forEach(el => {
         if (amountsVisible) {
             if (el.classList.contains('amount-value')) {
                 el.textContent = format_currency(el.dataset.amount);
-            } else if (el.classList.contains('net-amount')) {
-                el.textContent = '₦' + format_currency(Math.abs(el.dataset.amount));
-            } else {
-                el.textContent = el.dataset.originalText || el.textContent;
             }
         } else {
             if (!el.dataset.originalText) {
