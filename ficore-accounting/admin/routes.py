@@ -7,9 +7,7 @@ from wtforms import StringField, FloatField, SelectField, SubmitField, TextAreaF
 from wtforms.validators import DataRequired, NumberRange, ValidationError
 from translations import trans
 import utils
-import bleach
 import datetime
-from babel.dates import format_date
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
@@ -17,9 +15,7 @@ from reportlab.lib.units import inch
 from io import BytesIO
 import csv
 import re
-from models import get_budgets, get_bills, get_emergency_funds, get_net_worth, get_quiz_results
-from learning_hub.models import get_progress
-from learning_hub.forms import UploadForm
+from models import get_budgets, get_bills
 from werkzeug.utils import secure_filename
 import os
 from credits import ApproveCreditRequestForm
@@ -55,13 +51,6 @@ class BulkAgentIDForm(FlaskForm):
         NumberRange(min=1, max=100, message=trans('agents_count_range', default='Must be between 1 and 100'))
     ], render_kw={'class': 'form-control'})
     submit = SubmitField(trans('agents_generate_bulk', default='Generate IDs'), render_kw={'class': 'btn btn-primary w-100'})
-
-class NewsForm(FlaskForm):
-    title = StringField(trans('news_title', default='Title'), validators=[DataRequired()], render_kw={'class': 'form-control'})
-    content = TextAreaField(trans('news_content', default='Content'), validators=[DataRequired()], render_kw={'class': 'form-control'})
-    source_link = StringField(trans('news_source_link', default='Source Link'), render_kw={'class': 'form-control'})
-    category = StringField(trans('news_category', default='Category'), render_kw={'class': 'form-control'})
-    submit = SubmitField(trans('news_save', default='Save'), render_kw={'class': 'btn btn-primary'})
 
 class TaxRateForm(FlaskForm):
     role = SelectField(trans('tax_role', default='Role'), choices=[('personal', 'Personal'), ('trader', 'Trader'), ('agent', 'Agent'), ('company', 'Company'), ('vat', 'VAT')], validators=[DataRequired()], render_kw={'class': 'form-select'})
@@ -106,12 +95,6 @@ def log_audit_action(action, details=None):
     except Exception as e:
         logger.error(f"Error logging audit action: {str(e)}")
 
-def sanitize_input(text):
-    """Sanitize HTML input for news content to prevent XSS."""
-    allowed_tags = ['p', 'b', 'i', 'strong', 'em', 'ul', 'ol', 'li', 'a']
-    allowed_attributes = {'a': ['href', 'target']}
-    return bleach.clean(text, tags=allowed_tags, attributes=allowed_attributes)
-
 def allowed_file(filename):
     """Check if the file extension is allowed."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -126,18 +109,13 @@ def dashboard():
     try:
         db = utils.get_mongo_db()
         user_count = db.users.count_documents({'role': {'$ne': 'admin'}} if not utils.is_admin() else {})
-        records_count = db.records.count_documents({})
+        records_count = db.data_records.count_documents({})
         cashflows_count = db.cashflows.count_documents({})
-        inventory_count = db.inventory.count_documents({})
         credit_tx_count = db.ficore_credit_transactions.count_documents({})
         credit_requests_count = db.credit_requests.count_documents({})
         audit_log_count = db.audit_logs.count_documents({})
         budgets_count = db.budgets.count_documents({})
         bills_count = db.bills.count_documents({})
-        emergency_funds_count = db.emergency_funds.count_documents({})
-        net_worth_count = db.net_worth_data.count_documents({})
-        quiz_results_count = db.quiz_responses.count_documents({})
-        learning_progress_count = db.learning_materials.count_documents({})
         payment_locations_count = db.payment_locations.count_documents({})
         tax_deadlines_count = db.tax_deadlines.count_documents({})
         
@@ -159,16 +137,11 @@ def dashboard():
                 'users': user_count,
                 'records': records_count,
                 'cashflows': cashflows_count,
-                'inventory': inventory_count,
                 'credit_transactions': credit_tx_count,
                 'credit_requests': credit_requests_count,
                 'audit_logs': audit_log_count,
                 'budgets': budgets_count,
                 'bills': bills_count,
-                'emergency_funds': emergency_funds_count,
-                'net_worth': net_worth_count,
-                'quiz_results': quiz_results_count,
-                'learning_progress': learning_progress_count,
                 'payment_locations': payment_locations_count,
                 'tax_deadlines': tax_deadlines_count
             },
@@ -379,18 +352,13 @@ def delete_user(user_id):
         if not user:
             flash(trans('admin_user_not_found', default='User not found'), 'danger')
             return redirect(url_for('admin.manage_users'))
-        db.records.delete_many({'user_id': user_id})
+        db.data_records.delete_many({'user_id': user_id})
         db.cashflows.delete_many({'user_id': user_id})
-        db.inventory.delete_many({'user_id': user_id})
         db.ficore_credit_transactions.delete_many({'user_id': user_id})
         db.credit_requests.delete_many({'user_id': user_id})
         db.audit_logs.delete_many({'details.user_id': user_id})
         db.budgets.delete_many({'user_id': user_id})
         db.bills.delete_many({'user_id': user_id})
-        db.emergency_funds.delete_many({'user_id': user_id})
-        db.net_worth_data.delete_many({'user_id': user_id})
-        db.quiz_responses.delete_many({'user_id': user_id})
-        db.learning_materials.delete_many({'user_id': user_id})
         result = db.users.delete_one(user_query)
         if result.deleted_count == 0:
             flash(trans('admin_user_not_deleted', default='User could not be deleted'), 'danger')
@@ -410,7 +378,7 @@ def delete_user(user_id):
 @utils.limiter.limit("10 per hour")
 def delete_item(collection, item_id):
     """Delete an item from a collection."""
-    valid_collections = ['records', 'cashflows', 'inventory', 'budgets', 'bills', 'emergency_funds', 'net_worth_data', 'quiz_responses', 'learning_materials', 'payment_locations', 'tax_deadlines', 'credit_requests']
+    valid_collections = ['data_records', 'cashflows', 'budgets', 'bills', 'payment_locations', 'tax_deadlines', 'credit_requests']
     if collection not in valid_collections:
         flash(trans('admin_invalid_collection', default='Invalid collection selected'), 'danger')
         return redirect(url_for('admin.dashboard'))
@@ -423,7 +391,7 @@ def delete_item(collection, item_id):
             flash(trans('admin_item_deleted', default='Item deleted successfully'), 'success')
             logger.info(f"Admin {current_user.id} deleted {collection} item {item_id}")
             log_audit_action(f'delete_{collection}_item', {'item_id': item_id, 'collection': collection})
-        return redirect(url_for(f'admin.admin_{collection}' if collection in ['budgets', 'bills', 'emergency_funds', 'net_worth_data', 'quiz_responses', 'learning_materials', 'credit_requests'] else 'admin.' + collection.replace('_', '')))
+        return redirect(url_for(f'admin.admin_{collection}' if collection in ['budgets', 'bills', 'credit_requests'] else 'admin.' + collection.replace('_', '')))
     except Exception as e:
         logger.error(f"Error deleting {collection} item {item_id}: {str(e)}")
         flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
@@ -634,430 +602,6 @@ def admin_mark_bill_paid(bill_id):
         flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
         return redirect(url_for('admin.admin_bills'))
 
-@admin_bp.route('/emergency_funds', methods=['GET'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("50 per hour")
-def admin_emergency_funds():
-    """View all user emergency funds."""
-    try:
-        db = utils.get_mongo_db()
-        funds = list(get_emergency_funds(db, {}))
-        for fund in funds:
-            fund['_id'] = str(fund['_id'])
-        return render_template('admin/emergency_funds.html', funds=funds, title=trans('admin_emergency_funds_title', default='Manage Emergency Funds'))
-    except Exception as e:
-        logger.error(f"Error fetching emergency funds for admin: {str(e)}")
-        flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
-        return render_template('admin/emergency_funds.html', funds=[]), 500
-
-@admin_bp.route('/emergency_funds/delete/<fund_id>', methods=['POST'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("10 per hour")
-def admin_delete_emergency_fund(fund_id):
-    """Delete an emergency fund."""
-    try:
-        db = utils.get_mongo_db()
-        result = db.emergency_funds.delete_one({'_id': ObjectId(fund_id)})
-        if result.deleted_count == 0:
-            flash(trans('admin_item_not_found', default='Emergency fund not found'), 'danger')
-        else:
-            flash(trans('admin_item_deleted', default='Emergency fund deleted successfully'), 'success')
-            logger.info(f"Admin {current_user.id} deleted emergency fund {fund_id}")
-            log_audit_action('delete_emergency_fund', {'fund_id': fund_id})
-        return redirect(url_for('admin.admin_emergency_funds'))
-    except Exception as e:
-        logger.error(f"Error deleting emergency fund {fund_id}: {str(e)}")
-        flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
-        return redirect(url_for('admin.admin_emergency_funds'))
-
-@admin_bp.route('/net_worth', methods=['GET'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("50 per hour")
-def admin_net_worth():
-    """View all user net worth records."""
-    try:
-        db = utils.get_mongo_db()
-        net_worths = list(get_net_worth(db, {}))
-        for nw in net_worths:
-            nw['_id'] = str(nw['_id'])
-        return render_template('admin/net_worth.html', net_worths=net_worths, title=trans('admin_net_worth_title', default='Manage Net Worth'))
-    except Exception as e:
-        logger.error(f"Error fetching net worth for admin: {str(e)}")
-        flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
-        return render_template('admin/net_worth.html', net_worths=[]), 500
-
-@admin_bp.route('/net_worth/delete/<nw_id>', methods=['POST'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("10 per hour")
-def admin_delete_net_worth(nw_id):
-    """Delete a net worth record."""
-    try:
-        db = utils.get_mongo_db()
-        result = db.net_worth_data.delete_one({'_id': ObjectId(nw_id)})
-        if result.deleted_count == 0:
-            flash(trans('admin_item_not_found', default='Net worth record not found'), 'danger')
-        else:
-            flash(trans('admin_item_deleted', default='Net worth record deleted successfully'), 'success')
-            logger.info(f"Admin {current_user.id} deleted net worth record {nw_id}")
-            log_audit_action('delete_net_worth', {'nw_id': nw_id})
-        return redirect(url_for('admin.admin_net_worth'))
-    except Exception as e:
-        logger.error(f"Error deleting net worth record {nw_id}: {str(e)}")
-        flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
-        return redirect(url_for('admin.admin_net_worth'))
-
-@admin_bp.route('/quiz_results', methods=['GET'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("50 per hour")
-def admin_quiz_results():
-    """View all user quiz results."""
-    try:
-        db = utils.get_mongo_db()
-        quiz_results = list(get_quiz_results(db, {}))
-        for result in quiz_results:
-            result['_id'] = str(result['_id'])
-        return render_template('admin/quiz_results.html', quiz_results=quiz_results, title=trans('admin_quiz_results_title', default='Manage Quiz Results'))
-    except Exception as e:
-        logger.error(f"Error fetching quiz results for admin: {str(e)}")
-        flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
-        return render_template('admin/quiz_results.html', quiz_results=[]), 500
-
-@admin_bp.route('/quiz_results/delete/<result_id>', methods=['POST'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("10 per hour")
-def admin_delete_quiz_result(result_id):
-    """Delete a quiz result."""
-    try:
-        db = utils.get_mongo_db()
-        result = db.quiz_responses.delete_one({'_id': ObjectId(result_id)})
-        if result.deleted_count == 0:
-            flash(trans('admin_item_not_found', default='Quiz result not found'), 'danger')
-        else:
-            flash(trans('admin_item_deleted', default='Quiz result deleted successfully'), 'success')
-            logger.info(f"Admin {current_user.id} deleted quiz result {result_id}")
-            log_audit_action('delete_quiz_result', {'result_id': result_id})
-        return redirect(url_for('admin.admin_quiz_results'))
-    except Exception as e:
-        logger.error(f"Error deleting quiz result {result_id}: {str(e)}")
-        flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
-        return redirect(url_for('admin.admin_quiz_results'))
-
-@admin_bp.route('/manage_courses', methods=['GET', 'POST'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("50 per hour")
-def manage_courses():
-    """Manage courses: list all courses and upload new ones."""
-    form = UploadForm()
-    lang = session.get('lang', 'en')
-    try:
-        db = utils.get_mongo_db()
-        courses = list(db.learning_materials.find({'type': 'course'}).sort('created_at', -1))
-        for course in courses:
-            course['_id'] = str(course['_id'])
-            course['created_at_formatted'] = format_date(course['created_at'], format='medium', locale=lang)
-        
-        if request.method == 'POST' and form.validate_on_submit():
-            if not allowed_file(form.file.data.filename):
-                flash(trans('learning_hub_invalid_file_type', default='Invalid file type. Allowed: mp4, pdf, txt, md'), 'danger')
-                return render_template('admin/learning_hub.html', form=form, courses=courses, progress=[], title=trans('admin_manage_courses_title', default='Manage Courses'))
-            
-            filename = secure_filename(form.file.data.filename)
-            file_path = os.path.join(current_app.config.get('UPLOAD_FOLDER', UPLOAD_FOLDER), filename)
-            form.file.data.save(file_path)
-            
-            course_id = form.course_id.data
-            roles = [form.roles.data] if form.roles.data != 'all' else ['trader', 'personal', 'agent']
-            course_data = {
-                'type': 'course',
-                'id': course_id,
-                '_id': ObjectId(),
-                'title_key': f"learning_hub_course_{course_id}_title",
-                'title_en': form.title.data,
-                'title_ha': form.title.data,
-                'description_en': form.description.data,
-                'description_ha': form.description.data,
-                'is_premium': form.is_premium.data,
-                'roles': roles,
-                'modules': [{
-                    'id': f"{course_id}-module-1",
-                    'title_key': f"learning_hub_module_{course_id}_title",
-                    'title_en': "Module 1",
-                    'lessons': [{
-                        'id': f"{course_id}-module-1-lesson-1",
-                        'title_key': f"learning_hub_lesson_{course_id}_title",
-                        'title_en': "Lesson 1",
-                        'content_type': form.content_type.data,
-                        'content_path': f"uploads/{filename}",
-                        'content_en': "Uploaded content",
-                        'quiz_id': None
-                    }]
-                }],
-                'created_at': datetime.datetime.utcnow()
-            }
-            
-            db.learning_materials.update_one(
-                {'type': 'course', 'id': course_id},
-                {'$set': course_data},
-                upsert=True
-            )
-            
-            flash(trans('learning_hub_upload_success', default='Content uploaded successfully'), 'success')
-            logger.info(f"Admin {current_user.id} uploaded course {course_id}")
-            log_audit_action('upload_course', {'course_id': course_id, 'filename': filename})
-            return redirect(url_for('admin.manage_courses'))
-        
-        return render_template('admin/learning_hub.html', form=form, courses=courses, progress=[], title=trans('admin_manage_courses_title', default='Manage Courses'))
-    
-    except Exception as e:
-        logger.error(f"Error managing courses for admin {current_user.id}: {str(e)}")
-        flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
-        return render_template('admin/learning_hub.html', form=form, courses=[], progress=[]), 500
-
-@admin_bp.route('/manage_courses/delete/<course_id>', methods=['POST'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("10 per hour")
-def delete_course(course_id):
-    """Delete a course."""
-    try:
-        db = utils.get_mongo_db()
-        result = db.learning_materials.delete_one({'type': 'course', 'id': course_id})
-        if result.deleted_count == 0:
-            flash(trans('admin_item_not_found', default='Course not found'), 'danger')
-        else:
-            flash(trans('admin_item_deleted', default='Course deleted successfully'), 'success')
-            logger.info(f"Admin {current_user.id} deleted course {course_id}")
-            log_audit_action('delete_course', {'course_id': course_id})
-        return redirect(url_for('admin.manage_courses'))
-    except Exception as e:
-        logger.error(f"Error deleting course {course_id}: {str(e)}")
-        flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
-        return redirect(url_for('admin.manage_courses'))
-
-@admin_bp.route('/learning_hub', methods=['GET'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("50 per hour")
-def admin_learning_hub():
-    """View all user learning hub progress."""
-    try:
-        db = utils.get_mongo_db()
-        progress = list(get_progress(db, {}))
-        for p in progress:
-            p['_id'] = str(p['_id'])
-        form = UploadForm()
-        return render_template('admin/learning_hub.html', form=form, progress=progress, courses=[], title=trans('admin_learning_hub_title', default='Manage Learning Hub'))
-    except Exception as e:
-        logger.error(f"Error fetching learning progress for admin: {str(e)}")
-        flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
-        return render_template('admin/learning_hub.html', form=UploadForm(), progress=[], courses=[]), 500
-
-@admin_bp.route('/learning_hub/delete/<progress_id>', methods=['POST'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("10 per hour")
-def admin_delete_learning_progress(progress_id):
-    """Delete a learning progress record."""
-    try:
-        db = utils.get_mongo_db()
-        result = db.learning_materials.delete_one({'_id': ObjectId(progress_id)})
-        if result.deleted_count == 0:
-            flash(trans('admin_item_not_found', default='Learning progress not found'), 'danger')
-        else:
-            flash(trans('admin_item_deleted', default='Learning progress deleted successfully'), 'success')
-            logger.info(f"Admin {current_user.id} deleted learning progress {progress_id}")
-            log_audit_action('delete_learning_progress', {'progress_id': progress_id})
-        return redirect(url_for('admin.admin_learning_hub'))
-    except Exception as e:
-        logger.error(f"Error deleting learning progress {progress_id}: {str(e)}")
-        flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
-        return redirect(url_for('admin.admin_learning_hub'))
-
-@admin_bp.route('/news', methods=['GET', 'POST'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("50 per hour")
-def news_management():
-    """Manage news articles: list all articles and add new ones."""
-    db = utils.get_mongo_db()
-    lang = session.get('lang', 'en')
-    form = NewsForm()
-    if request.method == 'POST' and form.validate_on_submit():
-        title = form.title.data
-        content = form.content.data
-        source_link = form.source_link.data
-        category = form.category.data
-        sanitized_content = sanitize_input(content)
-        article = {
-            'title': title,
-            'content': sanitized_content,
-            'source_link': source_link if source_link else None,
-            'category': category if category else None,
-            'is_active': True,
-            'published_at': datetime.datetime.utcnow(),
-            'created_by': current_user.id
-        }
-        result = db.news.insert_one(article)
-        article_id = str(result.inserted_id)
-        logger.info(f"News article created: id={article_id}, title={title}, user={current_user.id}")
-        log_audit_action('add_news_article', {'article_id': article_id, 'title': title})
-        flash(trans('news_article_added', default='News article added successfully'), 'success')
-        return redirect(url_for('admin.news_management'))
-    
-    articles = list(db.news.find().sort('published_at', -1))
-    for article in articles:
-        article['_id'] = str(article['_id'])
-        article['published_at_formatted'] = format_date(article['published_at'], format='medium', locale=lang)
-    return render_template('admin/news_management.html', form=form, articles=articles, title=trans('admin_news_management_title', default='News Management'))
-
-@admin_bp.route('/news/edit/<article_id>', methods=['GET', 'POST'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("10 per hour")
-def edit_news(article_id):
-    """Edit an existing news article."""
-    db = utils.get_mongo_db()
-    lang = session.get('lang', 'en')
-    article = db.news.find_one({'_id': ObjectId(article_id)})
-    if not article:
-        flash(trans('news_article_not_found', default='Article not found'), 'danger')
-        return redirect(url_for('admin.news_management'))
-    
-    form = NewsForm(obj=article)
-    if request.method == 'POST' and form.validate_on_submit():
-        sanitized_content = sanitize_input(form.content.data)
-        db.news.update_one(
-            {'_id': ObjectId(article_id)},
-            {'$set': {
-                'title': form.title.data,
-                'content': sanitized_content,
-                'source_link': form.source_link.data if form.source_link.data else None,
-                'category': form.category.data if form.category.data else None,
-                'updated_at': datetime.datetime.utcnow()
-            }}
-        )
-        logger.info(f"News article updated: id={article_id}, user={current_user.id}")
-        log_audit_action('edit_news_article', {'article_id': article_id})
-        flash(trans('news_article_updated', default='News article updated successfully'), 'success')
-        return redirect(url_for('admin.news_management'))
-    
-    return render_template('admin/news_edit.html', form=form, article=article, title=trans('admin_edit_news_title', default='Edit News Article'))
-
-@admin_bp.route('/news/delete/<article_id>', methods=['POST'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("10 per hour")
-def delete_news(article_id):
-    """Delete a news article."""
-    db = utils.get_mongo_db()
-    lang = session.get('lang', 'en')
-    result = db.news.delete_one({'_id': ObjectId(article_id)})
-    if result.deleted_count > 0:
-        logger.info(f"News article deleted: id={article_id}, user={current_user.id}")
-        log_audit_action('delete_news_article', {'article_id': article_id})
-        flash(trans('news_article_deleted', default='News article deleted successfully'), 'success')
-    else:
-        flash(trans('news_article_not_found', default='Article not found'), 'danger')
-    return redirect(url_for('admin.news_management'))
-
-@admin_bp.route('/tax_rates', methods=['GET', 'POST'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("50 per hour")
-def manage_tax_rates():
-    """Manage tax rates: list all tax rates and add new ones."""
-    db = utils.get_mongo_db()
-    lang = session.get('lang', 'en')
-    form = TaxRateForm()
-    if request.method == 'POST' and form.validate_on_submit():
-        try:
-            tax_rate = {
-                'role': form.role.data,
-                'min_income': form.min_income.data,
-                'max_income': form.max_income.data,
-                'rate': form.rate.data,
-                'description': form.description.data,
-                'created_by': current_user.id,
-                'created_at': datetime.datetime.utcnow()
-            }
-            result = db.tax_rates.insert_one(tax_rate)
-            rate_id = str(result.inserted_id)
-            logger.info(f"Tax rate added: id={rate_id}, role={form.role.data}, user={current_user.id}")
-            log_audit_action('add_tax_rate', {'rate_id': rate_id, 'role': form.role.data})
-            flash(trans('tax_rate_added', default='Tax rate added successfully'), 'success')
-            return redirect(url_for('admin.manage_tax_rates'))
-        except Exception as e:
-            logger.error(f"Error adding tax rate: {str(e)}")
-            flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
-            return render_template('admin/tax_rates.html', form=form, rates=[])
-    
-    rates = list(db.tax_rates.find().sort('created_at', -1))
-    for rate in rates:
-        rate['_id'] = str(rate['_id'])
-    return render_template('admin/tax_rates.html', form=form, rates=rates, title=trans('admin_tax_rates_title', default='Manage Tax Rates'))
-
-@admin_bp.route('/tax_rates/edit/<rate_id>', methods=['GET', 'POST'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("10 per hour")
-def edit_tax_rate(rate_id):
-    """Edit an existing tax rate."""
-    db = utils.get_mongo_db()
-    lang = session.get('lang', 'en')
-    rate = db.tax_rates.find_one({'_id': ObjectId(rate_id)})
-    if not rate:
-        flash(trans('tax_rate_not_found', default='Tax rate not found'), 'danger')
-        return redirect(url_for('admin.manage_tax_rates'))
-    
-    form = TaxRateForm(obj=rate)
-    if request.method == 'POST' and form.validate_on_submit():
-        try:
-            db.tax_rates.update_one(
-                {'_id': ObjectId(rate_id)},
-                {'$set': {
-                    'role': form.role.data,
-                    'min_income': form.min_income.data,
-                    'max_income': form.max_income.data,
-                    'rate': form.rate.data,
-                    'description': form.description.data,
-                    'updated_at': datetime.datetime.utcnow()
-                }}
-            )
-            logger.info(f"Tax rate updated: id={rate_id}, user={current_user.id}")
-            log_audit_action('edit_tax_rate', {'rate_id': rate_id})
-            flash(trans('tax_rate_updated', default='Tax rate updated successfully'), 'success')
-            return redirect(url_for('admin.manage_tax_rates'))
-        except Exception as e:
-            logger.error(f"Error updating tax rate {rate_id}: {str(e)}")
-            flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
-            return render_template('admin/tax_rate_edit.html', form=form, rate=rate, title=trans('admin_edit_tax_rate_title', default='Edit Tax Rate'))
-    
-    return render_template('admin/tax_rate_edit.html', form=form, rate=rate, title=trans('admin_edit_tax_rate_title', default='Edit Tax Rate'))
-
-@admin_bp.route('/tax_rates/delete/<rate_id>', methods=['POST'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("10 per hour")
-def delete_tax_rate(rate_id):
-    """Delete a tax rate."""
-    db = utils.get_mongo_db()
-    lang = session.get('lang', 'en')
-    result = db.tax_rates.delete_one({'_id': ObjectId(rate_id)})
-    if result.deleted_count > 0:
-        logger.info(f"Tax rate deleted: id={rate_id}, user={current_user.id}")
-        log_audit_action('delete_tax_rate', {'rate_id': rate_id})
-        flash(trans('tax_rate_deleted', default='Tax rate deleted successfully'), 'success')
-    else:
-        flash(trans('tax_rate_not_found', default='Tax rate not found'), 'danger')
-    return redirect(url_for('admin.manage_tax_rates'))
-
 @admin_bp.route('/payment_locations', methods=['GET', 'POST'])
 @login_required
 @utils.requires_role('admin')
@@ -1234,6 +778,97 @@ def delete_tax_deadline(deadline_id):
     else:
         flash(trans('tax_deadline_not_found', default='Tax deadline not found'), 'danger')
     return redirect(url_for('admin.manage_tax_deadlines'))
+
+@admin_bp.route('/tax_rates', methods=['GET', 'POST'])
+@login_required
+@utils.requires_role('admin')
+@utils.limiter.limit("50 per hour")
+def manage_tax_rates():
+    """Manage tax rates: list all tax rates and add new ones."""
+    db = utils.get_mongo_db()
+    lang = session.get('lang', 'en')
+    form = TaxRateForm()
+    if request.method == 'POST' and form.validate_on_submit():
+        try:
+            tax_rate = {
+                'role': form.role.data,
+                'min_income': form.min_income.data,
+                'max_income': form.max_income.data,
+                'rate': form.rate.data,
+                'description': form.description.data,
+                'created_by': current_user.id,
+                'created_at': datetime.datetime.utcnow()
+            }
+            result = db.tax_rates.insert_one(tax_rate)
+            rate_id = str(result.inserted_id)
+            logger.info(f"Tax rate added: id={rate_id}, role={form.role.data}, user={current_user.id}")
+            log_audit_action('add_tax_rate', {'rate_id': rate_id, 'role': form.role.data})
+            flash(trans('tax_rate_added', default='Tax rate added successfully'), 'success')
+            return redirect(url_for('admin.manage_tax_rates'))
+        except Exception as e:
+            logger.error(f"Error adding tax rate: {str(e)}")
+            flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
+            return render_template('admin/tax_rates.html', form=form, rates=[])
+    
+    rates = list(db.tax_rates.find().sort('created_at', -1))
+    for rate in rates:
+        rate['_id'] = str(rate['_id'])
+    return render_template('admin/tax_rates.html', form=form, rates=rates, title=trans('admin_tax_rates_title', default='Manage Tax Rates'))
+
+@admin_bp.route('/tax_rates/edit/<rate_id>', methods=['GET', 'POST'])
+@login_required
+@utils.requires_role('admin')
+@utils.limiter.limit("10 per hour")
+def edit_tax_rate(rate_id):
+    """Edit an existing tax rate."""
+    db = utils.get_mongo_db()
+    lang = session.get('lang', 'en')
+    rate = db.tax_rates.find_one({'_id': ObjectId(rate_id)})
+    if not rate:
+        flash(trans('tax_rate_not_found', default='Tax rate not found'), 'danger')
+        return redirect(url_for('admin.manage_tax_rates'))
+    
+    form = TaxRateForm(obj=rate)
+    if request.method == 'POST' and form.validate_on_submit():
+        try:
+            db.tax_rates.update_one(
+                {'_id': ObjectId(rate_id)},
+                {'$set': {
+                    'role': form.role.data,
+                    'min_income': form.min_income.data,
+                    'max_income': form.max_income.data,
+                    'rate': form.rate.data,
+                    'description': form.description.data,
+                    'updated_at': datetime.datetime.utcnow()
+                }}
+            )
+            logger.info(f"Tax rate updated: id={rate_id}, user={current_user.id}")
+            log_audit_action('edit_tax_rate', {'rate_id': rate_id})
+            flash(trans('tax_rate_updated', default='Tax rate updated successfully'), 'success')
+            return redirect(url_for('admin.manage_tax_rates'))
+        except Exception as e:
+            logger.error(f"Error updating tax rate {rate_id}: {str(e)}")
+            flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
+            return render_template('admin/tax_rate_edit.html', form=form, rate=rate, title=trans('admin_edit_tax_rate_title', default='Edit Tax Rate'))
+    
+    return render_template('admin/tax_rate_edit.html', form=form, rate=rate, title=trans('admin_edit_tax_rate_title', default='Edit Tax Rate'))
+
+@admin_bp.route('/tax_rates/delete/<rate_id>', methods=['POST'])
+@login_required
+@utils.requires_role('admin')
+@utils.limiter.limit("10 per hour")
+def delete_tax_rate(rate_id):
+    """Delete a tax rate."""
+    db = utils.get_mongo_db()
+    lang = session.get('lang', 'en')
+    result = db.tax_rates.delete_one({'_id': ObjectId(rate_id)})
+    if result.deleted_count > 0:
+        logger.info(f"Tax rate deleted: id={rate_id}, user={current_user.id}")
+        log_audit_action('delete_tax_rate', {'rate_id': rate_id})
+        flash(trans('tax_rate_deleted', default='Tax rate deleted successfully'), 'success')
+    else:
+        flash(trans('tax_rate_not_found', default='Tax rate not found'), 'danger')
+    return redirect(url_for('admin.manage_tax_rates'))
 
 @admin_bp.route('/reports/customers', methods=['GET'])
 @login_required
