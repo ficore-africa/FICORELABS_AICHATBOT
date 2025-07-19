@@ -1160,7 +1160,7 @@ def create_vat_rule(db, vat_rule_data):
                     exc_info=True, extra={'session_id': vat_rule_data.get('session_id', 'no-session-id')})
         raise ValueError(trans('general_vat_rule_exists', default='VAT rule with this category already exists'))
     except Exception as e:
-        logger.error(f"{trans('general_vat_rule_creation_error vale='Error creating VAT rule')}: {str(e)}", 
+        logger.error(f"{trans('general_vat_rule_creation_error', value='Error creating VAT rule')}: {str(e)}", 
                     exc_info=True, extra={'session_id': vat_rule_data.get('session_id', 'no-session-id')})
         raise
 
