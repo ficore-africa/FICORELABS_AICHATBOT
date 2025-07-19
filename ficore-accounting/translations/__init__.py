@@ -48,7 +48,6 @@ try:
     # General Tools
     from .general_tools.general_translations import GENERAL_TRANSLATIONS
     from .general_tools.tax_translations import TAX_TRANSLATIONS
-    from .general_tools.learning_hub_translations import LEARNING_HUB_TRANSLATIONS
     
 except ImportError as e:
     logger.error(f"Failed to import translation module: {str(e)}", exc_info=True)
@@ -73,7 +72,6 @@ translation_modules = {
     # General Tools
     'general': GENERAL_TRANSLATIONS,
     'tax': TAX_TRANSLATIONS,
-    'learning_hub': LEARNING_HUB_TRANSLATIONS,
 }
 
 # Map key prefixes to module names
@@ -103,7 +101,6 @@ KEY_PREFIX_TO_MODULE = {
     'backup_': 'tax',
     'maintenance_': 'tax',
     'webhook_': 'tax',
-    'learning_hub_': 'learning_hub',
 }
 
 # General-specific keys without prefixes (common navigation and UI elements)
