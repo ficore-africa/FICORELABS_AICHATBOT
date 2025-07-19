@@ -21,6 +21,7 @@ import os
 from credits import ApproveCreditRequestForm
 import random
 import string
+from learning_hub import calculate_progress_summary
 
 logger = logging.getLogger(__name__)
 
@@ -161,56 +162,48 @@ def allowed_file(filename):
 @admin_bp.route('/dashboard', methods=['GET'])
 @login_required
 @utils.requires_role('admin')
-@utils.limiter.limit("100 per hour")
+@utils.limiter.limit("50 per hour")
 def dashboard():
-    """Admin dashboard with system stats and tool usage."""
+    """Admin dashboard with system statistics."""
     try:
         db = utils.get_mongo_db()
-        user_count = db.users.count_documents({'role': {'$ne': 'admin'}} if not utils.is_admin() else {})
-        records_count = db.data_records.count_documents({})
-        cashflows_count = db.cashflows.count_documents({})
-        credit_tx_count = db.ficore_credit_transactions.count_documents({})
-        credit_requests_count = db.credit_requests.count_documents({})
-        audit_log_count = db.audit_logs.count_documents({})
-        budgets_count = db.budgets.count_documents({})
-        bills_count = db.bills.count_documents({})
-        payment_locations_count = db.payment_locations.count_documents({})
-        tax_deadlines_count = db.tax_deadlines.count_documents({})
         
-        tool_usage = db.tool_usage.aggregate([
-            {'$group': {
-                '_id': '$tool_name',
-                'count': {'$sum': 1}
-            }}
-        ])
-        tool_usage_stats = {item['_id']: item['count'] for item in tool_usage}
+        # Calculate system statistics
+        stats = {
+            'users': db.users.count_documents({}),
+            'records': db.data_records.count_documents({}),
+            'cashflows': db.cashflows.count_documents({}),
+            'credit_transactions': db.ficore_credit_transactions.count_documents({}),
+            'audit_logs': db.audit_logs.count_documents({}),
+            'budgets': db.budgets.count_documents({}),
+            'bills': db.bills.count_documents({}),
+            'payment_locations': db.payment_locations.count_documents({}),
+            'tax_deadlines': db.tax_deadlines.count_documents({}),
+            'learning_progress': calculate_progress_summary(db)
+        }
         
-        recent_users = list(db.users.find({} if utils.is_admin() else {'role': {'$ne': 'admin'}}).sort('created_at', -1).limit(10))
+        # Get tool usage statistics
+        tool_usage = {
+            'audit_logs': db.audit_logs.count_documents({'action': {'$in': ['tool_used', 'tool_accessed']}})
+        }
+        
+        # Get recent users
+        recent_users = list(db.users.find().sort('created_at', -1).limit(5))
         for user in recent_users:
             user['_id'] = str(user['_id'])
         
+        logger.info(f"Admin {current_user.id} accessed dashboard at {datetime.datetime.utcnow()}")
         return render_template(
             'admin/dashboard.html',
-            stats={
-                'users': user_count,
-                'records': records_count,
-                'cashflows': cashflows_count,
-                'credit_transactions': credit_tx_count,
-                'credit_requests': credit_requests_count,
-                'audit_logs': audit_log_count,
-                'budgets': budgets_count,
-                'bills': bills_count,
-                'payment_locations': payment_locations_count,
-                'tax_deadlines': tax_deadlines_count
-            },
-            tool_usage=tool_usage_stats,
+            stats=stats,
+            tool_usage=tool_usage,
             recent_users=recent_users,
-            title=trans('admin_dashboard_title', default='Admin Dashboard')
+            title=trans('admin_dashboard', default='Admin Dashboard')
         )
     except Exception as e:
-        logger.error(f"Error loading admin dashboard: {str(e)}")
-        flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
-        return render_template('personal/GENERAL/500.html', error=str(e)), 500
+        logger.error(f"Error loading admin dashboard for {current_user.id}: {str(e)}")
+        flash(trans('admin_dashboard_error', default='An error occurred while loading the dashboard'), 'danger')
+        return redirect(url_for('personal_bp.error'))
 
 @admin_bp.route('/feedbacks', methods=['GET'])
 @login_required
@@ -243,8 +236,8 @@ def generate_agent_id():
         db.agents.insert_one({
             '_id': agent_id,
             'status': 'active',
-            'created_at': datetime.utcnow(),
-            'updated_at': datetime.utcnow()
+            'created_at': datetime.datetime.utcnow(),
+            'updated_at': datetime.datetime.utcnow()
         })
         flash(trans('agents_agent_id_generated', default=f'Agent ID {agent_id} generated successfully'), 'success')
         logger.info(f"Admin {current_user.id} generated agent ID {agent_id}")
@@ -274,8 +267,8 @@ def generate_agent_ids():
                 agent_ids.append({
                     '_id': agent_id,
                     'status': 'active',
-                    'created_at': datetime.utcnow(),
-                    'updated_at': datetime.utcnow()
+                    'created_at': datetime.datetime.utcnow(),
+                    'updated_at': datetime.datetime.utcnow()
                 })
             db.agents.insert_many(agent_ids)
             for agent in agent_ids:
@@ -323,7 +316,7 @@ def manage_agents():
             if existing_agent:
                 result = db.agents.update_one(
                     {'_id': agent_id},
-                    {'$set': {'status': status, 'updated_at': datetime.utcnow()}}
+                    {'$set': {'status': status, 'updated_at': datetime.datetime.utcnow()}}
                 )
                 if result.modified_count == 0:
                     flash(trans('agents_not_updated', default='Agent status could not be updated'), 'danger')
@@ -335,8 +328,8 @@ def manage_agents():
                 db.agents.insert_one({
                     '_id': agent_id,
                     'status': status,
-                    'created_at': datetime.utcnow(),
-                    'updated_at': datetime.utcnow()
+                    'created_at': datetime.datetime.utcnow(),
+                    'updated_at': datetime.datetime.utcnow()
                 })
                 flash(trans('agents_added', default='Agent ID added successfully'), 'success')
                 logger.info(f"Admin {current_user.id} added agent {agent_id} with status {status}")
