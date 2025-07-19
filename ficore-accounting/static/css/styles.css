@@ -2842,11 +2842,11 @@ df-messenger {
 /* Dropdown Menu Styling */
 .dropdown-menu {
     position: absolute !important;
-    background: var(--navbar-bg); /* Fallback background when not active */
+    background: var(--footer-bg); /* Updated to use footer background */
     border: 1px solid var(--card-border);
     border-radius: 10px;
     box-shadow: var(--dropdown-shadow);
-    min-width: 160px; /* Adjusted for better fit */
+    min-width: 160px;
     max-height: 200px;
     z-index: 9999;
     overflow-y: auto;
@@ -2857,7 +2857,7 @@ df-messenger {
 
 /* Active Dropdown Menu (when clicked/open) */
 .dropdown-menu.show {
-    background: #1e3a8a; /* Dark blue background when open */
+    background: var(--footer-bg); /* Updated to use footer background */
     color: #ffffff; /* White text for contrast */
 }
 
@@ -2869,38 +2869,38 @@ df-messenger {
     transition: var(--transition-base);
     border-radius: 6px;
     cursor: pointer;
-    background: transparent; /* Ensure items don't override the dark blue */
+    background: transparent;
 }
 
 /* Dropdown Items in Active Dropdown */
 .dropdown-menu.show .dropdown-item {
-    color: #ffffff; /* White text for contrast against dark blue */
+    color: #ffffff; /* White text for contrast */
 }
 
 /* Hover and Focus States for Dropdown Items */
 .dropdown-item:hover,
 .dropdown-item:focus {
-    background: rgba(255, 255, 255, 0.1); /* Slight white overlay for hover in dark blue menu */
-    color: #ffffff; /* Maintain white text on hover */
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
 }
 
 /* Dark Mode Overrides */
 .dark-mode .dropdown-menu {
-    background: var(--navbar-bg); /* Fallback for dark mode when not active */
+    background: var(--footer-bg); /* Updated to use footer background */
 }
 
 .dark-mode .dropdown-menu.show {
-    background: #1e3a8a; /* Consistent dark blue when open */
+    background: var(--footer-bg); /* Updated to use footer background */
 }
 
 .dark-mode .dropdown-item {
-    background: transparent;
     color: #ffffff;
+    background: transparent;
 }
 
 .dark-mode .dropdown-item:hover,
 .dark-mode .dropdown-item:focus {
-    background: rgba(255, 255, 255, 0.1); /* Consistent hover effect */
+    background: rgba(255, 255, 255, 0.1);
     color: #ffffff;
 }
 
@@ -2912,7 +2912,7 @@ df-messenger {
     }
 
     .dropdown-menu.show {
-        background: #1e3a8a; /* Ensure dark blue on mobile */
+        background: var(--footer-bg); /* Updated to use footer background */
     }
 
     .dropdown-item {
@@ -2920,43 +2920,44 @@ df-messenger {
         font-size: clamp(0.75rem, 1.5vw, 0.875rem);
     }
 }
+
 /* Mobile Dropdown Menu (Navbar Collapse) */
 .navbar-collapse.show {
-    background: var(--navbar-bg); /* Use navbar background for consistency */
-    border: 1px solid var(--card-border); /* Optional: subtle border */
-    border-radius: 10px; /* Match other dropdowns */
-    box-shadow: var(--dropdown-shadow); /* Consistent shadow */
-    padding: 1rem; /* Add padding for better spacing */
-    width: 100%; /* Ensure full width */
-    z-index: 9999; /* Ensure it appears above other elements */
+    background: var(--footer-bg); /* Updated to use footer background */
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    box-shadow: var(--dropdown-shadow);
+    padding: 1rem;
+    width: 100%;
+    z-index: 9999;
 }
 
 /* Ensure navbar items are styled appropriately */
 .navbar-collapse.show .navbar-nav {
-    background: transparent; /* Prevent navbar-nav from overriding */
+    background: transparent;
 }
 
 /* Style for nav items in the mobile dropdown */
 .navbar-collapse.show .nav-item {
-    padding: 0.5rem 0; /* Add spacing between items */
-}
-
-/* Dark Mode Overrides */
-.dark-mode .navbar-collapse.show {
-    background: var(--navbar-bg); /* Use dark mode navbar background */
-    border-color: var(--card-border); /* Match dark mode border */
+    padding: 0.5rem 0;
 }
 
 /* Ensure text is readable */
 .navbar-collapse.show .nav-link {
-    color: var(--navbar-text-color); /* Use navbar text color */
+    color: var(--navbar-text-color);
 }
 
 /* Hover effect for nav items in mobile dropdown */
 .navbar-collapse.show .nav-link:hover,
 .navbar-collapse.show .nav-link:focus {
-    background: rgba(255, 255, 255, 0.1); /* Match dropdown-item hover */
+    background: rgba(255, 255, 255, 0.1);
     color: var(--accent-blue);
+}
+
+/* Dark Mode Overrides */
+.dark-mode .navbar-collapse.show {
+    background: var(--footer-bg); /* Updated to use footer background */
+    border-color: var(--card-border);
 }
 
 /* Dark Mode Hover */
@@ -2967,13 +2968,13 @@ df-messenger {
 }
 
 /* Responsive Adjustments for Mobile */
-@media (max-width: 991.98px) { /* Bootstrap's lg breakpoint */
+@media (max-width: 991.98px) {
     .navbar-collapse.show {
-        position: absolute; /* Ensure it overlays content */
-        top: var(--navbar-height); /* Position below navbar */
+        position: absolute;
+        top: var(--navbar-height);
         left: 0;
         width: 100%;
-        max-height: calc(100vh - var(--navbar-height)); /* Prevent overflow */
-        overflow-y: auto; /* Allow scrolling if content is long */
+        max-height: calc(100vh - var(--navbar-height));
+        overflow-y: auto;
     }
 }
