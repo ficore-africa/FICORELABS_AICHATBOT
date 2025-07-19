@@ -87,7 +87,7 @@ class CreditRequestsListForm(FlaskForm):
             ('denied', trans('credits_denied', default='Denied'))
         ],
         validators=[validators.DataRequired()],
-        render={'class': 'form-select'}
+        render_kw={'class': 'form-select'}
     )
     submit = SubmitField(
         trans('credits_filter', default='Filter'),
