@@ -38,16 +38,8 @@
         <div class="col">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h2 class="card-title">{{ t('inventory_title', default='Inventory') | escape }}</h2>
-                    <p class="card-text fs-3">{{ stats.inventory }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h2 class="card-title">{{ t('coins_transactions', default='Coin Transactions') | escape }}</h2>
-                    <p class="card-text fs-3">{{ stats.coin_transactions }}</p>
+                    <h2 class="card-title">{{ t('credits_transactions', default='Ficore Credits Transactions') | escape }}</h2>
+                    <p class="card-text fs-3">{{ stats.credits_transactions }}</p>
                 </div>
             </div>
         </div>
@@ -72,30 +64,6 @@
                 <div class="card-body">
                     <h2 class="card-title">{{ t('bills_title', default='Bills') | escape }}</h2>
                     <p class="card-text fs-3">{{ stats.bills }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h2 class="card-title">{{ t('emergency_funds_title', default='Emergency Funds') | escape }}</h2>
-                    <p class="card-text fs-3">{{ stats.emergency_funds }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h2 class="card-title">{{ t('net_worth_title', default='Net Worth') | escape }}</h2>
-                    <p class="card-text fs-3">{{ stats.net_worth }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h2 class="card-title">{{ t('quiz_results_title', default='Quiz Results') | escape }}</h2>
-                    <p class="card-text fs-3">{{ stats.quiz_results }}</p>
                 </div>
             </div>
         </div>
@@ -146,11 +114,7 @@
         <a href="{{ url_for('admin.manage_user_roles') }}" class="btn btn-primary">{{ t('admin_manage_user_roles', default='Manage User Roles') | escape }}</a>
         <a href="{{ url_for('admin.admin_budgets') }}" class="btn btn-primary">{{ t('admin_manage_budgets', default='Manage Budgets') | escape }}</a>
         <a href="{{ url_for('admin.admin_bills') }}" class="btn btn-primary">{{ t('admin_manage_bills', default='Manage Bills') | escape }}</a>
-        <a href="{{ url_for('admin.admin_emergency_funds') }}" class="btn btn-primary">{{ t('admin_manage_emergency_funds', default='Manage Emergency Funds') | escape }}</a>
-        <a href="{{ url_for('admin.admin_net_worth') }}" class="btn btn-primary">{{ t('admin_manage_net_worth', default='Manage Net Worth') | escape }}</a>
-        <a href="{{ url_for('admin.admin_quiz_results') }}" class="btn btn-primary">{{ t('admin_manage_quiz_results', default='Manage Quiz Results') | escape }}</a>
         <a href="{{ url_for('admin.admin_learning_hub') }}" class="btn btn-primary">{{ t('admin_manage_learning_hub', default='Manage Learning Hub') | escape }}</a>
-        <!-- New Buttons Added -->
         <a href="{{ url_for('admin.view_feedbacks') }}" class="btn btn-primary">{{ t('admin_view_feedbacks', default='View Feedbacks') | escape }}</a>
         <a href="{{ url_for('admin.generate_agent_ids') }}" class="btn btn-primary">{{ t('admin_generate_agent_ids', default='Generate Agent IDs') | escape }}</a>
         <a href="{{ url_for('admin.view_credit_requests') }}" class="btn btn-primary">{{ t('admin_approve_credit_requests', default='Approve Credit Requests') | escape }}</a>
