@@ -2762,6 +2762,7 @@ df-messenger {
 /* Language Toggle */
 .language-toggle {
     margin: 1rem 0;
+    background: var(--gradient-primary);
     text-align: center;
 }
 
