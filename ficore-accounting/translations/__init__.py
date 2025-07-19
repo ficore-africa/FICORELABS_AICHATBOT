@@ -242,4 +242,20 @@ def get_module_translations(module_name: str, lang: Optional[str] = None) -> Dic
     module = translation_modules.get(module_name, {})
     return module.get(lang, {})
 
-__all__ = ['trans', 'get_translations', 'get_all_translations', 'get_module_translations']
+def register_translation(app):
+    """
+    Register the translation function with Flask's Jinja2 environment.
+    
+    Args:
+        app: Flask application instance.
+    """
+    app.jinja_env.globals['t'] = trans
+
+    # Ensure session['lang'] is set before each request
+    @app.before_request
+    def set_default_language():
+        if has_request_context() and 'lang' not in session:
+            # Default to 'en' or use request headers/user settings as needed
+            session['lang'] = request.accept_languages.best_match(['en', 'ha'], 'en')
+
+__all__ = ['trans', 'get_translations', 'get_all_translations', 'get_module_translations', 'register_translation']
