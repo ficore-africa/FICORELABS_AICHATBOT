@@ -1223,7 +1223,7 @@ GENERAL_TRANSLATIONS = {
         'general_your_tax_reminders': 'Tunanin Harajinka',
         'general_notifications_tooltip': 'Sanarwa',
         'general_language_tooltip': 'Canza Harshe',
-        'general_quick_actions': 'Ayyuka masu Sauri',
+        'general_quick_actions': 'Madannan Sauri',
         'general_send_reminder': 'Aika Tunatarwa',
         'general_reminder_type': 'Nau’in Tunatarwa',
         'general_sms': 'SMS',
