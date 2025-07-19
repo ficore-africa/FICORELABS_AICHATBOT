@@ -107,22 +107,16 @@ def feedback():
     current_app.logger.info('Handling feedback', extra={'ip_address': request.remote_addr})
     tool_options = [
         ['profile', trans('general_profile', default='Profile')],
-        ['coins', trans('coins_dashboard', default='Coins')],
+        ['credits', trans('credits_dashboard', default='Ficore Credits')],
         ['debtors', trans('debtors_dashboard', default='Debtors')],
         ['creditors', trans('creditors_dashboard', default='Creditors')],
         ['receipts', trans('receipts_dashboard', default='Receipts')],
         ['payment', trans('payments_dashboard', default='Payments')],
-        ['inventory', trans('inventory_dashboard', default='Inventory')],
         ['report', trans('reports_dashboard', default='Reports')],
-        ['financial_health', trans('financial_health_calculator', default='Financial Health')],
         ['budget', trans('budget_budget_planner', default='Budget')],
         ['bill', trans('bill_bill_planner', default='Bill')],
-        ['net_worth', trans('net_worth_calculator', default='Net Worth')],
-        ['emergency_fund', trans('emergency_fund_calculator', default='Emergency Fund')],
         ['learning', trans('learning_hub_courses', default='Learning')],
-        ['quiz', trans('quiz_personality_quiz', default='Quiz')],
-        ['taxation', trans('taxation_calculator', default='Taxation')],
-        ['news', trans('news_updates', default='News')]
+        ['taxation', trans('taxation_calculator', default='Taxation')]
     ]
     if request.method == 'POST':
         try:
