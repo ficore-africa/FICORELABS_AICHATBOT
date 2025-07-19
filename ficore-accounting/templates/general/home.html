@@ -45,8 +45,8 @@
                         <i class="bi bi-wallet2 text-primary"></i>
                     </div>
                     <div class="snapshot-info">
-                        <div class="snapshot-label fw-bold ">{{ t('general_wallet_balance', default='Wallet') | e }}</div>
-                        <div class="stat-card-value" id="walletBalance">₦0</div>
+                        <div class="snapshot-label fw-bold ">{{ t('general_ficore_credits', default='Ficore Credits') | e }}</div>
+                        <div class="stat-card-value" id="walletBalance">0</div>
                     </div>
                 </div>
                 <div class="stat-card net-cashflow">
@@ -224,7 +224,7 @@ const translations = {
 function loadFinancialSummary() {
     Promise.all([
         fetch('{{ url_for("business.debt_summary") | e }}').then(r => r.json()).catch(() => ({totalIOwe: 0, totalIAmOwed: 0})),
-        fetch('{{ url_for("business.get_balance") | e }}').then(r => r.json()).catch(() => ({coin_balance: 0})),
+        fetch('{{ url_for("business.get_balance") | e }}').then(r => r.json()).catch(() => ({balance: 0})),
         fetch('{{ url_for("business.cashflow_summary") | e }}').then(r => r.json()).catch(() => ({netCashflow: 0}))
     ]).then(([debtData, walletData, cashflowData]) => {
         updateDebtSummary(debtData);
@@ -363,8 +363,8 @@ function updateDebtSummary(data) {
 }
 
 function updateSnapshots(walletData, cashflowData) {
-    document.getElementById('walletBalance').textContent = '₦' + format_currency(walletData.coin_balance || 0);
-    document.getElementById('walletBalance').dataset.originalText = '₦' + format_currency(walletData.coin_balance || 0);
+    document.getElementById('walletBalance').textContent = format_currency(walletData.balance || 0);
+    document.getElementById('walletBalance').dataset.originalText = format_currency(walletData.balance || 0);
     document.getElementById('netCashflow').textContent = '₦' + format_currency(cashflowData.netCashflow || 0);
     document.getElementById('netCashflow').dataset.originalText = '₦' + format_currency(cashflowData.netCashflow || 0);
 }
