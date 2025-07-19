@@ -59,7 +59,7 @@
                 <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                     <ul class="navbar-nav">
                         <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == ('personal.index' if request.blueprint == 'personal' else 'general_bp.home') %}active{% endif %}" href="{{ url_for('personal.index') if request.blueprint == 'personal' else url_for('general_bp.home') | e }}" data-bs-toggle="tooltip" odal" data-bs-title="{{ t('general_home_tooltip', default='Go to homepage') | e }}" aria-current="{% if request.endpoint == ('personal.index' if request.blueprint == 'personal' else 'general_bp.home') %}page{% endif %}">{{ t('general_home', default='Home') | e }}</a>
+                            <a class="nav-link {% if request.endpoint == ('personal.index' if request.blueprint == 'personal' else 'general_bp.home') %}active{% endif %}" href="{{ url_for('personal.index') if request.blueprint == 'personal' else url_for('general_bp.home') | e }}" data-bs-toggle="tooltip" data-bs-title="{{ t('general_home_tooltip', default='Go to homepage') | e }}" aria-current="{% if request.endpoint == ('personal.index' if request.blueprint == 'personal' else 'general_bp.home') %}page{% endif %}">{{ t('general_home', default='Home') | e }}</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {% if request.endpoint == 'general_bp.about' %}active{% endif %}" href="{{ url_for('general_bp.about') | e }}" data-bs-toggle="tooltip" data-bs-title="{{ t('general_about_tooltip', default='Learn more about FiCore') | e }}" aria-current="{% if request.endpoint == 'general_bp.about' %}page{% endif %}">{{ t('general_about', default='About') | e }}</a>
@@ -244,7 +244,63 @@
       chat-icon="{{ url_for('static', filename='img/chat-icon.png') | e }}"
     ></df-messenger>
     <script>
-        // Dialogflow Messenger error handling
+        // Flag to prevent rendering authenticated content after 401/403
+        window.isAuthenticatedContentBlocked = false;
+
+        // Clear local user-specific data
+        function clearUserData() {
+            localStorage.clear();
+            sessionStorage.clear();
+            console.log('Local user data cleared.');
+        }
+
+        // Handle 401/403 errors and redirect to login
+        function handleAuthError() {
+            if (!window.isAuthenticatedContentBlocked) {
+                window.isAuthenticatedContentBlocked = true;
+                clearUserData();
+                window.location.href = '/login';
+            }
+        }
+
+        // Intercept fetch requests for global error handling
+        (function() {
+            const originalFetch = window.fetch;
+            window.fetch = async function(...args) {
+                if (window.isAuthenticatedContentBlocked) {
+                    return Promise.reject(new Error('Authenticated content rendering blocked.'));
+                }
+                try {
+                    const response = await originalFetch(...args);
+                    if (response.status === 401 || response.status === 403) {
+                        handleAuthError();
+                        return Promise.reject(new Error('Unauthorized or Forbidden'));
+                    }
+                    return response;
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    throw error;
+                }
+            };
+        })();
+
+        // Intercept XMLHttpRequest for global error handling
+        (function() {
+            const originalOpen = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function(method, url, ...args) {
+                if (window.isAuthenticatedContentBlocked) {
+                    throw new Error('Authenticated content rendering blocked.');
+                }
+                const xhr = this;
+                xhr.addEventListener('load', function() {
+                    if (xhr.status === 401 || xhr.status === 403) {
+                        handleAuthError();
+                    }
+                });
+                return originalOpen.call(xhr, method, url, ...args);
+            };
+        })();
+
         document.addEventListener('DOMContentLoaded', function() {
             const dfMessenger = document.querySelector('df-messenger');
             if (!dfMessenger) {
@@ -309,7 +365,9 @@
             }
 
             {% if current_user.is_authenticated %}
-                loadNotificationCount();
+                if (!window.isAuthenticatedContentBlocked) {
+                    loadNotificationCount();
+                }
             {% endif %}
         });
 
@@ -329,6 +387,7 @@
         };
 
         async function toggleLanguage() {
+            if (window.isAuthenticatedContentBlocked) return;
             const languageText = document.getElementById('languageText');
             if (!languageText) {
                 console.error('Language text element not found.');
@@ -359,6 +418,7 @@
         }
 
         async function loadNotificationCount() {
+            if (window.isAuthenticatedContentBlocked) return;
             try {
                 const endpoint = {% if current_user.is_authenticated %}
                     {% if current_user.role == 'personal' %}
@@ -389,6 +449,7 @@
         }
 
         async function loadNotifications() {
+            if (window.isAuthenticatedContentBlocked) return;
             const body = document.getElementById('notificationBody');
             if (!body) {
                 console.warn('Notification modal body (#notificationBody) not found.');
@@ -479,11 +540,11 @@
         }
 
         function getCsrfToken() {
-            const token = document.querySelector('meta[name="csrf-token"]').content;
+            const token = document.querySelector('meta[name="csrf-token"]')?.content;
             if (!token) {
                 console.error('CSRF token not found in meta tag');
             }
-            return token;
+            return token || '';
         }
 
         function getNotificationIcon(type) {
