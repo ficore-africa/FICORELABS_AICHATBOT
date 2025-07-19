@@ -10,6 +10,7 @@ from bson import ObjectId
 from datetime import datetime
 from logging import getLogger
 from pymongo import errors
+from models import get_user, get_user_by_email, create_credit_request, update_credit_request, get_credit_requests, to_dict_credit_request
 
 logger = getLogger(__name__)
 
@@ -143,29 +144,29 @@ def request_credits():
                     flash(trans('credits_file_upload_failed', default='Failed to upload receipt file'), 'danger')
                     return redirect(url_for('credits.request_credits'))
 
-            # Step 2: Perform database operations within a transaction
+            # Step 2: Create credit request
+            request_data = {
+                'user_id': str(current_user.id),
+                'amount': amount,
+                'payment_method': payment_method,
+                'receipt_file_id': receipt_file_id,
+                'status': 'pending',
+                'created_at': datetime.utcnow(),
+                'updated_at': datetime.utcnow(),
+                'admin_id': None
+            }
             try:
                 with client.start_session() as mongo_session:
                     with mongo_session.start_transaction():
-                        db.credit_requests.insert_one({
-                            'user_id': str(current_user.id),
-                            'amount': amount,
-                            'payment_method': payment_method,
-                            'receipt_file_id': receipt_file_id,
-                            'status': 'pending',
-                            'created_at': datetime.utcnow(),
-                            'updated_at': datetime.utcnow(),
-                            'admin_id': None
-                        }, session=mongo_session)
+                        request_id = create_credit_request(db, request_data)
                         db.audit_logs.insert_one({
                             'admin_id': 'system',
                             'action': 'credit_request_submitted',
-                            'details': {'user_id': str(current_user.id), 'amount': amount, 'ref': ref},
+                            'details': {'user_id': str(current_user.id), 'amount': amount, 'ref': ref, 'request_id': request_id},
                             'timestamp': datetime.utcnow()
                         }, session=mongo_session)
             except errors.PyMongoError as e:
                 logger.error(f"MongoDB error submitting credit request for user {current_user.id}, ref {ref}: {str(e)}")
-                # Rollback: Delete the uploaded file if transaction fails
                 if receipt_file_id:
                     try:
                         fs.delete(receipt_file_id)
@@ -176,11 +177,10 @@ def request_credits():
                 return redirect(url_for('credits.request_credits'))
 
             flash(trans('credits_request_success', default='Ficore Credit request submitted successfully'), 'success')
-            logger.info(f"User {current_user.id} submitted credit request for {amount} Ficore Credits via {payment_method}, ref: {ref}")
+            logger.info(f"User {current_user.id} submitted credit request {request_id} for {amount} Ficore Credits via {payment_method}, ref: {ref}")
             return redirect(url_for('credits.history'))
         except Exception as e:
             logger.error(f"Unexpected error submitting credit request for user {current_user.id}, ref {ref}: {str(e)}")
-            # Rollback: Delete the uploaded file if an unexpected error occurs
             if receipt_file_id:
                 try:
                     fs.delete(receipt_file_id)
@@ -198,24 +198,23 @@ def request_credits():
 @login_required
 @utils.limiter.limit("100 per hour")
 def history():
-    """View Ficore Credit transaction and request history."""
+    """View Ficore Credit transaction and request history, including all statuses."""
     try:
         db = utils.get_mongo_db()
-        user_query = utils.get_user_query(str(current_user.id))
-        user = db.users.find_one(user_query)
+        # Clear cache to ensure fresh data
+        get_user.cache_clear()
+        get_user_by_email.cache_clear()
+        user = get_user(db, str(current_user.id))
         query = {} if utils.is_admin() else {'user_id': str(current_user.id)}
-        transactions = list(db.ficore_credit_transactions.find(query).sort('date', -1).limit(50))
-        requests = list(db.credit_requests.find(query).sort('created_at', -1).limit(50))
-        for tx in transactions:
-            tx['_id'] = str(tx['_id'])
-        for req in requests:
-            req['_id'] = str(req['_id'])
-            req['receipt_file_id'] = str(req['receipt_file_id']) if req.get('receipt_file_id') else None
+        transactions = get_ficore_credit_transactions(db, query)
+        requests = get_credit_requests(db, query)
+        formatted_transactions = [to_dict_ficore_credit_transaction(tx) for tx in transactions]
+        formatted_requests = [to_dict_credit_request(req) for req in requests]
         return render_template(
             'credits/history.html',
-            transactions=transactions,
-            requests=requests,
-            ficore_credit_balance=user.get('ficore_credit_balance', 0) if user else 0,
+            transactions=formatted_transactions,
+            requests=formatted_requests,
+            ficore_credit_balance=user.ficore_credit_balance if user else 0,
             title=trans('credits_history_title', default='Ficore Credit Transaction History', lang=session.get('lang', 'en'))
         )
     except Exception as e:
@@ -234,16 +233,14 @@ def history():
 @utils.requires_role('admin')
 @utils.limiter.limit("50 per hour")
 def view_credit_requests():
-    """View all pending credit requests (admin only)."""
+    """View all credit requests (admin only)."""
     try:
         db = utils.get_mongo_db()
-        requests = list(db.credit_requests.find({'status': 'pending'}).sort('created_at', -1).limit(50))
-        for req in requests:
-            req['_id'] = str(req['_id'])
-            req['receipt_file_id'] = str(req['receipt_file_id']) if req.get('receipt_file_id') else None
+        requests = get_credit_requests(db, {})
+        formatted_requests = [to_dict_credit_request(req) for req in requests]
         return render_template(
             'credits/requests.html',
-            requests=requests,
+            requests=formatted_requests,
             title=trans('credits_requests_title', default='Pending Credit Requests', lang=session.get('lang', 'en'))
         )
     except Exception as e:
@@ -281,17 +278,10 @@ def manage_credit_request(request_id):
             ref = f"REQ_PROCESS_{datetime.utcnow().isoformat()}"
             with client.start_session() as mongo_session:
                 with mongo_session.start_transaction():
-                    db.credit_requests.update_one(
-                        {'_id': ObjectId(request_id)},
-                        {
-                            '$set': {
-                                'status': status,
-                                'updated_at': datetime.utcnow(),
-                                'admin_id': str(current_user.id)
-                            }
-                        },
-                        session=mongo_session
-                    )
+                    update_credit_request(db, request_id, {
+                        'status': status,
+                        'admin_id': str(current_user.id)
+                    })
                     if status == 'approved':
                         credit_ficore_credits(
                             user_id=request_data['user_id'],
@@ -313,7 +303,7 @@ def manage_credit_request(request_id):
         return render_template(
             'credits/manage_request.html',
             form=form,
-            request=request_data,
+            request=to_dict_credit_request(request_data),
             title=trans('credits_manage_request_title', default='Manage Credit Request', lang=session.get('lang', 'en'))
         )
     except errors.PyMongoError as e:
@@ -387,7 +377,6 @@ def receipt_upload():
                         }, session=mongo_session)
             except (ValueError, errors.PyMongoError) as e:
                 logger.error(f"Error during transaction for receipt upload for user {current_user.id}, ref {ref}: {str(e)}")
-                # Rollback: Delete the uploaded file if transaction fails
                 try:
                     fs.delete(file_id)
                     logger.info(f"Deleted orphaned GridFS file {file_id} for user {current_user.id}, ref {ref}")
@@ -401,7 +390,6 @@ def receipt_upload():
             return redirect(url_for('credits.history'))
         except Exception as e:
             logger.error(f"Unexpected error uploading receipt for user {current_user.id}, ref {ref}: {str(e)}")
-            # Rollback: Delete the uploaded file if an unexpected error occurs
             if file_id:
                 try:
                     fs.delete(file_id)
@@ -480,9 +468,8 @@ def get_balance():
     """API endpoint to get current user's Ficore Credit balance."""
     try:
         db = utils.get_mongo_db()
-        user_query = utils.get_user_query(str(current_user.id))
-        user = db.users.find_one(user_query)
-        balance = user.get('ficore_credit_balance', 0) if user else 0
+        user = get_user(db, str(current_user.id))
+        balance = user.ficore_credit_balance if user else 0
         return jsonify({'balance': balance})
     except Exception as e:
         logger.error(f"Error fetching Ficore Credit balance for user {current_user.id}: {str(e)}")
