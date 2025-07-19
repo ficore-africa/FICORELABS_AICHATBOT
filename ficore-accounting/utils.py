@@ -92,10 +92,26 @@ _PERSONAL_TOOLS = [
     },
     {
         "endpoint": "credits.request_credits",
+        "label": "Request Credits",
+        "label_key": "request_credits_dashboard",
+        "description_key": "request_credits_dashboard_desc",
+        "tooltip_key": "request_credits_tooltip",
+        "icon": "bi-coin"
+    },  
+    {
+    "endpoint": "credits.receipt_upload",
+    "label": "Upload Receipt",
+    "label_key": "credits_upload_receipt",
+    "description_key": "credits_upload_receipt_desc",
+    "tooltip_key": "credits_upload_receipt_tooltip",
+    "icon": "bi-upload"
+    },
+    {
+        "endpoint": "credits.history",
         "label": "Ficore Credits",
-        "label_key": "credits_dashboard",
-        "description_key": "credits_dashboard_desc",
-        "tooltip_key": "credits_tooltip",
+        "label_key": "credits_your_wallet",
+        "description_key": "credits_your_wallet_desc",
+        "tooltip_key": "credits_your_wallet_tooltip",
         "icon": "bi-coin"
     },
     {
@@ -168,6 +184,14 @@ _PERSONAL_EXPLORE_FEATURES = [
         "tooltip_key": "credits_tooltip",
         "icon": "bi-coin"
     },
+        {
+        "endpoint": "credits.history",
+        "label": "Ficore Credits",
+        "label_key": "credits_your_wallet",
+        "description_key": "credits_your_wallet_desc",
+        "tooltip_key": "credits_your_wallet_tooltip",
+        "icon": "bi-coin"
+    },
     {
         "endpoint": "taxation_bp.calculate_tax",
         "label": "Taxation",
@@ -220,6 +244,14 @@ _BUSINESS_TOOLS = [
         "icon": "bi-coin"
     },
     {
+    "endpoint": "credits.receipt_upload",
+    "label": "Upload Receipt",
+    "label_key": "credits_upload_receipt",
+    "description_key": "credits_upload_receipt_desc",
+    "tooltip_key": "credits_upload_receipt_tooltip",
+    "icon": "bi-upload"
+    },
+    {
         "endpoint": "learning_hub.main",
         "label": "Learning Hub",
         "label_key": "learning_hub_main",
@@ -245,6 +277,14 @@ _BUSINESS_NAV = [
         "description_key": "debtors_dashboard_desc",
         "tooltip_key": "debtors_tooltip",
         "icon": "bi-person-plus"
+    },
+        {
+        "endpoint": "credits.history",
+        "label": "Ficore Credits",
+        "label_key": "credits_your_wallet",
+        "description_key": "credits_your_wallet_desc",
+        "tooltip_key": "credits_your_wallet_tooltip",
+        "icon": "bi-coin"
     },
     {
         "endpoint": "settings.profile",
