@@ -81,6 +81,23 @@ class TaxDeadlineForm(FlaskForm):
     description = StringField(trans('tax_description', default='Description'), validators=[DataRequired(), validators.Length(min=5, max=200)], render_kw={'class': 'form-control'})
     submit = SubmitField(trans('tax_add_deadline', default='Add Tax Deadline'), render_kw={'class': 'btn btn-primary'})
 
+class CreditRequestsListForm(FlaskForm):
+    status = SelectField(
+        trans('credits_request_status_filter', default='Filter by Status'),
+        choices=[
+            ('all', trans('credits_all_statuses', default='All')),
+            ('pending', trans('credits_pending', default='Pending')),
+            ('approved', trans('credits_approved', default='Approved')),
+            ('denied', trans('credits_denied', default='Denied'))
+        ],
+        validators=[validators.DataRequired()],
+        render_kw={'class': 'form-select'}
+    )
+    submit = SubmitField(
+        trans('credits_filter', default='Filter'),
+        render_kw={'class': 'btn btn-primary'}
+    )
+
 # Helper Functions
 def log_audit_action(action, details=None):
     """Log an admin action to audit_logs collection."""
@@ -372,7 +389,7 @@ def delete_user(user_id):
         flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
         return redirect(url_for('admin.manage_users'))
 
-@admin_bp.route('/data/delete/<collection>/<item_id>', methods=['POST'])
+@admin_bp.route('/data/delete/<collection>/<item_id>', methods=['POST部分: POST'])
 @login_required
 @utils.requires_role('admin')
 @utils.limiter.limit("10 per hour")
@@ -403,21 +420,25 @@ def delete_item(collection, item_id):
 @utils.limiter.limit("50 per hour")
 def view_credit_requests():
     """View all pending credit requests."""
+    form = CreditRequestsListForm()
     try:
         db = utils.get_mongo_db()
-        requests = list(db.credit_requests.find({'status': 'pending'}).sort('created_at', -1).limit(50))
+        status_filter = request.args.get('status', 'pending') if not form.validate_on_submit() else form.status.data
+        query = {} if status_filter == 'all' else {'status': status_filter}
+        requests = list(db.credit_requests.find(query).sort('created_at', -1).limit(50))
         for req in requests:
             req['_id'] = str(req['_id'])
             req['receipt_file_id'] = str(req['receipt_file_id']) if req.get('receipt_file_id') else None
         return render_template(
             'admin/credits_requests.html',
+            form=form,
             requests=requests,
             title=trans('credits_requests_title', default='Pending Credit Requests')
         )
     except Exception as e:
         logger.error(f"Error fetching credit requests for admin {current_user.id}: {str(e)}")
         flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
-        return render_template('admin/credits_requests.html', requests=[], title=trans('general_error', default='Error'))
+        return render_template('admin/credits_requests.html', form=form, requests=[], title=trans('general_error', default='Error'))
 
 @admin_bp.route('/credits/request/<request_id>', methods=['GET', 'POST'])
 @login_required
@@ -470,7 +491,7 @@ def manage_credit_request(request_id):
             return redirect(url_for('admin.view_credit_requests'))
         
         return render_template(
-            'admin/credits_requests.html',
+            'admin/credits_request.html',
             form=form,
             request=request_data,
             title=trans('credits_manage_request_title', default='Manage Credit Request')
