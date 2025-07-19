@@ -1,5 +1,5 @@
 # Translations for 'learning_hub' module
-learning_hub_translations = {
+LEARNING_HUB_TRANSLATIONS = {
     'en': {
         # Core UI Translations
         'learning_hub_title': 'Learning Hub',
