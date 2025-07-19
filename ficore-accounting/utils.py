@@ -83,14 +83,6 @@ _PERSONAL_TOOLS = [
         "icon": "bi-receipt"
     },
     {
-        "endpoint": "taxation_bp.calculate_tax",
-        "label": "Taxation",
-        "label_key": "taxation_calculator",
-        "description_key": "taxation_calculator_desc",
-        "tooltip_key": "taxation_tooltip",
-        "icon": "bi-calculator"
-    },
-    {
         "endpoint": "credits.request_credits",
         "label": "Request Credits",
         "label_key": "request_credits_dashboard",
@@ -105,14 +97,6 @@ _PERSONAL_TOOLS = [
         "description_key": "credits_your_wallet_desc",
         "tooltip_key": "credits_your_wallet_tooltip",
         "icon": "bi-coin"
-    },
-    {
-        "endpoint": "learning_hub.main",
-        "label": "Learning Hub",
-        "label_key": "learning_hub_main",
-        "description_key": "learning_hub_desc",
-        "tooltip_key": "learning_hub_tooltip",
-        "icon": "bi-book"
     },
 ]
 
@@ -210,7 +194,15 @@ _PERSONAL_EXPLORE_FEATURES = [
     },
 ]
 
-_BUSINESS_TOOLS = [
+_BUSINESS_TOOLS = [ 
+    {
+        "endpoint": "debtors.index",
+        "label": "They Owe",
+        "label_key": "debtors_dashboard",
+        "description_key": "debtors_dashboard_desc",
+        "tooltip_key": "debtors_tooltip",
+        "icon": "bi-person-plus"
+    },
     {
         "endpoint": "creditors.index",
         "label": "I Owe",
@@ -220,28 +212,12 @@ _BUSINESS_TOOLS = [
         "icon": "bi-arrow-up-circle"
     },
     {
-        "endpoint": "taxation_bp.calculate_tax",
-        "label": "Taxation",
-        "label_key": "taxation_calculator",
-        "description_key": "taxation_calculator_desc",
-        "tooltip_key": "taxation_tooltip",
-        "icon": "bi-calculator"
-    },
-    {
         "endpoint": "credits.request_credits",
         "label": "Ficore Credits",
         "label_key": "credits_dashboard",
         "description_key": "credits_dashboard_desc",
         "tooltip_key": "credits_tooltip",
         "icon": "bi-coin"
-    },
-    {
-        "endpoint": "learning_hub.main",
-        "label": "Learning Hub",
-        "label_key": "learning_hub_main",
-        "description_key": "learning_hub_desc",
-        "tooltip_key": "learning_hub_tooltip",
-        "icon": "bi-book"
     },
 ]
 
