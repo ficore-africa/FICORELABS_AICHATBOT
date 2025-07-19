@@ -87,18 +87,20 @@ def home():
 @login_required
 @utils.requires_role(['trader', 'admin'])
 def get_balance():
-    """Fetch the Ficore Credit balance for the authenticated user."""
-    try:
-        db = utils.get_mongo_db()
-        user = db.users.find_one({'_id': current_user.id})
-        ficore_credit_balance = user.get('ficore_credit_balance', 0) if user else 0
-        logger.info(f"Fetched Ficore Credit balance for user {current_user.id}: {ficore_credit_balance}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-        return jsonify({'ficore_credit_balance': ficore_credit_balance})
-    except Exception as e:
-        logger.error(f"Error fetching Ficore Credit balance for user {current_user.id}: {str(e)}", 
-                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-        return jsonify({'error': utils.trans('ficore_credit_balance_error')}), 500
+    return redirect(url_for('credits.get_balance'))
+# COMMENT OUT DUPLICATE BALANCE API CALLS FOR NOW, LET IT USE THE ONE FROM CREDITS BLUEPRINT
+#"""Fetch the Ficore Credit balance for the authenticated user."""
+ #   try:
+  #      db = utils.get_mongo_db()
+   #     user = db.users.find_one({'_id': current_user.id})
+    #    ficore_credit_balance = user.get('ficore_credit_balance', 0) if user else 0
+     #   logger.info(f"Fetched Ficore Credit balance for user {current_user.id}: {ficore_credit_balance}", 
+      #              extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+       # return jsonify({'ficore_credit_balance': ficore_credit_balance})
+    #except Exception as e:
+     #   logger.error(f"Error fetching Ficore Credit balance for user {current_user.id}: {str(e)}", 
+      #               extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+       # return jsonify({'error': utils.trans('ficore_credit_balance_error')}), 500
 
 # Other routes (notifications, debt, summary, etc.) remain unchanged
 @business.route('/notifications/count')
