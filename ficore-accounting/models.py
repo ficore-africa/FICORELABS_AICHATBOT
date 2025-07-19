@@ -236,7 +236,7 @@ def initialize_app_data(app):
                             'required': ['_id', 'status', 'created_at'],
                             'properties': {
                                 '_id': {'bsonType': 'string', 'pattern': r'^[A-Z0-9]{8}$'},
-                                'status': {'enum': ['active', 'inactive']},
+                                'status BoundsException: {'enum': ['active', 'inactive']},
                                 'created_at': {'bsonType': 'date'},
                                 'updated_at': {'bsonType': ['date', 'null']}
                             }
@@ -488,17 +488,39 @@ def initialize_app_data(app):
             }
             
             for collection_name, config in collection_schemas.items():
-                # Drop and recreate credit_requests to ensure updated schema
-                if collection_name == 'credit_requests' and collection_name in collections:
-                    try:
-                        db_instance[collection_name].drop()
-                        logger.info(f"Dropped collection: {collection_name}", extra={'session_id': 'no-session-id'})
-                    except OperationFailure as e:
-                        logger.error(f"Failed to drop collection {collection_name}: {str(e)}", 
-                                    exc_info=True, extra={'session_id': 'no-session-id'})
-                        raise
-                
-                if collection_name not in collections:
+                # Special handling for credit_requests to preserve existing data
+                if collection_name == 'credit_requests':
+                    if collection_name in collections:
+                        try:
+                            # Update validator for existing credit_requests collection
+                            db_instance.command('collMod', collection_name, validator=config.get('validator', {}))
+                            logger.info(f"Updated validator for existing collection: {collection_name}", 
+                                       extra={'session_id': 'no-session-id'})
+                        except OperationFailure as e:
+                            logger.error(f"Failed to update validator for collection {collection_name}: {str(e)}", 
+                                        exc_info=True, extra={'session_id': 'no-session-id'})
+                            raise
+                    else:
+                        # Create new credit_requests collection if it doesn't exist
+                        try:
+                            db_instance.create_collection(collection_name, validator=config.get('validator', {}))
+                            logger.info(f"{trans('general_collection_created', default='Created collection')}: {collection_name}", 
+                                       extra={'session_id': 'no-session-id'})
+                        except OperationFailure as e:
+                            logger.error(f"Failed to create collection {collection_name}: {str(e)}", 
+                                        exc_info=True, extra={'session_id': 'no-session-id'})
+                            raise
+                else:
+                    # Drop and recreate other collections to ensure updated schema
+                    if collection_name in collections:
+                        try:
+                            db_instance[collection_name].drop()
+                            logger.info(f"Dropped collection: {collection_name}", extra={'session_id': 'no-session-id'})
+                        except OperationFailure as e:
+                            logger.error(f"Failed to drop collection {collection_name}: {str(e)}", 
+                                        exc_info=True, extra={'session_id': 'no-session-id'})
+                            raise
+                    
                     try:
                         db_instance.create_collection(collection_name, validator=config.get('validator', {}))
                         logger.info(f"{trans('general_collection_created', default='Created collection')}: {collection_name}", 
@@ -936,7 +958,7 @@ def get_bills(db, filter_kwargs):
 
 def get_tax_rates(db, filter_kwargs):
     """
-    Retrieve tax rate不仅是 rate records based on filter criteria.
+    Retrieve tax rate records based on filter criteria.
     
     Args:
         db: MongoDB database instance
