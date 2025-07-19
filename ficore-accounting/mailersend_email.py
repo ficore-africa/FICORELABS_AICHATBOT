@@ -9,13 +9,6 @@ from translations import trans
 
 # Email configuration dictionary with provider-specific templates
 EMAIL_CONFIG = {
-    "financial_health": {
-        "subject_key": "financial_health_financial_health_report",
-        "template": {
-            "mailersend": "health_score_email.html",
-            "gmail": "health_score_email_gmail.html"
-        }
-    },
     "budget": {
         "subject_key": "budget_plan_summary",
         "template": {
@@ -23,46 +16,11 @@ EMAIL_CONFIG = {
             "gmail": "budget_email_gmail.html"
         }
     },
-    "quiz": {
-        "subject_key": "quiz_results_summary",
-        "template": {
-            "mailersend": "quiz_email.html",
-            "gmail": "quiz_email_gmail.html"
-        }
-    },
     "bill_reminder": {
         "subject_key": "bill_payment_reminder",
         "template": {
             "mailersend": "bill_reminder.html",
             "gmail": "bill_reminder_gmail.html"
-        }
-    },
-    "net_worth": {
-        "subject_key": "net_worth_net_worth_summary",
-        "template": {
-            "mailersend": "net_worth_email.html",
-            "gmail": "net_worth_email.html"
-        }
-    },
-    "emergency_fund": {
-        "subject_key": "emergency_fund_email_subject",
-        "template": {
-            "mailersend": "emergency_fund.html",
-            "gmail": "emergency_fund.html"
-        }
-    },
-    "learning_hub_lesson_completed": {
-        "subject_key": "learning_hub_lesson_completed_subject",
-        "template": {
-            "mailersend": "learning_hub_lesson_completed.html",
-            "gmail": "learning_hub_lesson_completed.html"
-        }
-    },
-    "learning_hub_feedback_received": {
-        "subject_key": "learning_hub_feedback_received_subject",
-        "template": {
-            "mailersend": "learning_hub_feedback_received.html",
-            "gmail": "learning_hub_feedback_received.html"
         }
     }
 }
@@ -94,7 +52,7 @@ def send_email(
         logger: Logger instance with SessionAdapter for session-aware logging.
         to_email: Recipient's email address.
         subject: Email subject.
-        template_key: Key in EMAIL_CONFIG (e.g., 'budget', 'quiz').
+        template_key: Key in EMAIL_CONFIG (e.g., 'budget', 'bill_reminder').
         data: Data to pass to the template for rendering. Defaults to empty dict if None.
         lang: Language code ('en' or 'ha'). Defaults to 'en'.
         job_id: Optional job ID for scheduled tasks to replace session ID in logs.
