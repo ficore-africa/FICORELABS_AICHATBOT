@@ -28,6 +28,7 @@ class RequestCreditsForm(FlaskForm):
         trans('general_payment_method', default='Payment Method'),
         choices=[
             ('card', trans('general_card', default='Credit/Debit Card')),
+            ('cash', trans('general_cash', default='Cash')),
             ('bank', trans('general_bank_transfer', default='Bank Transfer'))
         ],
         validators=[validators.DataRequired(message=trans('general_payment_method_required', default='Payment method is required'))],
