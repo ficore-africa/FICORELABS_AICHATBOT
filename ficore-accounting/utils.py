@@ -99,36 +99,12 @@ _PERSONAL_TOOLS = [
         "icon": "bi-coin"
     },
     {
-        "endpoint": "personal.emergency_fund.main",
-        "label": "Emergency Fund",
-        "label_key": "emergency_fund_calculator",
-        "description_key": "emergency_fund_desc",
-        "tooltip_key": "emergency_fund_tooltip",
-        "icon": "bi-shield"
-    },
-    {
-        "endpoint": "personal.quiz.main",
-        "label": "Quiz",
-        "label_key": "quiz_personality_quiz",
-        "description_key": "quiz_personality_desc",
-        "tooltip_key": "quiz_tooltip",
-        "icon": "bi-question-circle"
-    },
-    {
         "endpoint": "learning_hub.main",
         "label": "Learning Hub",
         "label_key": "learning_hub_main",
         "description_key": "learning_hub_desc",
         "tooltip_key": "learning_hub_tooltip",
         "icon": "bi-book"
-    },
-    {
-        "endpoint": "personal.net_worth.main",
-        "label": "Net Worth",
-        "label_key": "net_worth_calculator",
-        "description_key": "net_worth_desc",
-        "tooltip_key": "net_worth_tooltip",
-        "icon": "bi-cash-stack"
     },
 ]
 
@@ -185,14 +161,6 @@ _PERSONAL_EXPLORE_FEATURES = [
         "icon": "bi-wallet"
     },
     {
-        "endpoint": "personal.emergency_fund.main",
-        "label": "Emergency Fund",
-        "label_key": "emergency_fund_calculator",
-        "description_key": "emergency_fund_desc",
-        "tooltip_key": "emergency_fund_tooltip",
-        "icon": "bi-shield"
-    },
-    {
         "endpoint": "credits.history",
         "label": "Ficore Credits",
         "label_key": "credits_dashboard",
@@ -201,44 +169,12 @@ _PERSONAL_EXPLORE_FEATURES = [
         "icon": "bi-coin"
     },
     {
-        "endpoint": "personal.financial_health.main",
-        "label": "Financial Health",
-        "label_key": "financial_health_calculator",
-        "description_key": "financial_health_desc",
-        "tooltip_key": "financial_health_tooltip",
-        "icon": "bi-heart"
-    },
-    {
-        "endpoint": "personal.net_worth.main",
-        "label": "Net Worth",
-        "label_key": "net_worth_calculator",
-        "description_key": "net_worth_desc",
-        "tooltip_key": "net_worth_tooltip",
-        "icon": "bi-cash-stack"
-    },
-    {
-        "endpoint": "personal.quiz.main",
-        "label": "Quiz",
-        "label_key": "quiz_personality_quiz",
-        "description_key": "quiz_personality_desc",
-        "tooltip_key": "quiz_tooltip",
-        "icon": "bi-question-circle"
-    },
-    {
         "endpoint": "taxation_bp.calculate_tax",
         "label": "Taxation",
         "label_key": "taxation_calculator",
         "description_key": "taxation_calculator_desc",
         "tooltip_key": "taxation_tooltip",
         "icon": "bi-calculator"
-    },
-    {
-        "endpoint": "news_bp.news_list",
-        "label": "News",
-        "label_key": "news_list",
-        "description_key": "news_list_desc",
-        "tooltip_key": "news_tooltip",
-        "icon": "bi-newspaper"
     },
     {
         "endpoint": "personal.bill.main",
@@ -260,14 +196,6 @@ _PERSONAL_EXPLORE_FEATURES = [
 
 _BUSINESS_TOOLS = [
     {
-        "endpoint": "inventory.index",
-        "label": "Inventory",
-        "label_key": "inventory_dashboard",
-        "description_key": "inventory_dashboard_desc",
-        "tooltip_key": "inventory_tooltip",
-        "icon": "bi-box"
-    },
-    {
         "endpoint": "creditors.index",
         "label": "I Owe",
         "label_key": "creditors_dashboard",
@@ -298,14 +226,6 @@ _BUSINESS_TOOLS = [
         "description_key": "learning_hub_desc",
         "tooltip_key": "learning_hub_tooltip",
         "icon": "bi-book"
-    }, 
-    {
-        "endpoint": "news_bp.news_list",
-        "label": "News",
-        "label_key": "news_list",
-        "description_key": "news_list_desc",
-        "tooltip_key": "news_tooltip",
-        "icon": "bi-newspaper"
     },
 ]
 
@@ -327,14 +247,6 @@ _BUSINESS_NAV = [
         "icon": "bi-person-plus"
     },
     {
-        "endpoint": "inventory.index",
-        "label": "Inventory",
-        "label_key": "inventory_dashboard",
-        "description_key": "inventory_dashboard_desc",
-        "tooltip_key": "inventory_tooltip",
-        "icon": "bi-box"
-    },
-    {
         "endpoint": "settings.profile",
         "label": "Profile",
         "label_key": "profile_settings",
@@ -345,14 +257,6 @@ _BUSINESS_NAV = [
 ]
 
 _BUSINESS_EXPLORE_FEATURES = [
-    {
-        "endpoint": "inventory.index",
-        "label": "Inventory",
-        "label_key": "inventory_dashboard",
-        "description_key": "inventory_dashboard_desc",
-        "tooltip_key": "inventory_tooltip",
-        "icon": "bi-box"
-    },
     {
         "endpoint": "credits.history",
         "label": "Ficore Credits",
@@ -384,14 +288,6 @@ _BUSINESS_EXPLORE_FEATURES = [
         "description_key": "creditors_dashboard_desc",
         "tooltip_key": "creditors_tooltip",
         "icon": "bi-arrow-up-circle"
-    },
-    {
-        "endpoint": "news_bp.news_list",
-        "label": "News",
-        "label_key": "news_list",
-        "description_key": "news_list_desc",
-        "tooltip_key": "news_tooltip",
-        "icon": "bi-newspaper"
     },
     {
         "endpoint": "receipts.index",
@@ -486,6 +382,8 @@ _AGENT_EXPLORE_FEATURES = [
         "endpoint": "agents_bp.agent_portal",
         "label": "Agent Portal",
         "label_key": "agents_dashboard",
+       წ
+
         "description_key": "agents_dashboard_desc",
         "tooltip_key": "agents_tooltip",
         "icon": "bi-person-workspace"
@@ -497,14 +395,6 @@ _AGENT_EXPLORE_FEATURES = [
         "description_key": "credits_dashboard_desc",
         "tooltip_key": "credits_tooltip",
         "icon": "bi-coin"
-    },
-    {
-        "endpoint": "news_bp.news_list",
-        "label": "News",
-        "label_key": "news_list",
-        "description_key": "news_list_desc",
-        "tooltip_key": "news_tooltip",
-        "icon": "bi-newspaper"
     },
     {
         "endpoint": "learning_hub.main",
@@ -628,30 +518,6 @@ _ADMIN_EXPLORE_FEATURES = [
         "icon": "bi-receipt"
     },
     {
-        "endpoint": "admin.admin_emergency_funds",
-        "label": "Manage Emergency Funds",
-        "label_key": "admin_manage_emergency_funds",
-        "description_key": "admin_manage_emergency_funds_desc",
-        "tooltip_key": "admin_manage_emergency_funds_tooltip",
-        "icon": "bi-shield"
-    },
-    {
-        "endpoint": "admin.admin_net_worth",
-        "label": "Manage Net Worth",
-        "label_key": "admin_manage_net_worth",
-        "description_key": "admin_manage_net_worth_desc",
-        "tooltip_key": "admin_manage_net_worth_tooltip",
-        "icon": "bi-cash-stack"
-    },
-    {
-        "endpoint": "admin.admin_quiz_results",
-        "label": "Manage Quiz Results",
-        "label_key": "admin_manage_quiz_results",
-        "description_key": "admin_manage_quiz_results_desc",
-        "tooltip_key": "admin_manage_quiz_results_tooltip",
-        "icon": "bi-question-circle"
-    },
-    {
         "endpoint": "admin.admin_learning_hub",
         "label": "Manage Learning Hub",
         "label_key": "admin_manage_learning_hub",
@@ -684,33 +550,6 @@ def get_explore_features():
                     "category": "Personal"
                 },
                 {
-                    "endpoint": "personal.financial_health.main",
-                    "label": "Financial Health",
-                    "label_key": "financial_health_calculator",
-                    "description_key": "financial_health_desc",
-                    "tooltip_key": "financial_health_tooltip",
-                    "icon": "bi-heart",
-                    "category": "Personal"
-                },
-                {
-                    "endpoint": "personal.quiz.main",
-                    "label": "Financial Personality Quiz",
-                    "label_key": "quiz_personality_quiz",
-                    "description_key": "quiz_personality_desc",
-                    "tooltip_key": "quiz_tooltip",
-                    "icon": "bi-question-circle",
-                    "category": "Personal"
-                },
-                {
-                    "endpoint": "inventory.index",
-                    "label": "Inventory",
-                    "label_key": "inventory_dashboard",
-                    "description_key": "inventory_dashboard_desc",
-                    "tooltip_key": "inventory_tooltip",
-                    "icon": "bi-box",
-                    "category": "Business"
-                },
-                {
                     "endpoint": "creditors.index",
                     "label": "I Owe",
                     "label_key": "creditors_dashboard",
@@ -736,15 +575,6 @@ def get_explore_features():
                     "tooltip_key": "agents_tooltip",
                     "icon": "bi-person-workspace",
                     "category": "Agent"
-                },
-                {
-                    "endpoint": "news_bp.news_list",
-                    "label": "News",
-                    "label_key": "news_list",
-                    "description_key": "news_list_desc",
-                    "tooltip_key": "news_tooltip",
-                    "icon": "bi-newspaper",
-                    "category": "News"
                 },
                 {
                     "endpoint": "learning_hub.main",
@@ -849,7 +679,9 @@ def initialize_tools_with_urls(app):
             BUSINESS_TOOLS = generate_tools_with_urls(_BUSINESS_TOOLS)
             BUSINESS_NAV = generate_tools_with_urls(_BUSINESS_NAV)
             BUSINESS_EXPLORE_FEATURES = generate_tools_with_urls(_BUSINESS_EXPLORE_FEATURES)
-            AGENT_TOOLS = generate_tools_with_urls(_AGENT_TOOLS)
+            AG verschwunden
+
+ENT_TOOLS = generate_tools_with_urls(_AGENT_TOOLS)
             AGENT_NAV = generate_tools_with_urls(_AGENT_NAV)
             AGENT_EXPLORE_FEATURES = generate_tools_with_urls(_AGENT_EXPLORE_FEATURES)
             ADMIN_TOOLS = generate_tools_with_urls(_ADMIN_TOOLS)
@@ -1552,64 +1384,6 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None, session_id
                     'surplus_deficit': budget.get('surplus_deficit', 0)
                 },
                 'icon': 'bi-cash-coin'
-            })
-
-        # Fetch recent net worth records
-        net_worths = db.net_worth_data.find(query).sort('created_at', -1).limit(5)
-        for nw in net_worths:
-            activities.append({
-                'type': 'net_worth',
-                'description': trans('recent_activity_net_worth_calculated', default='Calculated net worth: {amount}', amount=nw.get('net_worth', 0)),
-                'timestamp': nw.get('created_at', datetime.utcnow()).isoformat(),
-                'details': {
-                    'net_worth': nw.get('net_worth', 0),
-                    'total_assets': nw.get('total_assets', 0),
-                    'total_liabilities': nw.get('total_liabilities', 0)
-                },
-                'icon': 'bi-graph-up'
-            })
-
-        # Fetch recent financial health scores
-        health_scores = db.financial_health_scores.find(query).sort('created_at', -1).limit(5)
-        for hs in health_scores:
-            activities.append({
-                'type': 'financial_health',
-                'description': trans('recent_activity_health_score', default='Calculated financial health score: {score}', score=hs.get('score', 0)),
-                'timestamp': hs.get('created_at', datetime.utcnow()).isoformat(),
-                'details': {
-                    'score': hs.get('score', 0),
-                    'status': hs.get('status', 'Unknown')
-                },
-                'icon': 'bi-heart-pulse'
-            })
-
-        # Fetch recent emergency fund plans
-        emergency_funds = db.emergency_funds.find(query).sort('created_at', -1).limit(5)
-        for ef in emergency_funds:
-            activities.append({
-                'type': 'emergency_fund',
-                'description': trans('recent_activity_emergency_fund_created', default='Created emergency fund plan with target: {amount}', amount=ef.get('target_amount', 0)),
-                'timestamp': ef.get('created_at', datetime.utcnow()).isoformat(),
-                'details': {
-                    'target_amount': ef.get('target_amount', 0),
-                    'savings_gap': ef.get('savings_gap', 0),
-                    'monthly_savings': ef.get('monthly_savings', 0)
-                },
-                'icon': 'bi-piggy-bank'
-            })
-
-        # Fetch recent quiz results
-        quizzes = db.quiz_responses.find(query).sort('created_at', -1).limit(5)
-        for quiz in quizzes:
-            activities.append({
-                'type': 'quiz',
-                'description': trans('recent_activity_quiz_completed', default='Completed financial quiz with score: {score}', score=quiz.get('score', 0)),
-                'timestamp': quiz.get('created_at', datetime.utcnow()).isoformat(),
-                'details': {
-                    'score': quiz.get('score', 0),
-                    'personality': quiz.get('personality', 'N/A')
-                },
-                'icon': 'bi-question-circle'
             })
 
         # Fetch recent learning hub progress
