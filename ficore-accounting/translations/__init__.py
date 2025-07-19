@@ -34,11 +34,7 @@ try:
     # Personal Finance Tools
     from .personal_finance.bill_translations import BILL_TRANSLATIONS
     from .personal_finance.budget_translations import BUDGET_TRANSLATIONS
-    from .personal_finance.emergency_fund_translations import EMERGENCY_FUND_TRANSLATIONS
-    from .personal_finance.financial_health_translations import FINANCIAL_HEALTH_TRANSLATIONS
-    from .personal_finance.net_worth_translations import NET_WORTH_TRANSLATIONS
     from .personal_finance.learning_hub_translations import LEARNING_HUB_TRANSLATIONS
-    from .personal_finance.quiz_translations import QUIZ_TRANSLATIONS
     
     # Accounting Tools
     from .accounting_tools.admin_translations import ADMIN_TRANSLATIONS
@@ -46,7 +42,6 @@ try:
     from .accounting_tools.ficore_credits_translations import FICORE_CREDITS_TRANSLATIONS
     from .accounting_tools.creditors_translations import CREDITORS_TRANSLATIONS
     from .accounting_tools.debtors_translations import DEBTORS_TRANSLATIONS
-    from .accounting_tools.inventory_translations import INVENTORY_TRANSLATIONS
     from .accounting_tools.payments_translations import PAYMENTS_TRANSLATIONS
     from .accounting_tools.receipts_translations import RECEIPTS_TRANSLATIONS
     from .accounting_tools.reports_translations import REPORTS_TRANSLATIONS
@@ -64,11 +59,7 @@ translation_modules = {
     # Personal Finance
     'bill': BILL_TRANSLATIONS,
     'budget': BUDGET_TRANSLATIONS,
-    'emergency_fund': EMERGENCY_FUND_TRANSLATIONS,
-    'financial_health': FINANCIAL_HEALTH_TRANSLATIONS,
-    'net_worth': NET_WORTH_TRANSLATIONS,
     'learning_hub': LEARNING_HUB_TRANSLATIONS,
-    'quiz': QUIZ_TRANSLATIONS,
     
     # Accounting Tools
     'admin': ADMIN_TRANSLATIONS,
@@ -76,7 +67,6 @@ translation_modules = {
     'credits': FICORE_CREDITS_TRANSLATIONS,
     'creditors': CREDITORS_TRANSLATIONS,
     'debtors': DEBTORS_TRANSLATIONS,
-    'inventory': INVENTORY_TRANSLATIONS,
     'payments': PAYMENTS_TRANSLATIONS,
     'receipts': RECEIPTS_TRANSLATIONS,
     'reports': REPORTS_TRANSLATIONS,
@@ -91,12 +81,7 @@ KEY_PREFIX_TO_MODULE = {
     # Personal Finance prefixes
     'bill_': 'bill',
     'budget_': 'budget',
-    'emergency_fund_': 'emergency_fund',
-    'financial_health_': 'financial_health',
-    'net_worth_': 'net_worth', 
     'learning_hub_': 'learning_hub',
-    'quiz_': 'quiz',
-    'badge_': 'quiz',  # Route badge_ keys to quiz translations
     
     # Accounting Tools prefixes
     'admin_': 'admin',
@@ -104,15 +89,12 @@ KEY_PREFIX_TO_MODULE = {
     'credits_': 'coins',
     'creditors_': 'creditors',
     'debtors_': 'debtors',
-    'inventory_': 'inventory',
     'payments_': 'payments',
     'receipts_': 'receipts',
     'reports_': 'reports',
     
     # General Tools prefixes
     'general_': 'general',
-    'news_': 'common_features',
-    'tax_': 'common_features',
     'notifications_': 'common_features',
     'search_': 'common_features',
     'filter_': 'common_features',
@@ -124,15 +106,12 @@ KEY_PREFIX_TO_MODULE = {
     'webhook_': 'common_features',
 }
 
-# Quiz-specific keys without prefixes
-QUIZ_SPECIFIC_KEYS = {'Yes', 'No', 'See Results'}
-
 # General-specific keys without prefixes (common navigation and UI elements)
 GENERAL_SPECIFIC_KEYS = {
     'Home', 'About', 'Contact', 'Login', 'Logout', 'Register', 'Profile',
     'Settings', 'Help', 'Support', 'Terms', 'Privacy', 'FAQ', 'Documentation',
     'Get Started', 'Learn More', 'Try Now', 'Sign Up', 'Sign In', 'Welcome',
-    'Dashboard', 'Tools', 'Features', 'Pricing', 'Blog', 'News', 'Updates',
+    'Dashboard', 'Tools', 'Features', 'Pricing', 'Blog', 'Updates',
     'Save', 'Cancel', 'Submit', 'Edit', 'Delete', 'Add', 'Create', 'Update',
     'View', 'Search', 'Filter', 'Sort', 'Export', 'Import', 'Print', 'Download',
     'Upload', 'Back', 'Next', 'Previous', 'Continue', 'Finish', 'Close', 'Open'
@@ -149,7 +128,7 @@ def trans(key: str, lang: Optional[str] = None, **kwargs: str) -> str:
     Translate a key using the appropriate module's translation dictionary.
     
     Args:
-        key: The translation key (e.g., 'bill_submit', 'general_welcome', 'quiz_yes', 'Yes').
+        key: The translation key (e.g., 'bill_submit', 'general_welcome').
         lang: Language code ('en', 'ha'). Defaults to session['lang'] or 'en'.
         **kwargs: String formatting parameters for the translated string.
     
@@ -177,29 +156,17 @@ def trans(key: str, lang: Optional[str] = None, **kwargs: str) -> str:
         lang = 'en'
 
     # Determine module based on key prefix or specific keys
-    module_name = 'general'  # Default to general instead of core
+    module_name = 'general'  # Default to general
     
-    # Check for specific prefix mappings first
+    # Check for specific prefix mappings
     for prefix, mod in KEY_PREFIX_TO_MODULE.items():
         if key.startswith(prefix):
             module_name = mod
             break
     
-    # Check for quiz-specific keys
-    if key in QUIZ_SPECIFIC_KEYS and has_request_context() and '/quiz/' in request.path:
-        module_name = 'quiz'
-    
     # Check for general-specific keys (common UI elements)
-    elif key in GENERAL_SPECIFIC_KEYS:
+    if key in GENERAL_SPECIFIC_KEYS:
         module_name = 'general'
-    
-    # If no specific module found and key doesn't have a prefix, check general
-    elif '_' not in key:
-        # Try general module for unprefixed general keys
-        general_module = translation_modules.get('general', {})
-        general_lang_dict = general_module.get(lang, {})
-        if key in general_lang_dict:
-            module_name = 'general'
 
     module = translation_modules.get(module_name, translation_modules['general'])
     lang_dict = module.get(lang, {})
@@ -263,7 +230,7 @@ def get_module_translations(module_name: str, lang: Optional[str] = None) -> Dic
     Get translations for a specific module and language.
     
     Args:
-        module_name: Name of the translation module (e.g., 'general', 'bill', 'quiz').
+        module_name: Name of the translation module (e.g., 'general', 'bill').
         lang: Language code ('en', 'ha'). Defaults to session['lang'] or 'en'.
     
     Returns:
