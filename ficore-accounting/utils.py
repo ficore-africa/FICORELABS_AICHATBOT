@@ -99,14 +99,6 @@ _PERSONAL_TOOLS = [
         "icon": "bi-coin"
     },  
     {
-    "endpoint": "credits.receipt_upload",
-    "label": "Upload Receipt",
-    "label_key": "credits_upload_receipt",
-    "description_key": "credits_upload_receipt_desc",
-    "tooltip_key": "credits_upload_receipt_tooltip",
-    "icon": "bi-upload"
-    },
-    {
         "endpoint": "credits.history",
         "label": "Ficore Credits",
         "label_key": "credits_your_wallet",
