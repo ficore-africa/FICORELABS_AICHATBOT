@@ -206,9 +206,9 @@ def initialize_app_data(app):
                         }
                     },
                     'indexes': [
-                        {'key': [('user_id', ASCENDING)]},
-                        {'key': [('status', ASCENDING)]},
-                        {'key': [('created_at', DESCENDING)]}
+                        [{'key': [('user_id', ASCENDING)]},
+                         {'key': [('status', ASCENDING)]},
+                         {'key': [('created_at', DESCENDING)]}]
                     ]
                 },
                 'audit_logs': {
@@ -236,7 +236,7 @@ def initialize_app_data(app):
                             'required': ['_id', 'status', 'created_at'],
                             'properties': {
                                 '_id': {'bsonType': 'string', 'pattern': r'^[A-Z0-9]{8}$'},
-                                'status BoundsException: {'enum': ['active', 'inactive']},
+                                'status': {'enum': ['active', 'inactive']},
                                 'created_at': {'bsonType': 'date'},
                                 'updated_at': {'bsonType': ['date', 'null']}
                             }
@@ -488,39 +488,16 @@ def initialize_app_data(app):
             }
             
             for collection_name, config in collection_schemas.items():
-                # Special handling for credit_requests to preserve existing data
-                if collection_name == 'credit_requests':
-                    if collection_name in collections:
-                        try:
-                            # Update validator for existing credit_requests collection
-                            db_instance.command('collMod', collection_name, validator=config.get('validator', {}))
-                            logger.info(f"Updated validator for existing collection: {collection_name}", 
-                                       extra={'session_id': 'no-session-id'})
-                        except OperationFailure as e:
-                            logger.error(f"Failed to update validator for collection {collection_name}: {str(e)}", 
-                                        exc_info=True, extra={'session_id': 'no-session-id'})
-                            raise
-                    else:
-                        # Create new credit_requests collection if it doesn't exist
-                        try:
-                            db_instance.create_collection(collection_name, validator=config.get('validator', {}))
-                            logger.info(f"{trans('general_collection_created', default='Created collection')}: {collection_name}", 
-                                       extra={'session_id': 'no-session-id'})
-                        except OperationFailure as e:
-                            logger.error(f"Failed to create collection {collection_name}: {str(e)}", 
-                                        exc_info=True, extra={'session_id': 'no-session-id'})
-                            raise
-                else:
-                    # Drop and recreate other collections to ensure updated schema
-                    if collection_name in collections:
-                        try:
-                            db_instance[collection_name].drop()
-                            logger.info(f"Dropped collection: {collection_name}", extra={'session_id': 'no-session-id'})
-                        except OperationFailure as e:
-                            logger.error(f"Failed to drop collection {collection_name}: {str(e)}", 
-                                        exc_info=True, extra={'session_id': 'no-session-id'})
-                            raise
-                    
+                if collection_name == 'credit_requests' and collection_name in collections:
+                    try:
+                        db_instance.command('collMod', collection_name, validator=config.get('validator', {}))
+                        logger.info(f"Updated validator for collection: {collection_name}", 
+                                    extra={'session_id': 'no-session-id'})
+                    except OperationFailure as e:
+                        logger.error(f"Failed to update validator for collection {collection_name}: {str(e)}", 
+                                    exc_info=True, extra={'session_id': 'no-session-id'})
+                        raise
+                elif collection_name not in collections:
                     try:
                         db_instance.create_collection(collection_name, validator=config.get('validator', {}))
                         logger.info(f"{trans('general_collection_created', default='Created collection')}: {collection_name}", 
@@ -532,45 +509,87 @@ def initialize_app_data(app):
                 
                 existing_indexes = db_instance[collection_name].index_information()
                 for index in config.get('indexes', []):
-                    keys = index['key']
-                    options = {k: v for k, v in index.items() if k != 'key'}
-                    index_key_tuple = tuple(keys)
-                    index_name = '_'.join(f"{k}_{v if isinstance(v, int) else str(v).replace(' ', '_')}" for k, v in keys)
-                    index_exists = False
-                    for existing_index_name, existing_index_info in existing_indexes.items():
-                        if tuple(existing_index_info['key']) == index_key_tuple:
-                            existing_options = {k: v for k, v in existing_index_info.items() if k not in ['key', 'v', 'ns']}
-                            if existing_options == options:
-                                logger.info(f"{trans('general_index_exists', default='Index already exists on')} {collection_name}: {keys} with options {options}", 
-                                           extra={'session_id': 'no-session-id'})
-                                index_exists = True
-                            else:
+                    if isinstance(index, list):
+                        for idx in index:
+                            keys = idx['key']
+                            options = {k: v for k, v in idx.items() if k != 'key'}
+                            index_key_tuple = tuple(keys)
+                            index_name = '_'.join(f"{k}_{v if isinstance(v, int) else str(v).replace(' ', '_')}" for k, v in keys)
+                            index_exists = False
+                            for existing_index_name, existing_index_info in existing_indexes.items():
+                                if tuple(existing_index_info['key']) == index_key_tuple:
+                                    existing_options = {k: v for k, v in existing_index_info.items() if k not in ['key', 'v', 'ns']}
+                                    if existing_options == options:
+                                        logger.info(f"{trans('general_index_exists', default='Index already exists on')} {collection_name}: {keys} with options {options}", 
+                                                   extra={'session_id': 'no-session-id'})
+                                        index_exists = True
+                                    else:
+                                        try:
+                                            db_instance[collection_name].drop_index(existing_index_name)
+                                            logger.info(f"Dropped conflicting index {existing_index_name} on {collection_name}", 
+                                                       extra={'session_id': 'no-session-id'})
+                                        except OperationFailure as e:
+                                            logger.error(f"Failed to drop index {existing_index_name} on {collection_name}: {str(e)}", 
+                                                        exc_info=True, extra={'session_id': 'no-session-id'})
+                                            raise
+                                    break
+                            if not index_exists:
                                 try:
-                                    db_instance[collection_name].drop_index(existing_index_name)
-                                    logger.info(f"Dropped conflicting index {existing_index_name} on {collection_name}", 
+                                    db_instance[collection_name].create_index(keys, name=index_name, **options)
+                                    logger.info(f"{trans('general_index_created', default='Created index on')} {collection_name}: {keys} with options {options}", 
                                                extra={'session_id': 'no-session-id'})
                                 except OperationFailure as e:
-                                    logger.error(f"Failed to drop index {existing_index_name} on {collection_name}: {str(e)}", 
+                                    if 'IndexKeySpecsConflict' in str(e):
+                                        logger.info(f"Attempting to resolve index conflict for {collection_name}: {index_name}", 
+                                                   extra={'session_id': 'no-session-id'})
+                                        db_instance[collection_name].drop_index(index_name)
+                                        db_instance[collection_name].create_index(keys, name=index_name, **options)
+                                        logger.info(f"Recreated index on {collection_name}: {keys} with options {options}", 
+                                                   extra={'session_id': 'no-session-id'})
+                                    else:
+                                        logger.error(f"Failed to create index on {collection_name}: {str(e)}", 
+                                                    exc_info=True, extra={'session_id': 'no-session-id'})
+                                        raise
+                    else:
+                        keys = index['key']
+                        options = {k: v for k, v in index.items() if k != 'key'}
+                        index_key_tuple = tuple(keys)
+                        index_name = '_'.join(f"{k}_{v if isinstance(v, int) else str(v).replace(' ', '_')}" for k, v in keys)
+                        index_exists = False
+                        for existing_index_name, existing_index_info in existing_indexes.items():
+                            if tuple(existing_index_info['key']) == index_key_tuple:
+                                existing_options = {k: v for k, v in existing_index_info.items() if k not in ['key', 'v', 'ns']}
+                                if existing_options == options:
+                                    logger.info(f"{trans('general_index_exists', default='Index already exists on')} {collection_name}: {keys} with options {options}", 
+                                               extra={'session_id': 'no-session-id'})
+                                    index_exists = True
+                                else:
+                                    try:
+                                        db_instance[collection_name].drop_index(existing_index_name)
+                                        logger.info(f"Dropped conflicting index {existing_index_name} on {collection_name}", 
+                                                   extra={'session_id': 'no-session-id'})
+                                    except OperationFailure as e:
+                                        logger.error(f"Failed to drop index {existing_index_name} on {collection_name}: {str(e)}", 
+                                                    exc_info=True, extra={'session_id': 'no-session-id'})
+                                        raise
+                                break
+                        if not index_exists:
+                            try:
+                                db_instance[collection_name].create_index(keys, name=index_name, **options)
+                                logger.info(f"{trans('general_index_created', default='Created index on')} {collection_name}: {keys} with options {options}", 
+                                           extra={'session_id': 'no-session-id'})
+                            except OperationFailure as e:
+                                if 'IndexKeySpecsConflict' in str(e):
+                                    logger.info(f"Attempting to resolve index conflict for {collection_name}: {index_name}", 
+                                               extra={'session_id': 'no-session-id'})
+                                    db_instance[collection_name].drop_index(index_name)
+                                    db_instance[collection_name].create_index(keys, name=index_name, **options)
+                                    logger.info(f"Recreated index on {collection_name}: {keys} with options {options}", 
+                                               extra={'session_id': 'no-session-id'})
+                                else:
+                                    logger.error(f"Failed to create index on {collection_name}: {str(e)}", 
                                                 exc_info=True, extra={'session_id': 'no-session-id'})
                                     raise
-                            break
-                    if not index_exists:
-                        try:
-                            db_instance[collection_name].create_index(keys, name=index_name, **options)
-                            logger.info(f"{trans('general_index_created', default='Created index on')} {collection_name}: {keys} with options {options}", 
-                                       extra={'session_id': 'no-session-id'})
-                        except OperationFailure as e:
-                            if 'IndexKeySpecsConflict' in str(e):
-                                logger.info(f"Attempting to resolve index conflict for {collection_name}: {index_name}", 
-                                           extra={'session_id': 'no-session-id'})
-                                db_instance[collection_name].drop_index(index_name)
-                                db_instance[collection_name].create_index(keys, name=index_name, **options)
-                                logger.info(f"Recreated index on {collection_name}: {keys} with options {options}", 
-                                           extra={'session_id': 'no-session-id'})
-                            else:
-                                logger.error(f"Failed to create index on {collection_name}: {str(e)}", 
-                                            exc_info=True, extra={'session_id': 'no-session-id'})
-                                raise
             
             # Initialize agents
             agents_collection = db_instance.agents
@@ -703,7 +722,7 @@ def create_user(db, user_data):
                     exc_info=True, extra={'session_id': 'no-session-id'})
         raise ValueError(trans('general_user_exists', default='User with this email or username already exists'))
     except Exception as e:
-        logger.error(f"{trans('general_user_creation_error', default='Error creating user')}: {str(e)}", 
+        logger.error(f"{trans(' عام_user_creation_error', default='Error creating user')}: {str(e)}", 
                     exc_info=True, extra={'session_id': 'no-session-id'})
         raise
 
@@ -1141,7 +1160,7 @@ def create_vat_rule(db, vat_rule_data):
                     exc_info=True, extra={'session_id': vat_rule_data.get('session_id', 'no-session-id')})
         raise ValueError(trans('general_vat_rule_exists', default='VAT rule with this category already exists'))
     except Exception as e:
-        logger.error(f"{trans('general_vat_rule_creation_error', default='Error creating VAT rule')}: {str(e)}", 
+        logger.error(f"{trans('general_vat_rule_creation_error vale='Error creating VAT rule')}: {str(e)}", 
                     exc_info=True, extra={'session_id': vat_rule_data.get('session_id', 'no-session-id')})
         raise
 
