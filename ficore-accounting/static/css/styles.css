@@ -2839,10 +2839,11 @@ df-messenger {
         font-size: 0.75rem;
     }
 }
+
 /* Dropdown Menu Styling */
 .dropdown-menu {
     position: absolute !important;
-    background: var(--footer-bg); /* Updated to use footer background */
+    background: #0F3D57; /* Solid dark blue */
     border: 1px solid var(--card-border);
     border-radius: 10px;
     box-shadow: var(--dropdown-shadow);
@@ -2857,24 +2858,20 @@ df-messenger {
 
 /* Active Dropdown Menu (when clicked/open) */
 .dropdown-menu.show {
-    background: var(--footer-bg); /* Updated to use footer background */
-    color: #ffffff; /* White text for contrast */
+    background: #0F3D57; /* Solid dark blue */
+    color: #ffffff; /* White text in bright mode */
+    opacity: 1; /* Ensure full opacity to block content beneath */
 }
 
 /* Dropdown Items */
 .dropdown-item {
-    color: var(--text-color);
+    color: #ffffff; /* White text in bright mode */
     padding: 0.5rem 1rem;
     font-size: clamp(0.875rem, 2vw, 0.9375rem);
     transition: var(--transition-base);
     border-radius: 6px;
     cursor: pointer;
     background: transparent;
-}
-
-/* Dropdown Items in Active Dropdown */
-.dropdown-menu.show .dropdown-item {
-    color: #ffffff; /* White text for contrast */
 }
 
 /* Hover and Focus States for Dropdown Items */
@@ -2886,11 +2883,12 @@ df-messenger {
 
 /* Dark Mode Overrides */
 .dark-mode .dropdown-menu {
-    background: var(--footer-bg); /* Updated to use footer background */
+    background: #0F3D57; /* Solid dark blue */
 }
 
 .dark-mode .dropdown-menu.show {
-    background: var(--footer-bg); /* Updated to use footer background */
+    background: #0F3D57; /* Solid dark blue */
+    color: #ffffff; /* White text in dark mode */
 }
 
 .dark-mode .dropdown-item {
@@ -2912,7 +2910,7 @@ df-messenger {
     }
 
     .dropdown-menu.show {
-        background: var(--footer-bg); /* Updated to use footer background */
+        background: #0F3D57; /* Solid dark blue */
     }
 
     .dropdown-item {
@@ -2923,13 +2921,14 @@ df-messenger {
 
 /* Mobile Dropdown Menu (Navbar Collapse) */
 .navbar-collapse.show {
-    background: var(--footer-bg); /* Updated to use footer background */
+    background: #0F3D57; /* Solid dark blue */
     border: 1px solid var(--card-border);
     border-radius: 10px;
     box-shadow: var(--dropdown-shadow);
     padding: 1rem;
     width: 100%;
     z-index: 9999;
+    opacity: 1; /* Ensure full opacity to block content beneath */
 }
 
 /* Ensure navbar items are styled appropriately */
@@ -2944,7 +2943,7 @@ df-messenger {
 
 /* Ensure text is readable */
 .navbar-collapse.show .nav-link {
-    color: var(--navbar-text-color);
+    color: #ffffff; /* White text in bright mode */
 }
 
 /* Hover effect for nav items in mobile dropdown */
@@ -2956,7 +2955,7 @@ df-messenger {
 
 /* Dark Mode Overrides */
 .dark-mode .navbar-collapse.show {
-    background: var(--footer-bg); /* Updated to use footer background */
+    background: #0F3D57; /* Solid dark blue */
     border-color: var(--card-border);
 }
 
