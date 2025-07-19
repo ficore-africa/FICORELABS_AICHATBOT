@@ -14,7 +14,6 @@ from bson import ObjectId
 from datetime import datetime
 from logging import getLogger
 from pymongo import errors
-from models import get_user, get_user_by_email, create_credit_request, update_credit_request, get_credit_requests, to_dict_credit_request
 
 logger = getLogger(__name__)
 
@@ -204,6 +203,7 @@ def request_credits():
 def history():
     """View Ficore Credit transaction and request history, including all statuses."""
     try:
+        logger.debug(f"Loading utils module: {utils.__file__}")  # Added debug logging
         db = utils.get_mongo_db()
         # Clear cache to ensure fresh data
         get_user.cache_clear()
