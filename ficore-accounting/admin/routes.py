@@ -12,7 +12,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from reportlab.lib.units import inch
-from io import BytesIO
+from io import BytesIO, StringIO
 import csv
 import re
 from models import get_budgets, get_bills
@@ -228,10 +228,17 @@ def generate_agent_ids():
             output = [['Agent ID', 'Status', 'Created At']]
             for agent in agent_ids:
                 output.append([agent['_id'], agent['status'], agent['created_at'].strftime('%Y-%m-%d %H:%M:%S')])
-            buffer = BytesIO()
-            writer = csv.writer(buffer, lineterminator='\n')
+            
+            # Use StringIO to write CSV content
+            string_buffer = StringIO()
+            writer = csv.writer(string_buffer, lineterminator='\n')
             writer.writerows(output)
+            
+            # Encode the string content to bytes
+            csv_content = string_buffer.getvalue().encode('utf-8')
+            buffer = BytesIO(csv_content)
             buffer.seek(0)
+            
             flash(trans('agents_bulk_generated', default=f'{count} Agent IDs generated successfully'), 'success')
             return Response(
                 buffer,
