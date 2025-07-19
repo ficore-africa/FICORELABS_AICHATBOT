@@ -121,40 +121,64 @@ def request_credits():
             ref = f"REQ_{datetime.utcnow().isoformat()}"
             receipt_file_id = None
 
-            with client.start_session() as mongo_session:
-                with mongo_session.start_transaction():
-                    if receipt_file:
-                        receipt_file_id = fs.put(
-                            receipt_file,
-                            filename=receipt_file.filename,
-                            user_id=str(current_user.id),
-                            upload_date=datetime.utcnow(),
-                            session=mongo_session
-                        )
-                    db.credit_requests.insert_one({
-                        'user_id': str(current_user.id),
-                        'amount': amount,
-                        'payment_method': payment_method,
-                        'receipt_file_id': receipt_file_id,
-                        'status': 'pending',
-                        'created_at': datetime.utcnow(),
-                        'updated_at': datetime.utcnow(),
-                        'admin_id': None
-                    }, session=mongo_session)
-                    db.audit_logs.insert_one({
-                        'admin_id': 'system',
-                        'action': 'credit_request_submitted',
-                        'details': {'user_id': str(current_user.id), 'amount': amount, 'ref': ref},
-                        'timestamp': datetime.utcnow()
-                    }, session=mongo_session)
+            # Step 1: Handle file upload outside the transaction
+            if receipt_file:
+                try:
+                    receipt_file_id = fs.put(
+                        receipt_file,
+                        filename=receipt_file.filename,
+                        user_id=str(current_user.id),
+                        upload_date=datetime.utcnow()
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to upload receipt to GridFS for user {current_user.id}, ref {ref}: {str(e)}")
+                    flash(trans('credits_file_upload_failed', default='Failed to upload receipt file'), 'danger')
+                    return redirect(url_for('credits.request_credits'))
+
+            # Step 2: Perform database operations within a transaction
+            try:
+                with client.start_session() as mongo_session:
+                    with mongo_session.start_transaction():
+                        db.credit_requests.insert_one({
+                            'user_id': str(current_user.id),
+                            'amount': amount,
+                            'payment_method': payment_method,
+                            'receipt_file_id': receipt_file_id,
+                            'status': 'pending',
+                            'created_at': datetime.utcnow(),
+                            'updated_at': datetime.utcnow(),
+                            'admin_id': None
+                        }, session=mongo_session)
+                        db.audit_logs.insert_one({
+                            'admin_id': 'system',
+                            'action': 'credit_request_submitted',
+                            'details': {'user_id': str(current_user.id), 'amount': amount, 'ref': ref},
+                            'timestamp': datetime.utcnow()
+                        }, session=mongo_session)
+            except errors.PyMongoError as e:
+                logger.error(f"MongoDB error submitting credit request for user {current_user.id}, ref {ref}: {str(e)}")
+                # Rollback: Delete the uploaded file if transaction fails
+                if receipt_file_id:
+                    try:
+                        fs.delete(receipt_file_id)
+                        logger.info(f"Deleted orphaned GridFS file {receipt_file_id} for user {current_user.id}, ref {ref}")
+                    except Exception as delete_err:
+                        logger.error(f"Failed to delete orphaned GridFS file {receipt_file_id}: {str(delete_err)}")
+                flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
+                return redirect(url_for('credits.request_credits'))
+
             flash(trans('credits_request_success', default='Ficore Credit request submitted successfully'), 'success')
             logger.info(f"User {current_user.id} submitted credit request for {amount} Ficore Credits via {payment_method}, ref: {ref}")
             return redirect(url_for('credits.history'))
-        except errors.PyMongoError as e:
-            logger.error(f"MongoDB error submitting credit request for user {current_user.id}, ref {ref}: {str(e)}")
-            flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
         except Exception as e:
             logger.error(f"Unexpected error submitting credit request for user {current_user.id}, ref {ref}: {str(e)}")
+            # Rollback: Delete the uploaded file if an unexpected error occurs
+            if receipt_file_id:
+                try:
+                    fs.delete(receipt_file_id)
+                    logger.info(f"Deleted orphaned GridFS file {receipt_file_id} for user {current_user.id}, ref {ref}")
+                except Exception as delete_err:
+                    logger.error(f"Failed to delete orphaned GridFS file {receipt_file_id}: {str(delete_err)}")
             flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
     return render_template(
         'credits/request.html',
@@ -309,51 +333,73 @@ def receipt_upload():
             fs = GridFS(db)
             receipt_file = form.receipt.data
             ref = f"RECEIPT_UPLOAD_{datetime.utcnow().isoformat()}"
-            with client.start_session() as mongo_session:
-                with mongo_session.start_transaction():
-                    file_id = fs.put(
-                        receipt_file,
-                        filename=receipt_file.filename,
-                        user_id=str(current_user.id),
-                        upload_date=datetime.utcnow(),
-                        session=mongo_session
-                    )
-                    if not utils.is_admin():
-                        user_query = utils.get_user_query(str(current_user.id))
-                        result = db.users.update_one(
-                            user_query,
-                            {'$inc': {'ficore_credit_balance': -1}},
-                            session=mongo_session
-                        )
-                        if result.matched_count == 0:
-                            logger.error(f"No user found for ID {current_user.id} to deduct Ficore Credits, ref: {ref}")
-                            raise ValueError(f"No user found for ID {current_user.id}")
-                        db.ficore_credit_transactions.insert_one({
-                            'user_id': str(current_user.id),
-                            'amount': -1,
-                            'type': 'spend',
-                            'ref': ref,
-                            'payment_method': None,
-                            'facilitated_by_agent': 'system',
-                            'date': datetime.utcnow()
+            file_id = None
+
+            # Step 1: Handle file upload outside the transaction
+            try:
+                file_id = fs.put(
+                    receipt_file,
+                    filename=receipt_file.filename,
+                    user_id=str(current_user.id),
+                    upload_date=datetime.utcnow()
+                )
+            except Exception as e:
+                logger.error(f"Failed to upload receipt to GridFS for user {current_user.id}, ref {ref}: {str(e)}")
+                flash(trans('credits_file_upload_failed', default='Failed to upload receipt file'), 'danger')
+                return redirect(url_for('credits.receipt_upload'))
+
+            # Step 2: Perform database operations within a transaction
+            try:
+                with client.start_session() as mongo_session:
+                    with mongo_session.start_transaction():
+                        if not utils.is_admin():
+                            user_query = utils.get_user_query(str(current_user.id))
+                            result = db.users.update_one(
+                                user_query,
+                                {'$inc': {'ficore_credit_balance': -1}},
+                                session=mongo_session
+                            )
+                            if result.matched_count == 0:
+                                logger.error(f"No user found for ID {current_user.id} to deduct Ficore Credits, ref: {ref}")
+                                raise ValueError(f"No user found for ID {current_user.id}")
+                            db.ficore_credit_transactions.insert_one({
+                                'user_id': str(current_user.id),
+                                'amount': -1,
+                                'type': 'spend',
+                                'ref': ref,
+                                'payment_method': None,
+                                'facilitated_by_agent': 'system',
+                                'date': datetime.utcnow()
+                            }, session=mongo_session)
+                        db.audit_logs.insert_one({
+                            'admin_id': 'system',
+                            'action': 'receipt_upload',
+                            'details': {'user_id': str(current_user.id), 'file_id': str(file_id), 'ref': ref},
+                            'timestamp': datetime.utcnow()
                         }, session=mongo_session)
-                    db.audit_logs.insert_one({
-                        'admin_id': 'system',
-                        'action': 'receipt_upload',
-                        'details': {'user_id': str(current_user.id), 'file_id': str(file_id), 'ref': ref},
-                        'timestamp': datetime.utcnow()
-                    }, session=mongo_session)
+            except (ValueError, errors.PyMongoError) as e:
+                logger.error(f"Error during transaction for receipt upload for user {current_user.id}, ref {ref}: {str(e)}")
+                # Rollback: Delete the uploaded file if transaction fails
+                try:
+                    fs.delete(file_id)
+                    logger.info(f"Deleted orphaned GridFS file {file_id} for user {current_user.id}, ref {ref}")
+                except Exception as delete_err:
+                    logger.error(f"Failed to delete orphaned GridFS file {file_id}: {str(delete_err)}")
+                flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
+                return redirect(url_for('credits.receipt_upload'))
+
             flash(trans('credits_receipt_uploaded', default='Receipt uploaded successfully'), 'success')
             logger.info(f"User {current_user.id} uploaded receipt {file_id}, ref: {ref}")
             return redirect(url_for('credits.history'))
-        except ValueError as e:
-            logger.error(f"User not found for receipt upload, ref: {ref}: {str(e)}")
-            flash(trans('general_user_not_found', default='User not found'), 'danger')
-        except errors.PyMongoError as e:
-            logger.error(f"MongoDB error uploading receipt for user {current_user.id}, ref: {ref}: {str(e)}")
-            flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
         except Exception as e:
-            logger.error(f"Unexpected error uploading receipt for user {current_user.id}, ref: {ref}: {str(e)}")
+            logger.error(f"Unexpected error uploading receipt for user {current_user.id}, ref {ref}: {str(e)}")
+            # Rollback: Delete the uploaded file if an unexpected error occurs
+            if file_id:
+                try:
+                    fs.delete(file_id)
+                    logger.info(f"Deleted orphaned GridFS file {file_id} for user {current_user.id}, ref {ref}")
+                except Exception as delete_err:
+                    logger.error(f"Failed to delete orphaned GridFS file {file_id}: {str(delete_err)}")
             flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
     return render_template(
         'credits/receipt_upload.html',
