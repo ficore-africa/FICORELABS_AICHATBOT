@@ -17,10 +17,9 @@ from functools import wraps
 from mailersend_email import init_email_config
 from scheduler_setup import init_scheduler
 from models import (
-    create_user, get_user_by_email, get_user, get_financial_health, get_budgets, get_bills,
-    get_net_worth, get_emergency_funds, get_quiz_results, get_tax_rates, get_payment_locations,
-    get_tax_reminders, get_vat_rules, get_tax_deadlines, to_dict_financial_health, to_dict_budget,
-    to_dict_bill, to_dict_net_worth, to_dict_emergency_fund, to_dict_quiz_result, to_dict_tax_rate,
+    create_user, get_user_by_email, get_user, get_budgets, get_bills,
+    get_tax_rates, get_payment_locations, get_tax_reminders, get_vat_rules, 
+    get_tax_deadlines, to_dict_budget, to_dict_bill, to_dict_tax_rate,
     to_dict_payment_location, to_dict_tax_reminder, to_dict_vat_rule, initialize_app_data
 )
 from learning_hub.models import get_progress, to_dict_learning_progress
@@ -33,8 +32,6 @@ from jinja2.exceptions import TemplateNotFound
 import time
 from pymongo import MongoClient
 import certifi
-from news.routes import seed_news
-from taxation.routes import seed_tax_data
 from credits.routes import credits_bp
 import re
 from flask_mailman import Mail
@@ -386,8 +383,7 @@ def create_app():
                     logger.error(f'Error shutting down scheduler: {str(e)}', exc_info=True)
 
             personal_finance_collections = [
-                'budgets', 'bills', 'emergency_funds', 'financial_health_scores',
-                'net_worth_data', 'quiz_responses', 'learning_materials', 'bill_reminders',
+                'budgets', 'bills', 'learning_materials', 'bill_reminders',
                 'tax_rates', 'payment_locations', 'tax_reminders', 'vat_rules', 'tax_deadlines'
             ]
             db = app.extensions['mongo']['ficodb']
@@ -405,16 +401,6 @@ def create_app():
                 db.budgets.create_index([('user_id', 1), ('created_at', -1)])
                 db.budgets.create_index([('session_id', 1), ('created_at', -1)])
                 db.budgets.create_index([('created_at', -1)])
-                db.emergency_funds.create_index([('user_id', 1), ('created_at', -1)])
-                db.emergency_funds.create_index([('session_id', 1), ('created_at', -1)])
-                db.emergency_funds.create_index([('created_at', -1)])
-                db.financial_health_scores.create_index([('user_id', 1), ('created_at', -1)])
-                db.financial_health_scores.create_index([('session_id', 1), ('created_at', -1)])
-                db.net_worth_data.create_index([('user_id', 1), ('due_date', 1), ('status', 1)])
-                db.net_worth_data.create_index([('session_id', 1), ('created_at', -1)])
-                db.net_worth_data.create_index([('created_at', -1)])
-                db.quiz_responses.create_index([('user_id', 1), ('created_at', -1)])
-                db.quiz_responses.create_index([('session_id', 1), ('created_at', -1)])
                 db.learning_materials.create_index([('user_id', 1), ('course_id', 1)])
                 db.learning_materials.create_index([('session_id', 1), ('course_id', 1)])
                 db.bill_reminders.create_index([('user_id', 1), ('sent_at', -1)])
@@ -447,23 +433,14 @@ def create_app():
                     tax_version = db.tax_rates.find_one({'_id': 'version'})
                     current_tax_version = '2025-07-02'
                     if not tax_version or tax_version.get('version') != current_tax_version:
-                        seed_tax_data()
                         db.tax_rates.update_one(
                             {'_id': 'version'},
                             {'$set': {'version': current_tax_version, 'updated_at': datetime.utcnow(), 'role': 'system'}},
                             upsert=True
                         )
                         logger.info(f'Tax data seeded or updated to version {current_tax_version}')
-                    else:
-                        logger.info('Tax data already up-to-date')
-                
-                if db.news.count_documents({}) == 0:
-                    seed_news()
-                    logger.info('News data seeded')
-                else:
-                    logger.info('News data already seeded')
             except Exception as e:
-                logger.error(f'Failed to seed tax or news data: {str(e)}', exc_info=True)
+                logger.error(f'Failed to seed tax data: {str(e)}', exc_info=True)
             
             admin_email = os.getenv('ADMIN_EMAIL', 'ficore@gmail.com')
             admin_password = os.getenv('ADMIN_PASSWORD')
@@ -498,7 +475,6 @@ def create_app():
     from creditors.routes import creditors_bp
     from dashboard.routes import dashboard_bp
     from debtors.routes import debtors_bp
-    from inventory.routes import inventory_bp
     from payments.routes import payments_bp
     from receipts.routes import receipts_bp
     from reports.routes import reports_bp
@@ -506,7 +482,6 @@ def create_app():
     from personal import personal_bp
     from general.routes import general_bp
     from admin.routes import admin_bp
-    from news.routes import news_bp
     from taxation.routes import taxation_bp
     from learning_hub import learning_hub_bp
     from ai import ai_bp
@@ -515,8 +490,6 @@ def create_app():
     logger.info('Registered users blueprint')
     app.register_blueprint(agents_bp, url_prefix='/agents')
     logger.info('Registered agents blueprint')
-    app.register_blueprint(news_bp, url_prefix='/news')
-    logger.info('Registered news blueprint')
     app.register_blueprint(taxation_bp, url_prefix='/taxation')
     logger.info('Registered taxation blueprint')
     try:
@@ -530,8 +503,6 @@ def create_app():
     logger.info('Registered dashboard blueprint')
     app.register_blueprint(debtors_bp, url_prefix='/debtors')
     logger.info('Registered debtors blueprint')
-    app.register_blueprint(inventory_bp, url_prefix='/inventory')
-    logger.info('Registered inventory blueprint')
     app.register_blueprint(payments_bp, url_prefix='/payments')
     logger.info('Registered payments blueprint')
     app.register_blueprint(receipts_bp, url_prefix='/receipts')
