@@ -21,7 +21,7 @@ import os
 from credits import ApproveCreditRequestForm
 import random
 import string
-from learning_hub import calculate_progress_summary
+from learning_hub.models import calculate_progress_summary
 
 logger = logging.getLogger(__name__)
 
