@@ -25,9 +25,9 @@ def home():
         user_id = current_user.id
         lang = session.get('lang', 'en')
 
-        # Fetch coin balance
+        # Fetch Ficore Credit balance
         user = db.users.find_one({'_id': user_id})
-        coin_balance = user.get('coin_balance', 0) if user else 0
+        ficore_credit_balance = user.get('ficore_credit_balance', 0) if user else 0
 
         # Fetch debt summary
         creditors_pipeline = [
@@ -65,7 +65,7 @@ def home():
         
         return render_template(
             'general/home.html',
-            coin_balance=coin_balance,
+            ficore_credit_balance=ficore_credit_balance,  # Updated variable name
             total_i_owe=total_i_owe,
             total_i_am_owed=total_i_am_owed,
             net_cashflow=net_cashflow,
@@ -83,6 +83,24 @@ def home():
             title=utils.trans('error', lang=lang)
         ), 500
 
+@business.route('/credits/get_balance')
+@login_required
+@utils.requires_role(['trader', 'admin'])
+def get_balance():
+    """Fetch the Ficore Credit balance for the authenticated user."""
+    try:
+        db = utils.get_mongo_db()
+        user = db.users.find_one({'_id': current_user.id})
+        ficore_credit_balance = user.get('ficore_credit_balance', 0) if user else 0
+        logger.info(f"Fetched Ficore Credit balance for user {current_user.id}: {ficore_credit_balance}", 
+                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+        return jsonify({'ficore_credit_balance': ficore_credit_balance})
+    except Exception as e:
+        logger.error(f"Error fetching Ficore Credit balance for user {current_user.id}: {str(e)}", 
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+        return jsonify({'error': utils.trans('ficore_credit_balance_error')}), 500
+
+# Other routes (notifications, debt, summary, etc.) remain unchanged
 @business.route('/notifications/count')
 @login_required
 @utils.requires_role(['trader', 'admin'])
@@ -193,23 +211,6 @@ def debt_summary():
         logger.error(f"Error fetching debt summary for user {user_id}: {str(e)}", 
                      extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
         return jsonify({'error': utils.trans('debt_summary_error')}), 500
-
-@business.route('/coins/get_balance')
-@login_required
-@utils.requires_role(['trader', 'admin'])
-def get_balance():
-    """Fetch the wallet balance for the authenticated user."""
-    try:
-        db = utils.get_mongo_db()
-        user = db.users.find_one({'_id': current_user.id})
-        coin_balance = user.get('coin_balance', 0) if user else 0
-        logger.info(f"Fetched coin balance for user {current_user.id}: {coin_balance}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-        return jsonify({'coin_balance': coin_balance})
-    except Exception as e:
-        logger.error(f"Error fetching coin balance for user {current_user.id}: {str(e)}", 
-                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-        return jsonify({'error': utils.trans('coin_balance_error')}), 500
 
 @business.route('/cashflow/summary')
 @login_required
