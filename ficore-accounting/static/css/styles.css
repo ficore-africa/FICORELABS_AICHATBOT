@@ -2135,7 +2135,7 @@ h2.card-title {
 /* Footer */
 .footer {
     background: var(--footer-bg);
-    color: var(--navbar-text-color);
+    color: #ffffff;
     padding: 2rem 1rem;
     text-align: center;
     flex-shrink: 0;
@@ -2144,7 +2144,7 @@ h2.card-title {
 }
 
 .footer a {
-    color: var(--footer-link-color);
+    color: #ffffff;
     text-decoration: none;
     margin: 0 0.5rem;
     font-size: clamp(0.875rem, 2vw, 0.9375rem);
@@ -2153,6 +2153,19 @@ h2.card-title {
 .footer a:hover {
     color: var(--accent-blue);
     text-decoration: underline;
+}
+
+/* Dark Mode Overrides */
+.dark-mode .footer {
+    color: #ffffff; /* Ensure white text in dark mode */
+}
+
+.dark-mode .footer a {
+    color: #ffffff; /* Ensure white links in dark mode */
+}
+
+.dark-mode .footer a:hover {
+    color: var(--accent-blue); /* Blue on hover for visibility */
 }
 
 /* Accessibility */
