@@ -14,7 +14,10 @@ from session_utils import create_anonymous_session
 from mailersend_email import send_email, EMAIL_CONFIG
 from werkzeug.utils import secure_filename
 import logging
-from . import learning_hub_bp
+import os
+from datetime import datetime
+from bson import ObjectId
+from credits import credit_ficore_credits
 
 # Configure logging
 logger = logging.getLogger('ficore_app.learning_hub')
@@ -26,6 +29,8 @@ UPLOAD_FOLDER = 'learning_hub/static/uploads'
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+learning_hub_bp = Blueprint('learning_hub', __name__, template_folder='templates/learning_hub')
 
 @learning_hub_bp.route('/')
 def main():
@@ -407,7 +412,7 @@ def get_quiz_data():
 @learning_hub_bp.route('/api/lesson/action', methods=['POST'])
 @requires_role(['personal', 'admin'])
 def lesson_action():
-    """Handle lesson actions like marking complete."""
+    """Handle lesson actions like marking complete and award Ficore Credits."""
     try:
         course_id = request.form.get('course_id')
         lesson_id = request.form.get('lesson_id')
@@ -437,6 +442,22 @@ def lesson_action():
                     course_progress['badges_earned'].append(badge_earned)
                 save_course_progress(course_id, course_progress)
                 
+                # Award 0.2 Ficore Credits for lesson completion
+                if current_user.is_authenticated:
+                    ref = f"LESSON_CREDIT_{course_id}_{lesson_id}_{datetime.utcnow().isoformat()}"
+                    try:
+                        credit_ficore_credits(
+                            user_id=str(current_user.id),
+                            amount=0.2,
+                            ref=ref,
+                            type='add',
+                            admin_id='system'
+                        )
+                        logger.info(f"Awarded 0.2 Ficore Credits to user {current_user.id} for completing lesson {lesson_id}, ref: {ref}")
+                    except Exception as e:
+                        logger.error(f"Failed to award 0.2 Ficore Credits for lesson {lesson_id} for user {current_user.id}, ref: {ref}: {str(e)}")
+                        flash(trans('credits_award_failed', default='Failed to award Ficore Credits for lesson completion'), 'danger')
+                
                 # Send email if user has provided details and opted in
                 profile = session.get('learning_hub_profile', {})
                 if profile.get('send_email') and profile.get('email'):
@@ -462,7 +483,8 @@ def lesson_action():
                                 "cta_url": url_for('learning_hub.main', _external=True),
                                 "unsubscribe_url": url_for('learning_hub.unsubscribe', email=profile['email'], _external=True),
                                 "coins_earned": format_currency(coins_earned, currency='NGN'),
-                                "badge_earned": badge_earned.get('title_en') if badge_earned else None
+                                "badge_earned": badge_earned.get('title_en') if badge_earned else None,
+                                "credits_earned": format_currency(0.2, currency='NGN') if current_user.is_authenticated else None
                             },
                             lang=session.get('lang', 'en')
                         )
@@ -473,14 +495,16 @@ def lesson_action():
                     'success': True,
                     'message': trans('learning_hub_lesson_completed', default='Lesson marked as complete'),
                     'coins_earned': format_currency(coins_earned, currency='NGN'),
-                    'badge_earned': badge_earned.get('title_en') if badge_earned else None
+                    'badge_earned': badge_earned.get('title_en') if badge_earned else None,
+                    'credits_earned': format_currency(0.2, currency='NGN') if current_user.is_authenticated else None
                 })
             else:
                 return jsonify({
                     'success': True,
                     'message': trans('learning_hub_lesson_already_completed', default='Lesson already completed'),
                     'coins_earned': format_currency(0, currency='NGN'),
-                    'badge_earned': None
+                    'badge_earned': None,
+                    'credits_earned': None
                 })
         
         return jsonify({'success': False, 'message': trans('learning_hub_invalid_action', default='Invalid action')}), 400
