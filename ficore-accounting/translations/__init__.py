@@ -34,7 +34,6 @@ try:
     # Personal Finance Tools
     from .personal_finance.bill_translations import BILL_TRANSLATIONS
     from .personal_finance.budget_translations import BUDGET_TRANSLATIONS
-   
     
     # Accounting Tools
     from .accounting_tools.admin_translations import ADMIN_TRANSLATIONS
@@ -48,8 +47,8 @@ try:
     
     # General Tools
     from .general_tools.general_translations import GENERAL_TRANSLATIONS
-    from .general_tools.common_features_translations import COMMON_FEATURES_TRANSLATIONS
-     from .general_tools.learning_hub_translations import LEARNING_HUB_TRANSLATIONS
+    from .general_tools.tax_translations import TAX_TRANSLATIONS
+    from .general_tools.learning_hub_translations import LEARNING_HUB_TRANSLATIONS
     
 except ImportError as e:
     logger.error(f"Failed to import translation module: {str(e)}", exc_info=True)
@@ -60,7 +59,6 @@ translation_modules = {
     # Personal Finance
     'bill': BILL_TRANSLATIONS,
     'budget': BUDGET_TRANSLATIONS,
-    
     
     # Accounting Tools
     'admin': ADMIN_TRANSLATIONS,
@@ -74,7 +72,7 @@ translation_modules = {
     
     # General Tools
     'general': GENERAL_TRANSLATIONS,
-    'common_features': COMMON_FEATURES_TRANSLATIONS,
+    'tax': TAX_TRANSLATIONS,
     'learning_hub': LEARNING_HUB_TRANSLATIONS,
 }
 
@@ -83,7 +81,6 @@ KEY_PREFIX_TO_MODULE = {
     # Personal Finance prefixes
     'bill_': 'bill',
     'budget_': 'budget',
-    
     
     # Accounting Tools prefixes
     'admin_': 'admin',
@@ -97,16 +94,15 @@ KEY_PREFIX_TO_MODULE = {
     
     # General Tools prefixes
     'general_': 'general',
-    'notifications_': 'common_features',
-    'search_': 'common_features',
-    'filter_': 'common_features',
-    'export_': 'common_features',
-    'api_': 'common_features',
-    'tax_': 'common_features',
-    'backup_': 'common_features',
-    'maintenance_': 'common_features',
-    'api_': 'common_features',
-    'webhook_': 'common_features',
+    'notifications_': 'tax',
+    'search_': 'tax',
+    'filter_': 'tax',
+    'export_': 'tax',
+    'api_': 'tax',
+    'tax_': 'tax',
+    'backup_': 'tax',
+    'maintenance_': 'tax',
+    'webhook_': 'tax',
     'learning_hub_': 'learning_hub',
 }
 
