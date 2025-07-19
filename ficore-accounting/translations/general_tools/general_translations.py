@@ -9,6 +9,7 @@ GENERAL_TRANSLATIONS = {
         'general_signin': 'Sign In',
         'general_profile': 'Profile',
         'general_settings': 'Settings',
+        'general_balances_overview':'Balances Overview',
         'credits_request_credits': 'Request Credits',
         'general_language_toggle_tooltip': 'Toggle to switch between available languages',
         'general_language_toggle': 'Switch Language',
@@ -1491,6 +1492,7 @@ GENERAL_TRANSLATIONS = {
         'general_language_toggle_tooltip': 'Togglar don canzawa tsakanin harsuna masu samuwa',
         'general_language_toggle': 'Canza Harshe',
         'session_timeout': 'Zaman ku ya ƙare. Da fatan za a sake shiga.',
+        'general_balances_overview':'Duba Ragowa',
 
         # Misc
         'payment_locations_title': 'Wuraren Biyan Kuɗi',
