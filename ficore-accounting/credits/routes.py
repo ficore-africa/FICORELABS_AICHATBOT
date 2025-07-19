@@ -199,21 +199,18 @@ def request_credits():
 
 @credits_bp.route('/history', methods=['GET'])
 @login_required
-@utils.limiter.limit("100 per hour")
 def history():
-    """View Ficore Credit transaction and request history, including all statuses."""
+    """View Ficore Credit transaction and request history."""
     try:
-        logger.debug(f"Loading utils module: {utils.__file__}")  # Added debug logging
-        db = utils.get_mongo_db()
-        # Clear cache to ensure fresh data
-        get_user.cache_clear()
-        get_user_by_email.cache_clear()
+        db = get_db()
         user = get_user(db, str(current_user.id))
-        query = {} if utils.is_admin() else {'user_id': str(current_user.id)}
+        query = {} if (user and user.is_admin) else {'user_id': str(current_user.id)}
         transactions = get_ficore_credit_transactions(db, query)
         requests = get_credit_requests(db, query)
         formatted_transactions = [to_dict_ficore_credit_transaction(tx) for tx in transactions]
         formatted_requests = [to_dict_credit_request(req) for req in requests]
+        if not transactions and not requests:
+            flash(trans('credits_no_history', default='No transaction or request history found'), 'info')
         return render_template(
             'credits/history.html',
             transactions=formatted_transactions,
