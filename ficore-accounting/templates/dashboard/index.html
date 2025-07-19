@@ -56,24 +56,6 @@
                     </div>
                     {% endif %}
 
-                    {% if personal_finance_summary.latest_financial_health %}
-                    <div class="col-md-3">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body text-center">
-                                <div class="text-success mb-2">
-                                    <i class="fas fa-heartbeat fa-2x"></i>
-                                </div>
-                                <h6 class="card-title">{{ t('financial_health_title', default='Health Score') }}</h6>
-                                <p class="card-text">
-                                    <span class="h5 text-primary">{{ personal_finance_summary.latest_financial_health.score }}/100</span><br>
-                                    <small class="text-muted">{{ personal_finance_summary.latest_financial_health.status }}</small>
-                                </p>
-                                <a href="{{ url_for('personal.financial_health.main') }}" class="btn btn-outline-success btn-sm">{{ t('general_view', default='View') }}</a>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-
                     {% if personal_finance_summary.total_bills > 0 %}
                     <div class="col-md-3">
                         <div class="card border-0 shadow-sm h-100">
@@ -97,26 +79,6 @@
                         </div>
                     </div>
                     {% endif %}
-
-                    {% if personal_finance_summary.latest_net_worth %}
-                    <div class="col-md-3">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-body text-center">
-                                <div class="text-info mb-2">
-                                    <i class="fas fa-chart-line fa-2x"></i>
-                                </div>
-                                <h6 class="card-title">{{ t('net_worth_title', default='Net Worth') }}</h6>
-                                <p class="card-text">
-                                    <span class="h5 {{ 'text-success' if personal_finance_summary.latest_net_worth.net_worth > 0 else 'text-danger' }}">
-                                        {{ personal_finance_summary.latest_net_worth.net_worth | format_currency }}
-                                    </span><br>
-                                    <small class="text-muted">{{ t('net_worth_total', default='Total Net Worth') }}</small>
-                                </p>
-                                <a href="{{ url_for('personal.net_worth.main') }}" class="btn btn-outline-info btn-sm">{{ t('general_view', default='View') }}</a>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
                 </div>
 
                 <!-- Personal Finance Quick Actions -->
@@ -136,24 +98,6 @@
                                 <a href="{{ url_for('personal.bill.main') }}" class="btn btn-outline-warning w-100">
                                     <i class="fas fa-file-invoice d-block mb-1"></i>
                                     <small>{{ t('bill_title', default='Bills') }}</small>
-                                </a>
-                            </div>
-                            <div class="col-md-2 col-6">
-                                <a href="{{ url_for('personal.emergency_fund.main') }}" class="btn btn-outline-success w-100">
-                                    <i class="fas fa-shield-alt d-block mb-1"></i>
-                                    <small>{{ t('emergency_fund_title', default='Emergency Fund') }}</small>
-                                </a>
-                            </div>
-                            <div class="col-md-2 col-6">
-                                <a href="{{ url_for('personal.financial_health.main') }}" class="btn btn-outline-info w-100">
-                                    <i class="fas fa-heartbeat d-block mb-1"></i>
-                                    <small>{{ t('financial_health_title', default='Health Score') }}</small>
-                                </a>
-                            </div>
-                            <div class="col-md-2 col-6">
-                                <a href="{{ url_for('personal.net_worth.main') }}" class="btn btn-outline-secondary w-100">
-                                    <i class="fas fa-chart-line d-block mb-1"></i>
-                                    <small>{{ t('net_worth_title', default='Net Worth') }}</small>
                                 </a>
                             </div>
                             <div class="col-md-2 col-6">
@@ -187,12 +131,6 @@
                                     <small>{{ t('bill_add_first', default='Add Bills') }}</small>
                                 </a>
                             </div>
-                            <div class="col-md-2 col-6">
-                                <a href="{{ url_for('personal.quiz.main') }}" class="btn btn-outline-primary w-100">
-                                    <i class="fas fa-question-circle d-block mb-1"></i>
-                                    <small>{{ t('quiz_take_first', default='Take Quiz') }}</small>
-                                </a>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -209,7 +147,6 @@
                 <a href="{{ url_for('debtors.add') }}" class="btn btn-primary">{{ t('debtors_create_what_they_owe_you', default='Create What They Owe You') }}</a>
                 <a href="{{ url_for('payments.add') }}" class="btn btn-primary">{{ t('payments_add_money_out', default='Add Money Out') }}</a>
                 <a href="{{ url_for('receipts.add') }}" class="btn btn-primary">{{ t('receipts_add_money_in', default='Add Money In') }}</a>
-                <a href="{{ url_for('inventory.add') }}" class="btn btn-primary">{{ t('inventory_add_goods_stock', default='Add Goods & Stock') }}</a>
                 <a href="{{ url_for('credits.request_credits') }}" class="btn btn-success">{{ t('credits_add_credits', default='Add Ficore Credits') }}</a>
                 {% if current_user.role == 'admin' %}
                     <a href="{{ url_for('admin.dashboard') }}" class="btn btn-warning">{{ t('admin_dashboard', default='Admin Dashboard') }}</a>
@@ -388,50 +325,6 @@
                     </div>
                 </div>
             </div>
-
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h3>{{ t('inventory_goods_stock', default='Goods & Stock') }}</h3>
-                        <small class="subtext">{{ t('inventory_goods_stock_subtext', default='Track your inventory') }}</small>
-                        {% if recent_inventory %}
-                            <table class="table table-striped mt-3">
-                                <thead>
-                                    <tr>
-                                        <th>{{ t('inventory_item_name', default='Item Name') }}</th>
-                                        <th>{{ t('inventory_quantity', default='Quantity') }}</th>
-                                        <th>{{ t('general_actions', default='Actions') }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in recent_inventory %}
-                                        <tr>
-                                            <td>{{ item.name }}</td>
-                                            <td>{{ item.quantity }}</td>
-                                            <td>
-                                                <button class="btn btn-secondary btn-sm actions-btn"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#inventoryActionsModal"
-                                                        data-id="{{ item._id }}"
-                                                        data-name="{{ item.name }}"
-                                                        data-quantity="{{ item.quantity }}"
-                                                        data-unit="{{ item.unit or '' }}"
-                                                        data-buying-price="{{ item.buying_price or '' }}"
-                                                        data-selling-price="{{ item.selling_price or '' }}"
-                                                        data-threshold="{{ item.threshold or 5 }}">
-                                                    {{ t('general_actions', default='Actions') }}
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        {% else %}
-                            <p>{{ t('inventory_no_inventory', default='No inventory recorded yet.') }}</p>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
         </div>
         {% endif %}
     {% else %}
@@ -578,43 +471,6 @@
                     <a id="receiptViewBtn" class="btn btn-info" href="#">{{ t('general_view', default='View') }}</a>
                     <a id="receiptEditBtn" class="btn btn-primary" href="#">{{ t('general_edit', default='Edit') }}</a>
                     <form id="receiptDeleteForm" action="#" method="POST" style="display:inline;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-danger" onclick="return confirm('{{ t('general_confirm_delete', default='Are you sure?') }}')">
-                            {{ t('general_delete', default='Delete') }}
-                        </button>
-                    </form>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('general_close', default='Close') }}</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Inventory Actions Modal -->
-    <div class="modal fade" id="inventoryActionsModal" tabindex="-1" aria-labelledby="inventoryActionsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="inventoryActionsModalLabel">{{ t('inventory_goods_stock', default='Goods & Stock') }}</h5>
-                    <button class="btn-close" data-bs-dismiss="modal" aria-label="{{ t('general_close', default='Close') }}"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>{{ t('inventory_item_name', default='Item Name') }}:</strong> <span id="inventoryModalName"></span></p>
-                            <p><strong>{{ t('inventory_quantity', default='Quantity') }}:</strong> <span id="inventoryModalQuantity"></span></p>
-                            <p><strong>{{ t('inventory_unit', default='Unit') }}:</strong> <span id="inventoryModalUnit"></span></p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>{{ t('inventory_buying_price', default='Buying Price') }}:</strong> <span id="inventoryModalBuyingPrice"></span></p>
-                            <p><strong>{{ t('inventory_selling_price', default='Selling Price') }}:</strong> <span id="inventoryModalSellingPrice"></span></p>
-                            <p><strong>{{ t('inventory_threshold', default='Threshold') }}:</strong> <span id="inventoryModalThreshold"></span></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <a id="inventoryViewBtn" class="btn btn-info" href="#">{{ t('general_view', default='View') }}</a>
-                    <a id="inventoryEditBtn" class="btn btn-primary" href="#">{{ t('general_edit', default='Edit') }}</a>
-                    <form id="inventoryDeleteForm" action="#" method="POST" style="display:inline;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-danger" onclick="return confirm('{{ t('general_confirm_delete', default='Are you sure?') }}')">
                             {{ t('general_delete', default='Delete') }}
@@ -868,35 +724,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('receiptViewBtn').href = `/receipts/view/${currentData._id}`;
             document.getElementById('receiptEditBtn').href = `/receipts/edit/${currentData._id}`;
             document.getElementById('receiptDeleteForm').action = `/receipts/delete/${currentData._id}`;
-        });
-    });
-
-    // Inventory Actions
-    document.querySelectorAll('#inventoryActionsModal').forEach(modal => {
-        modal.addEventListener('show.bs.modal', (event) => {
-            const button = event.relatedTarget;
-            currentData = {
-                _id: button.dataset.id,
-                name: button.dataset.name,
-                quantity: button.dataset.quantity,
-                unit: button.dataset.unit,
-                buying_price: button.dataset.buyingPrice ? parseFloat(button.dataset.buyingPrice).toLocaleString() : '-',
-                selling_price: button.dataset.sellingPrice ? parseFloat(button.dataset.sellingPrice).toLocaleString() : '-',
-                threshold: button.dataset.threshold
-            };
-
-            // Populate modal
-            document.getElementById('inventoryModalName').textContent = currentData.name;
-            document.getElementById('inventoryModalQuantity').textContent = currentData.quantity;
-            document.getElementById('inventoryModalUnit').textContent = currentData.unit || '-';
-            document.getElementById('inventoryModalBuyingPrice').textContent = currentData.buying_price === '-' ? '-' : `{{ t('general_currency_symbol', default='₦') }}${currentData.buying_price}`;
-            document.getElementById('inventoryModalSellingPrice').textContent = currentData.selling_price === '-' ? '-' : `{{ t('general_currency_symbol', default='₦') }}${currentData.selling_price}`;
-            document.getElementById('inventoryModalThreshold').textContent = currentData.threshold;
-
-            // Update action buttons
-            document.getElementById('inventoryViewBtn').href = `/inventory/view_page/${currentData._id}`;
-            document.getElementById('inventoryEditBtn').href = `/inventory/edit/${currentData._id}`;
-            document.getElementById('inventoryDeleteForm').action = `/inventory/delete/${currentData._id}`;
         });
     });
 
