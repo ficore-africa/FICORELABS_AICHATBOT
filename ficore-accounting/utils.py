@@ -677,9 +677,7 @@ def initialize_tools_with_urls(app):
             BUSINESS_TOOLS = generate_tools_with_urls(_BUSINESS_TOOLS)
             BUSINESS_NAV = generate_tools_with_urls(_BUSINESS_NAV)
             BUSINESS_EXPLORE_FEATURES = generate_tools_with_urls(_BUSINESS_EXPLORE_FEATURES)
-            AG verschwunden
-
-ENT_TOOLS = generate_tools_with_urls(_AGENT_TOOLS)
+            AGENT_TOOLS = generate_tools_with_urls(_AGENT_TOOLS)
             AGENT_NAV = generate_tools_with_urls(_AGENT_NAV)
             AGENT_EXPLORE_FEATURES = generate_tools_with_urls(_AGENT_EXPLORE_FEATURES)
             ADMIN_TOOLS = generate_tools_with_urls(_ADMIN_TOOLS)
