@@ -184,6 +184,14 @@ _PERSONAL_EXPLORE_FEATURES = [
         "description_key": "taxation_calculator_desc",
         "tooltip_key": "taxation_tooltip",
         "icon": "bi-calculator"
+    },    
+    {
+        "endpoint": "reports.index",
+        "label": "Reports",
+        "label_key": "personal_reports",
+        "description_key": "personal_reports_desc",
+        "tooltip_key": "personal_reports_tooltip",
+        "icon": "bi-journal-minus"
     },
 ]
 
