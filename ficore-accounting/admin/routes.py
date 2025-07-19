@@ -21,7 +21,6 @@ import os
 from credits import ApproveCreditRequestForm
 import random
 import string
-from learning_hub.models import calculate_progress_summary
 
 logger = logging.getLogger(__name__)
 
@@ -30,52 +29,7 @@ admin_bp = Blueprint('admin', __name__, template_folder='templates/admin')
 # Regular expression for agent ID validation
 AGENT_ID_REGEX = re.compile(r'^[A-Z0-9]{8}$')
 
-# Define allowed file extensions and upload folder
-ALLOWED_EXTENSIONS = {'mp4', 'pdf', 'txt', 'md'}
-UPLOAD_FOLDER = 'static/uploads'
-
 # Form Definitions
-class LearningHubContentForm(FlaskForm):
-    title = StringField(
-        trans('learning_hub_content_title', default='Content Title'),
-        validators=[validators.DataRequired(), validators.Length(min=2, max=200)],
-        render_kw={'class': 'form-control'}
-    )
-    description = TextAreaField(
-        trans('learning_hub_content_description', default='Description'),
-        validators=[validators.DataRequired(), validators.Length(min=5, max=1000)],
-        render_kw={'class': 'form-control'}
-    )
-    content_type = SelectField(
-        trans('learning_hub_content_type', default='Content Type'),
-        choices=[
-            ('video', trans('learning_hub_content_video', default='Video')),
-            ('pdf', trans('learning_hub_content_pdf', default='PDF')),
-            ('text', trans('learning_hub_content_text', default='Text'))
-        ],
-        validators=[validators.DataRequired()],
-        render_kw={'class': 'form-select'}
-    )
-    roles = SelectField(
-        trans('learning_hub_roles', default='Roles'),
-        choices=[
-            ('all', trans('learning_hub_all_roles', default='All Roles')),
-            ('trader', trans('learning_hub_trader', default='Civil Servant')),
-            ('personal', trans('learning_hub_personal', default='Personal')),
-            ('agent', trans('learning_hub_agent', default='Agent'))
-        ],
-        validators=[validators.DataRequired()], 
-        render_kw={'class': 'form-select'}
-    )
-    is_premium = BooleanField(
-        trans('learning_hub_is_premium', default='Premium Content'),
-        render_kw={'class': 'form-check-input'}
-    )
-    submit = SubmitField(
-        trans('learning_hub_add_content', default='Add Content'),
-        render_kw={'class': 'btn btn-primary'}
-    )
-
 class AgentManagementForm(FlaskForm):
     agent_id = StringField(trans('agents_agent_id', default='Agent ID'), [
         DataRequired(message=trans('agents_agent_id_required', default='Agent ID is required')),
@@ -133,7 +87,7 @@ class CreditRequestsListForm(FlaskForm):
             ('denied', trans('credits_denied', default='Denied'))
         ],
         validators=[validators.DataRequired()],
-        render_kw={'class': 'form-select'}
+        render={'class': 'form-select'}
     )
     submit = SubmitField(
         trans('credits_filter', default='Filter'),
@@ -153,10 +107,6 @@ def log_audit_action(action, details=None):
         })
     except Exception as e:
         logger.error(f"Error logging audit action: {str(e)}")
-
-def allowed_file(filename):
-    """Check if the file extension is allowed."""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Routes
 @admin_bp.route('/dashboard', methods=['GET'])
@@ -178,8 +128,7 @@ def dashboard():
             'budgets': db.budgets.count_documents({}),
             'bills': db.bills.count_documents({}),
             'payment_locations': db.payment_locations.count_documents({}),
-            'tax_deadlines': db.tax_deadlines.count_documents({}),
-            'learning_progress': calculate_progress_summary(db)
+            'tax_deadlines': db.tax_deadlines.count_documents({})
         }
         
         # Get tool usage statistics
@@ -1019,180 +968,3 @@ def manage_user_roles():
     for user in users:
         user['_id'] = str(user['_id'])
     return render_template('admin/user_roles.html', form=form, users=users, title=trans('admin_manage_user_roles_title', default='Manage User Roles'))
-
-@admin_bp.route('/learning_hub', methods=['GET', 'POST'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("50 per hour")
-def admin_learning_hub():
-    """Manage learning hub content (add, list)."""
-    db = utils.get_mongo_db()
-    form = LearningHubContentForm()
-    lang = session.get('lang', 'en')
-
-    if form.validate_on_submit():
-        try:
-            # Handle file upload
-            filename = None
-            if form.content_type.data in ['video', 'pdf']:
-                file = request.files.get('file')
-                if not file or not allowed_file(file.filename):
-                    flash(trans('learning_hub_invalid_file_type', default='Invalid file type. Allowed: mp4, pdf, txt, md'), 'danger')
-                    return render_template('admin/learning_hub.html', form=form, contents=[], title=trans('admin_manage_learning_hub_title', default='Manage Learning Hub'))
-                filename = secure_filename(file.filename)
-                file_path = os.path.join(current_app.config.get('UPLOAD_FOLDER', 'static/uploads'), filename)
-                file.save(file_path)
-
-            # Generate unique course ID
-            course_id = f"course_{''.join(random.choices(string.ascii_lowercase + string.digits, k=8))}"
-            while db.learning_materials.find_one({'type': 'course', 'id': course_id}):
-                course_id = f"course_{''.join(random.choices(string.ascii_lowercase + string.digits, k=8))}"
-
-            # Determine roles
-            roles = [form.roles.data] if form.roles.data != 'all' else ['trader', 'personal', 'agent']
-
-            # Create course data
-            course_data = {
-                'type': 'course',
-                'id': course_id,
-                '_id': ObjectId(),
-                'title_key': f"learning_hub_course_{course_id}_title",
-                'title_en': form.title.data,
-                'title_ha': form.title.data,  # Placeholder for translation
-                'description_en': form.description.data,
-                'description_ha': form.description.data,  # Placeholder
-                'is_premium': form.is_premium.data,
-                'roles': roles,
-                'modules': [{
-                    'id': f"{course_id}-module-1",
-                    'title_key': f"learning_hub_module_{course_id}_title",
-                    'title_en': "Module 1",
-                    'lessons': [{
-                        'id': f"{course_id}-module-1-lesson-1",
-                        'title_key': f"learning_hub_lesson_{course_id}_title",
-                        'title_en': "Lesson 1",
-                        'content_type': form.content_type.data,
-                        'content_path': f"uploads/{filename}" if filename else None,
-                        'content_en': form.description.data if form.content_type.data == 'text' else None,
-                        'quiz_id': None
-                    }]
-                }],
-                'created_at': datetime.datetime.utcnow(),
-                'created_by': str(current_user.id)
-            }
-
-            # Save to MongoDB
-            db.learning_materials.insert_one(course_data)
-            logger.info(f"Admin {current_user.id} added learning hub content: id={course_id}, title={form.title.data}")
-            log_audit_action('add_learning_hub_content', {'content_id': course_id, 'title': form.title.data})
-            flash(trans('learning_hub_content_added', default='Content added successfully'), 'success')
-            return redirect(url_for('admin.admin_learning_hub'))
-        except Exception as e:
-            logger.error(f"Error adding learning hub content: {str(e)}")
-            flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
-
-    # List existing content
-    contents = list(db.learning_materials.find({'type': 'course'}).sort('created_at', -1))
-    for content in contents:
-        content['_id'] = str(content['_id'])
-
-    return render_template(
-        'admin/learning_hub.html',
-        form=form,
-        contents=contents,
-        title=trans('admin_manage_learning_hub_title', default='Manage Learning Hub')
-    )
-
-@admin_bp.route('/learning_hub/edit/<content_id>', methods=['GET', 'POST'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("10 per hour")
-def edit_learning_hub_content(content_id):
-    """Edit existing learning hub content."""
-    db = utils.get_mongo_db()
-    content = db.learning_materials.find_one({'_id': ObjectId(content_id), 'type': 'course'})
-    if not content:
-        flash(trans('learning_hub_content_not_found', default='Content not found'), 'danger')
-        return redirect(url_for('admin.admin_learning_hub'))
-
-    form = LearningHubContentForm(data={
-        'title': content['title_en'],
-        'description': content['description_en'],
-        'content_type': content['modules'][0]['lessons'][0]['content_type'],
-        'roles': 'all' if set(content['roles']) == {'trader', 'personal', 'agent'} else content['roles'][0],
-        'is_premium': content['is_premium']
-    })
-
-    if form.validate_on_submit():
-        try:
-            # Handle file upload if content type is video or pdf
-            filename = content['modules'][0]['lessons'][0].get('content_path', '').split('/')[-1] if content['modules'][0]['lessons'][0].get('content_path') else None
-            if form.content_type.data in ['video', 'pdf']:
-                file = request.files.get('file')
-                if file and allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
-                    file_path = os.path.join(current_app.config.get('UPLOAD_FOLDER', 'static/uploads'), filename)
-                    file.save(file_path)
-
-            # Determine roles
-            roles = [form.roles.data] if form.roles.data != 'all' else ['trader', 'personal', 'agent']
-
-            # Update course data
-            update_data = {
-                'title_en': form.title.data,
-                'title_ha': form.title.data,  # Placeholder
-                'description_en': form.description.data,
-                'description_ha': form.description.data,  # Placeholder
-                'is_premium': form.is_premium.data,
-                'roles': roles,
-                'modules': [{
-                    'id': content['modules'][0]['id'],
-                    'title_key': content['modules'][0]['title_key'],
-                    'title_en': content['modules'][0]['title_en'],
-                    'lessons': [{
-                        'id': content['modules'][0]['lessons'][0]['id'],
-                        'title_key': content['modules'][0]['lessons'][0]['title_key'],
-                        'title_en': content['modules'][0]['lessons'][0]['title_en'],
-                        'content_type': form.content_type.data,
-                        'content_path': f"uploads/{filename}" if filename else None,
-                        'content_en': form.description.data if form.content_type.data == 'text' else None,
-                        'quiz_id': None
-                    }]
-                }],
-                'updated_at': datetime.datetime.utcnow()
-            }
-
-            db.learning_materials.update_one(
-                {'_id': ObjectId(content_id)},
-                {'$set': update_data}
-            )
-            logger.info(f"Admin {current_user.id} updated learning hub content: id={content_id}")
-            log_audit_action('edit_learning_hub_content', {'content_id': content_id, 'title': form.title.data})
-            flash(trans('learning_hub_content_updated', default='Content updated successfully'), 'success')
-            return redirect(url_for('admin.admin_learning_hub'))
-        except Exception as e:
-            logger.error(f"Error updating learning hub content {content_id}: {str(e)}")
-            flash(trans('admin_database_error', default='An error occurred while accessing the database'), 'danger')
-
-    return render_template(
-        'admin/learning_hub_edit.html',
-        form=form,
-        content=content,
-        title=trans('admin_edit_learning_hub_content_title', default='Edit Learning Hub Content')
-    )
-
-@admin_bp.route('/learning_hub/delete/<content_id>', methods=['POST'])
-@login_required
-@utils.requires_role('admin')
-@utils.limiter.limit("10 per hour")
-def delete_learning_hub_content(content_id):
-    """Delete learning hub content."""
-    db = utils.get_mongo_db()
-    result = db.learning_materials.delete_one({'_id': ObjectId(content_id), 'type': 'course'})
-    if result.deleted_count > 0:
-        logger.info(f"Admin {current_user.id} deleted learning hub content: id={content_id}")
-        log_audit_action('delete_learning_hub_content', {'content_id': content_id})
-        flash(trans('learning_hub_content_deleted', default='Content deleted successfully'), 'success')
-    else:
-        flash(trans('learning_hub_content_not_found', default='Content not found'), 'danger')
-    return redirect(url_for('admin.admin_learning_hub'))
