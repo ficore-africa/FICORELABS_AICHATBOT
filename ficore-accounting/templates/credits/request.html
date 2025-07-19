@@ -6,6 +6,11 @@
         <h1>{{ t('credits_requests_title', default='Pending Credit Requests') }}</h1>
         <small class="subtext">{{ t('credits_wallet_subtext', default='Tsabobin Cikin App') }}</small>
     </div>
+    {% if current_user.role in ['trader', 'personal'] %}
+        <div class="mb-4">
+            <a href="{{ url_for('credits.request_credits') }}" class="btn btn-success">{{ t('credits_request_button', default='Request Ficore Credits') }}</a>
+        </div>
+    {% endif %}
     {% if requests %}
         <div class="table-responsive">
             <table class="table table-striped table-bordered">
