@@ -196,7 +196,7 @@ def initialize_app_data(app):
                             'properties': {
                                 'user_id': {'bsonType': 'string'},
                                 'amount': {'bsonType': 'int', 'minimum': 1},
-                                'payment_method': {'enum': ['card', 'bank']},
+                                'payment_method': {'enum': ['card', 'cash', 'bank']},
                                 'receipt_file_id': {'bsonType': ['objectId', 'null']},
                                 'status': {'enum': ['pending', 'approved', 'denied']},
                                 'created_at': {'bsonType': 'date'},
