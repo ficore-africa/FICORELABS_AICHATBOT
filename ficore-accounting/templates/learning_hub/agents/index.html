@@ -1,60 +1,43 @@
 {% extends 'base.html' %}
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/learning_hub.css') | e }}">
+{% endblock %}
 {% block content %}
-<!DOCTYPE html>
-<html lang="{{ lang }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ tool_title }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/learning_hub.css') }}">
-</head>
-<body>
+<div class="container">
     <header>
-        <h1>{{ t('learning_hub_agents_title', default='Agent Learning', lang=lang) }}</h1>
-        <p>{{ t('agents_welcome', default='Become a trusted financial agent in Northern Nigeria, serving communities with mobile banking and financial advice.', lang=lang) }}</p>
+        <h1>{{ t('learning_hub_agents_title', default='Agent Learning', lang=lang) | e }}</h1>
+        <p>{{ t('agents_welcome', default='Become a trusted financial agent in Northern Nigeria, serving communities with mobile banking and financial advice.', lang=lang) | e }}</p>
     </header>
 
     <nav>
         <ul>
-            <li><a href="{{ url_for('learning_hub.main') }}">{{ t('learning_hub_title', default='Learning Hub', lang=lang) }}</a></li>
-            <li><a href="{{ url_for('learning_hub.personal') }}">{{ t('learning_hub_personal_title', default='Personal Finance Learning', lang=lang) }}</a></li>
-            <li><a href="{{ url_for('learning_hub.business') }}">{{ t('learning_hub_business_title', default='Business Learning', lang=lang) }}</a></li>
-            <li><a href="{{ url_for('learning_hub.compliance') }}">{{ t('learning_hub_compliance_title', default='Compliance Learning', lang=lang) }}</a></li>
-            <li><a href="{{ url_for('learning_hub.tool_tutorials') }}">{{ t('learning_hub_tool_tutorials_title', default='Tool Tutorials', lang=lang) }}</a></li>
+            <li><a href="{{ url_for('learning_hub.main') | e }}">{{ t('learning_hub_title', default='Learning Hub', lang=lang) | e }}</a></li>
+            <li><a href="{{ url_for('learning_hub.personal') | e }}">{{ t('learning_hub_personal_title', default='Personal Finance Learning', lang=lang) | e }}</a></li>
+            <li><a href="{{ url_for('learning_hub.business') | e }}">{{ t('learning_hub_business_title', default='Business Learning', lang=lang) | e }}</a></li>
+            <li><a href="{{ url_for('learning_hub.compliance') | e }}">{{ t('learning_hub_compliance_title', default='Compliance Learning', lang=lang) | e }}</a></li>
+            <li><a href="{{ url_for('learning_hub.tool_tutorials') | e }}">{{ t('learning_hub_tool_tutorials_title', default='Tool Tutorials', lang=lang) | e }}</a></li>
         </ul>
     </nav>
 
-    <div class="container">
-        <div class="section-title">{{ t('agents_courses', default='Agent Training Courses', lang=lang) }}</div>
-        <div class="card">
-            <h3>{{ t('course_mobile_banking_title', default='Mobile Banking Basics', lang=lang) }}</h3>
-            <p>{{ t('course_mobile_banking_desc', default='Learn to facilitate mobile transactions for customers in rural Northern Nigeria using platforms like M-Pesa.', lang=lang) }}</p>
-            <a href="{{ url_for('learning_hub.course_overview', course_id='mobile_banking_101') }}" class="btn">{{ t('start_course', default='Start Course', lang=lang) }}</a>
-        </div>
-        <div class="card">
-            <h3>{{ t('course_customer_service_title', default='Customer Service for Agents', lang=lang) }}</h3>
-            <p>{{ t('course_customer_service_desc', default='Develop skills to assist customers in Hausa and English with trust and professionalism.', lang=lang) }}</p>
-            <a href="{{ url_for('learning_hub.course_overview', course_id='customer_service_101') }}" class="btn">{{ t('start_course', default='Start Course', lang=lang) }}</a>
-        </div>
-        <div class="card">
-            <h3>{{ t('course_fraud_prevention_title', default='Fraud Prevention', lang=lang) }}</h3>
-            <p>{{ t('course_fraud_prevention_desc', default='Identify and prevent financial scams targeting communities in Northern Nigeria.', lang=lang) }}</p>
-            <a href="{{ url_for('learning_hub.course_overview', course_id='fraud_prevention_101') }}" class="btn">{{ t('start_course', default='Start Course', lang=lang) }}</a>
-        </div>
-        <div class="gamification">
-            <img src="{{ url_for('static', filename='img/coin.png') }}" alt="Coin">
-            <p>{{ t('gamification_agents', default='Earn coins and unlock the “Trusted Agent” badge by completing agent courses!', lang=lang) }}</p>
-        </div>
+    <div class="section-title">{{ t('agents_courses', default='Agent Training Courses', lang=lang) | e }}</div>
+    <div class="card">
+        <h3>{{ t('course_mobile_banking_title', default='Mobile Banking Basics', lang=lang) | e }}</h3>
+        <p>{{ t('course_mobile_banking_desc', default='Learn to facilitate mobile transactions for customers in rural Northern Nigeria using platforms like M-Pesa.', lang=lang) | e }}</p>
+        <a href="{{ url_for('learning_hub.course_overview', course_id='mobile_banking_101') | e }}" class="btn">{{ t('start_course', default='Start Course', lang=lang) | e }}</a>
     </div>
-
-    <div class="language-toggle">
-        <a href="?lang=en">{{ t('lang_english', default='English', lang=lang) }}</a> |
-        <a href="?lang=ha">{{ t('lang_hausa', default='Hausa', lang=lang) }}</a>
+    <div class="card">
+        <h3>{{ t('course_customer_service_title', default='Customer Service for Agents', lang=lang) | e }}</h3>
+        <p>{{ t('course_customer_service_desc', default='Develop skills to assist customers in Hausa and English with trust and professionalism.', lang=lang) | e }}</p>
+        <a href="{{ url_for('learning_hub.course_overview', course_id='customer_service_101') | e }}" class="btn">{{ t('start_course', default='Start Course', lang=lang) | e }}</a>
     </div>
-
-    <footer>
-        <p>{{ t('footer_text', default='Empowering Northern Nigeria through Financial Education', lang=lang) }}</p>
-    </footer>
-</body>
-</html>
+    <div class="card">
+        <h3>{{ t('course_fraud_prevention_title', default='Fraud Prevention', lang=lang) | e }}</h3>
+        <p>{{ t('course_fraud_prevention_desc', default='Identify and prevent financial scams targeting communities in Northern Nigeria.', lang=lang) | e }}</p>
+        <a href="{{ url_for('learning_hub.course_overview', course_id='fraud_prevention_101') | e }}" class="btn">{{ t('start_course', default='Start Course', lang=lang) | e }}</a>
+    </div>
+    <div class="gamification">
+        <img src="{{ url_for('static', filename='img/credits.png') | e }}" alt="Ficore Credits">
+        <p>{{ t('gamification_agents_credits', default='Earn Ficore Credits and unlock the “Trusted Agent” badge by completing agent courses!', lang=lang) | e }}</p>
+    </div>
+</div>
 {% endblock %}
