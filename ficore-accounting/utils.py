@@ -382,8 +382,6 @@ _AGENT_EXPLORE_FEATURES = [
         "endpoint": "agents_bp.agent_portal",
         "label": "Agent Portal",
         "label_key": "agents_dashboard",
-       წ
-
         "description_key": "agents_dashboard_desc",
         "tooltip_key": "agents_tooltip",
         "icon": "bi-person-workspace"
