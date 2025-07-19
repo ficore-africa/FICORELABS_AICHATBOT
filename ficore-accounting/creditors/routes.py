@@ -10,7 +10,7 @@ import io
 import re
 import urllib.parse
 import utils
-from translations import trans, register_translation
+from translations import trans
 
 logger = logging.getLogger(__name__)
 
