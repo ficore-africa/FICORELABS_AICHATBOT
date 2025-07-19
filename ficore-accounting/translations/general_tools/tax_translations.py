@@ -16,6 +16,8 @@ TAX_TRANSLATIONS = {
         'tax_role_agent': 'Agent',
         'tax_role_company': 'Company',
         'tax_role_vat': 'VAT',
+        'tax_deadline_date': 'Tax Deadline Date',
+        'tax_add_deadline': 'Add Tax Deadline',
         
         # Tax Deadlines
         'deadline_date': 'Deadline Date',
@@ -381,6 +383,8 @@ TAX_TRANSLATIONS = {
         'tax_vat_default': 'Ƙimar VAT na Yau da Kullum',
         'tax_understand_taxes': 'Fahimci harajinku',
         'tax_no_rate_found': 'Ba a sami ƙimar haraji ga bayanan da aka bayar ba',
+        'tax_deadline_date': 'Ranar Ƙarshe na Haraji',
+        'tax_add_deadline': 'Ƙara Ranar Ƙarshe na Haraji',
         
         # Notifications
         'notifications_dashboard': 'Sanarwa',
