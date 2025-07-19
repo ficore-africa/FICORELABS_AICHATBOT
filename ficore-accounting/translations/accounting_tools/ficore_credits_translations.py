@@ -87,7 +87,7 @@ FICORE_CREDITS_TRANSLATIONS = {
         'credits_request_status': 'Request Status',
     },
     'ha': {
-        'credits_dashboard': 'Allon Ficore Credits',
+        'credits_dashboard': 'Karbi Ficore Credits',
         'credits_portfolio': 'Fayil ɗin Saka Jari',
         'credits_wallet': 'Walat',
         'credits_transactions': 'Ma\'amaloli',
@@ -126,7 +126,7 @@ FICORE_CREDITS_TRANSLATIONS = {
         'credits_wallet_subtext': 'Ƙara Ficore Credits don yin ayyuka',
         'credits_amount_required': 'Ana buƙatar adadin Ficore Credits',
         'credits_receipt_required': 'Ana buƙatar rasit',
-        'credits_dashboard_desc': 'Duba Ficore Credits na app.',
+        'credits_dashboard_desc': 'Karbi Ficore Credits na app.',
         'credits_title': 'Ficore Credits',
         'credits_add_credits': 'Ƙara Ficore Credits',
         'credits_ficore_credits': 'Ficore Credits',
