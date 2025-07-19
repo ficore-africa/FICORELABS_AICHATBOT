@@ -70,14 +70,6 @@
         <div class="col">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h2 class="card-title">{{ t('learning_hub_title', default='Learning Hub Progress') | escape }}</h2>
-                    <p class="card-text fs-3">{{ stats.learning_progress }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col">
-            <div class="card shadow-sm">
-                <div class="card-body">
                     <h2 class="card-title">{{ t('payment_locations_title', default='Payment Locations') | escape }}</h2>
                     <p class="card-text fs-3">{{ stats.payment_locations }}</p>
                 </div>
@@ -113,7 +105,6 @@
         <a href="{{ url_for('admin.manage_user_roles') }}" class="btn btn-primary">{{ t('admin_manage_user_roles', default='Manage User Roles') | escape }}</a>
         <a href="{{ url_for('admin.admin_budgets') }}" class="btn btn-primary">{{ t('admin_manage_budgets', default='Manage Budgets') | escape }}</a>
         <a href="{{ url_for('admin.admin_bills') }}" class="btn btn-primary">{{ t('admin_manage_bills', default='Manage Bills') | escape }}</a>
-        <a href="{{ url_for('admin.admin_learning_hub') }}" class="btn btn-primary">{{ t('admin_manage_learning_hub', default='Manage Learning Hub') | escape }}</a>
         <a href="{{ url_for('admin.view_feedbacks') }}" class="btn btn-primary">{{ t('admin_view_feedbacks', default='View Feedbacks') | escape }}</a>
         <a href="{{ url_for('admin.generate_agent_ids') }}" class="btn btn-primary">{{ t('admin_generate_agent_ids', default='Generate Agent IDs') | escape }}</a>
         <a href="{{ url_for('admin.view_credit_requests') }}" class="btn btn-primary">{{ t('admin_approve_credit_requests', default='Approve Credit Requests') | escape }}</a>
