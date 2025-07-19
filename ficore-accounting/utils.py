@@ -203,22 +203,22 @@ _BUSINESS_TOOLS = [
         "description_key": "creditors_dashboard_desc",
         "tooltip_key": "creditors_tooltip",
         "icon": "bi-arrow-up-circle"
-    },
+    },    
     {
-        "endpoint": "credits.request_credits",
-        "label": "Ficore Credits",
-        "label_key": "credits_dashboard",
-        "description_key": "credits_dashboard_desc",
-        "tooltip_key": "credits_tooltip",
-        "icon": "bi-coin"
-    },
+        "endpoint": "receipts.index",
+        "label": "MoneyIn",
+        "label_key": "receipts_dashboard",
+        "description_key": "receipts_dashboard",
+        "tooltip_key": "receipts_tooltip",
+        "icon": "bi-cash-coin"
+    },    
     {
-        "endpoint": "credits.history",
-        "label": "Ficore Credits",
-        "label_key": "credits_your_wallet",
-        "description_key": "credits_your_wallet_desc",
-        "tooltip_key": "credits_your_wallet_tooltip",
-        "icon": "bi-coin"
+        "endpoint": "payments.index",
+        "label": "MoneyOut",
+        "label_key": "payments_dashboard",
+        "description_key": "payments_dashboard",
+        "tooltip_key": "payments_tooltip",
+        "icon": "bi-calculator"
     },
 ]
 
