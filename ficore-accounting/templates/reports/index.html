@@ -8,7 +8,10 @@
     </div>
     <div class="d-grid gap-2">
         <a href="{{ url_for('reports.profit_loss') }}" class="btn btn-primary">{{ t('reports_profit_loss', default='Profit/Loss Report') }}</a>
-        <a href="{{ url_for('reports.inventory') }}" class="btn btn-primary">{{ t('reports_inventory', default='Inventory Report') }}</a>
+        <a href="{{ url_for('reports.debtors_creditors') }}" class="btn btn-primary">{{ t('reports_debtors_creditors', default='Debtors/Creditors Report') }}</a>
+        <a href="{{ url_for('reports.tax_obligations') }}" class="btn btn-primary">{{ t('reports_tax_obligations', default='Tax Obligations Report') }}</a>
+        <a href="{{ url_for('reports.budget_performance') }}" class="btn btn-primary">{{ t('reports_budget_performance', default='Budget Performance Report') }}</a>
+        <a href="{{ url_for('reports.credit_usage') }}" class="btn btn-primary">{{ t('reports_credit_usage', default='Credit Usage Report') }}</a>
     </div>
 </div>
 {% endblock %}
