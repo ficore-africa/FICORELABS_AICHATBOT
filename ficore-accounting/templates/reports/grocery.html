@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}{{ t('reports_grocery', default='Grocery Report') }} - FiCore{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="page-title mb-4">
+        <h1>{{ t('reports_grocery', default='Grocery Report') }}</h1>
+        <small class="subtext">{{ t('grocery_report_description', default='Review your grocery lists, items, and suggestions for budgeting.') }}</small>
+    </div>
+
+    <!-- Report Filter Form -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="{{ form.start_date.id }}" class="form-label">{{ t('reports_start_date', default='Start Date') }}</label>
+                        {{ form.start_date(class="form-control") }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.end_date.id }}" class="form-label">{{ t('reports_end_date', default='End Date') }}</label>
+                        {{ form.end_date(class="form-control") }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.format.id }}" class="form-label">{{ t('reports_format', default='Format') }}</label>
+                        {{ form.format(class="form-select") }}
+                    </div>
+                    <div class="col-12 mt-3">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Grocery Lists Table -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>{{ t('grocery_lists', default='Grocery Lists') }}</h5>
+        </div>
+        <div class="card-body">
+            {% if grocery_data.lists|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>{{ t('general_date', default='Date') }}</th>
+                            <th>{{ t('grocery_list_name', default='List Name') }}</th>
+                            <th>{{ t('grocery_budget', default='Budget') }}</th>
+                            <th>{{ t('grocery_total_spent', default='Total Spent') }}</th>
+                            <th>{{ t('grocery_collaborators', default='Collaborators') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lst in grocery_data.lists %}
+                        <tr>
+                            <td>{{ lst.created_at }}</td>
+                            <td>{{ lst.name }}</td>
+                            <td>{{ lst.budget | format_currency }}</td>
+                            <td>{{ lst.total_spent | format_currency }}</td>
+                            <td>{{ lst.collaborators | join(', ') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2"><strong>{{ t('grocery_total', default='Total') }}</strong></td>
+                            <td><strong>{{ grocery_data.lists | sum(attribute='budget') | format_currency }}</strong></td>
+                            <td><strong>{{ grocery_data.lists | sum(attribute='total_spent') | format_currency }}</strong></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">{{ t('no_grocery_lists', default='No grocery lists found.') }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Grocery Items Table -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>{{ t('grocery_items', default='Grocery Items') }}</h5>
+        </div>
+        <div class="card-body">
+            {% if grocery_data.items|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>{{ t('general_date', default='Date') }}</th>
+                            <th>{{ t('grocery_item_name', default='Item Name') }}</th>
+                            <th>{{ t('grocery_quantity', default='Quantity') }}</th>
+                            <th>{{ t('grocery_price', default='Price') }}</th>
+                            <th>{{ t('grocery_status', default='Status') }}</th>
+                            <th>{{ t('grocery_category', default='Category') }}</th>
+                            <th>{{ t('grocery_store', default='Store') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in grocery_data.items %}
+                        <tr>
+                            <td>{{ item.created_at }}</td>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.price | format_currency }}</td>
+                            <td>{{ t(item.status, default=item.status) }}</td>
+                            <td>{{ item.category }}</td>
+                            <td>{{ item.store }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3"><strong>{{ t('grocery_total_price', default='Total Price') }}</strong></td>
+                            <td><strong>{{ grocery_data.items | sum(attribute='price', multiplier='quantity') | format_currency }}</strong></td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">{{ t('no_grocery_items', default='No grocery items found.') }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Grocery Suggestions Table -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>{{ t('grocery_suggestions', default='Suggestions') }}</h5>
+        </div>
+        <div class="card-body">
+            {% if grocery_data.suggestions|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>{{ t('general_date', default='Date') }}</th>
+                            <th>{{ t('grocery_item_name', default='Item Name') }}</th>
+                            <th>{{ t('grocery_quantity', default='Quantity') }}</th>
+                            <th>{{ t('grocery_price', default='Price') }}</th>
+                            <th>{{ t('grocery_status', default='Status') }}</th>
+                            <th>{{ t('grocery_category', default='Category') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sug in grocery_data.suggestions %}
+                        <tr>
+                            <td>{{ sug.created_at }}</td>
+                            <td>{{ sug.name }}</td>
+                            <td>{{ sug.quantity }}</td>
+                            <td>{{ sug.price | format_currency }}</td>
+                            <td>{{ t(sug.status, default=sug.status) }}</td>
+                            <td>{{ sug.category }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3"><strong>{{ t('grocery_total_suggestion_price', default='Total Suggestion Price') }}</strong></td>
+                            <td><strong>{{ grocery_data.suggestions | sum(attribute='price', multiplier='quantity') | format_currency }}</strong></td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">{{ t('no_grocery_suggestions', default='No grocery suggestions found.') }}</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
