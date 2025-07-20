@@ -108,7 +108,9 @@
             <h3 class="quick-actions-heading">{{ t('general_quick_actions', default='Quick Actions') | e }}</h3>
             <div class="quick-actions">
                 {% for tool in tools_for_template %}
-                <a href="{{ tool.get('url', '#') | e }}" class="quick-action-card {{ tool.get('class', '') | e }} text-decoration-none" aria-label="{{ t(tool.get('label_key', ''), default=tool.get('label', 'Tool')) | e }}">
+                <a href="{{ tool.get('url', '#') | e }}" class="quick-action-card {{ tool.get('class', '') | e }} text-decoration-none" 
+                   {% if tool.get('label_key') == 'grocery_management' %}data-bs-toggle="modal" data-bs-target="#groceryModal"{% endif %}
+                   aria-label="{{ t(tool.get('label_key', ''), default=tool.get('label', 'Tool')) | e }}">
                     {% if tool.badge %}
                     <span class="badge bg-danger position-absolute top-0 end-0 translate-middle rounded-pill">{{ tool.badge | e }}</span>
                     {% endif %}
@@ -116,10 +118,6 @@
                     <div class="action-label">{{ t(tool.get('label_key', ''), default=tool.get('label', 'Tool')) | e }}</div>
                 </a>
                 {% endfor %}
-                <a href="#" class="quick-action-card text-decoration-none" data-bs-toggle="modal" data-bs-target="#groceryModal" aria-label="{{ t('grocery_add_list', default='Add Grocery List') | e }}">
-                    <i class="bi bi-cart action-icon"></i>
-                    <div class="action-label">{{ t('grocery_add_list', default='Add Grocery List') | e }}</div>
-                </a>
             </div>
         </section>
 
@@ -1094,7 +1092,6 @@ function suggestItem() {
 }
 
 function approveSuggestion(suggestionId, listId) {
-    // Fixed: Use url_for with both list_id and suggestion_id
     fetch('{{ url_for("personal.grocery.approve_suggestion", list_id=listId, suggestion_id=suggestionId) | e }}', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
