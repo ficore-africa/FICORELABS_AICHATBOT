@@ -476,9 +476,76 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Animated counter for users served
+     // Animated counter for users served
     const counter = document.querySelector('.animated-counter');
     if (counter) {
         const target = parseInt(counter.getAttribute('data-count')) || 0;
         let current = 0;
         const increment = Math.ceil(target / 100);
+        const updateCounter = () => {
+            current += increment;
+            if (current >= target) {
+                current = target;
+                counter.textContent = current.toLocaleString();
+                clearInterval(counterInterval);
+            } else {
+                counter.textContent = current.toLocaleString();
+            }
+        };
+        const counterInterval = setInterval(updateCounter, 50);
+    }
+
+    // Enhanced navbar touch handling
+    const navbarToggler = document.querySelector('.navbar-toggler');
+    const navbarCollapse = document.querySelector('#navbarNav');
+    if (navbarToggler && navbarCollapse) {
+        // Ensure navbar closes on link click
+        document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (navbarCollapse.classList.contains('show')) {
+                    navbarToggler.click(); // Programmatically close navbar
+                }
+            });
+        });
+
+        // Handle touch outside navbar to close
+        document.addEventListener('touchstart', (event) => {
+            if (!navbarCollapse.contains(event.target) && !navbarToggler.contains(event.target) && navbarCollapse.classList.contains('show')) {
+                navbarToggler.click();
+            }
+        });
+
+        // Debug navbar toggle state
+        navbarCollapse.addEventListener('show.bs.collapse', () => {
+            console.log('Navbar opened');
+            navbarToggler.setAttribute('aria-expanded', 'true');
+        });
+        navbarCollapse.addEventListener('hide.bs.collapse', () => {
+            console.log('Navbar closed');
+            navbarToggler.setAttribute('aria-expanded', 'false');
+        });
+    } else {
+        console.warn('Navbar toggler or collapse element not found');
+    }
+});
+
+function formatTimeAgo(timestamp) {
+    const translations = {
+        just_now: '{{ t("general_just_now", default="Just now") | e }}',
+        minutes_ago: '{{ t("general_minutes_ago", default="m ago") | e }}',
+        hours_ago: '{{ t("general_hours_ago", default="h ago") | e }}',
+        days_ago: '{{ t("general_days_ago", default="d ago") | e }}',
+        no_notifications: '{{ t("general_no_notifications", default="No notifications") | e }}',
+        check_back_later: '{{ t("general_check_back_later", default="Check back later") | e }}'
+    };
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffInSeconds = Math.floor((now - time) / 1000);
+    if (diffInSeconds < 60) return translations.just_now;
+    if (diffInSeconds < 3600) return Math.floor(diffInSeconds / 60) + ' ' + translations.minutes_ago;
+    if (diffInSeconds < 86400) return Math.floor(diffInSeconds / 3600) + ' ' + translations.hours_ago;
+    return Math.floor(diffInSeconds / 86400) + ' ' + translations.days_ago;
+}
+</script>
+{% endblock %}
+{% endblock %}
