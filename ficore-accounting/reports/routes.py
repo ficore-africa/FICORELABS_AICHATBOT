@@ -108,6 +108,13 @@ def to_dict_tax_reminder(record):
 def to_dict_record(record):
     if not record:
         return {'name': None, 'amount_owed': None}
+    try:
+        created_at = utils.format_date(record.get('created_at'), format_type='iso') if record.get('created_at') else None
+        updated_at = utils.format_date(record.get('updated_at'), format_type='iso') if record.get('updated_at') else None
+    except Exception as e:
+        logger.error(f"Error formatting dates in to_dict_record: {str(e)}", exc_info=True)
+        created_at = None
+        updated_at = None
     return {
         'id': str(record.get('_id', '')),
         'user_id': str(record.get('user_id', '')),
@@ -117,8 +124,8 @@ def to_dict_record(record):
         'amount_owed': record.get('amount_owed', 0),
         'description': record.get('description', ''),
         'reminder_count': record.get('reminder_count', 0),
-        'created_at': utils.format_date(record.get('created_at'), format_type='iso'),
-        'updated_at': utils.format_date(record.get('updated_at'), format_type='iso') if record.get('updated_at') else None
+        'created_at': created_at,
+        'updated_at': updated_at
     }
 
 def to_dict_cashflow(record):
@@ -348,7 +355,7 @@ def tax_obligations():
                     user_query,
                     {'$inc': {'ficore_credit_balance': -1}}
                 )
-                db.ficore730                db.ficore_ficore_credit_transactions.insert_one({
+                db.ficore_ficore_credit_transactions.insert_one({
                     'user_id': str(current_user.id),
                     'amount': -1,
                     'type': 'spend',
@@ -909,7 +916,7 @@ def generate_grocery_report_pdf(grocery_data):
     p.setFont("Helvetica-Bold", 12)
     p.drawString(1 * inch, y * inch, trans('grocery_lists', default='Grocery Lists'))
     y -= 0.3 * inch
-    p.setFont("Helvetica", wicked10)
+    p.setFont("Helvetica", 10)
     headers = [
         trans('general_date', default='Date'),
         trans('grocery_list_name', default='List Name'),
