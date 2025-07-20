@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, current_app, session
+from flask import Blueprint, jsonify, request, current_app, session, redirect, url_for
 from flask_login import current_user, login_required
 from datetime import datetime, date, timedelta
 from bson import ObjectId
@@ -46,6 +46,34 @@ def get_predictive_suggestions(user_id, db):
                 'estimated_price': float(item.get('price', 0))
             })
     return suggestions[:5]  # Limit to top 5 suggestions
+
+@grocery_bp.route('/', methods=['GET'])
+@login_required
+@requires_role(['personal', 'admin'])
+def index():
+    """Redirect to personal dashboard or return grocery summary."""
+    try:
+        db = get_mongo_db()
+        lists = db.grocery_lists.find({'user_id': str(current_user.id)}).sort('updated_at', -1).limit(5)
+        suggestions = get_predictive_suggestions(current_user.id, db)
+        summary = {
+            'recent_lists': [{
+                'id': str(l['_id']),
+                'name': l.get('name'),
+                'budget': float(l.get('budget', 0)),
+                'total_spent': float(l.get('total_spent', 0)),
+                'status': l.get('status', 'active')
+            } for l in lists],
+            'suggestions': suggestions
+        }
+        logger.info(f"Fetched grocery summary for user {current_user.id}", 
+                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+        return jsonify(summary), 200
+        # Alternatively, redirect to dashboard: return redirect(url_for('personal.index'))
+    except Exception as e:
+        logger.error(f"Error fetching grocery summary for user {current_user.id}: {str(e)}", 
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+        return jsonify({'error': trans('grocery_error', default='Error fetching grocery summary')}), 500
 
 @grocery_bp.route('/lists', methods=['GET', 'POST'])
 @login_required
@@ -458,3 +486,11 @@ def predictive_suggestions():
         logger.error(f"Error fetching predictive suggestions for user {current_user.id}: {str(e)}", 
                      extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
         return jsonify({'error': trans('grocery_suggestions_error', default='Error fetching suggestions')}), 500
+
+def init_app(app):
+    """Initialize the grocery blueprint."""
+    try:
+        current_app.logger.info("Initialized grocery blueprint", extra={'session_id': 'no-request-context'})
+    except Exception as e:
+        current_app.logger.error(f"Error initializing grocery blueprint: {str(e)}", extra={'session_id': 'no-request-context'})
+        raise
