@@ -260,22 +260,27 @@ def generate_iou(id):
         p = canvas.Canvas(buffer, pagesize=letter)
         draw_ficore_pdf_header(p, current_user, y_start=10.5)
         
+        # Calculate the Y position for the title
+        header_height = 0.7  # From draw_ficore_pdf_header
+        extra_space = 0.2  # Additional space below the header
+        title_y = 10.5 - header_height - extra_space
+        
         p.setFont("Helvetica-Bold", 24)
-        p.drawString(inch, 10.5 * inch, trans('debtors_iou_title', default='FiCore Records - IOU'))
+        p.drawString(inch, title_y * inch, trans('debtors_iou_title', default='FiCore Records - IOU'))
         
         p.setFont("Helvetica", 12)
-        y_position = 10 * inch
-        p.drawString(inch, y_position, f"{trans('general_name', default='Debtor')}: {debtor['name']}")
-        y_position -= 0.3 * inch
-        p.drawString(inch, y_position, f"{trans('debtors_amount_owed', default='Amount Owed')}: {utils.format_currency(debtor['amount_owed'])}")
-        y_position -= 0.3 * inch
-        p.drawString(inch, y_position, f"{trans('general_contact', default='Contact')}: {debtor.get('contact', 'N/A')}")
-        y_position -= 0.3 * inch
-        p.drawString(inch, y_position, f"{trans('general_description', default='Description')}: {debtor.get('description', 'No description provided')}")
-        y_position -= 0.3 * inch
-        p.drawString(inch, y_position, f"{trans('debtors_date_recorded', default='Date Recorded')}: {utils.format_date(debtor['created_at'])}")
-        y_position -= 0.3 * inch
-        p.drawString(inch, y_position, f"{trans('debtors_reminders_sent', default='Reminders Sent')}: {debtor.get('reminder_count', 0)}")
+        y_position = title_y - 0.5  # Start content below the title
+        p.drawString(inch, y_position * inch, f"{trans('general_name', default='Debtor')}: {debtor['name']}")
+        y_position -= 0.3
+        p.drawString(inch, y_position * inch, f"{trans('debtors_amount_owed', default='Amount Owed')}: {utils.format_currency(debtor['amount_owed'])}")
+        y_position -= 0.3
+        p.drawString(inch, y_position * inch, f"{trans('general_contact', default='Contact')}: {debtor.get('contact', 'N/A')}")
+        y_position -= 0.3
+        p.drawString(inch, y_position * inch, f"{trans('general_description', default='Description')}: {debtor.get('description', 'No description provided')}")
+        y_position -= 0.3
+        p.drawString(inch, y_position * inch, f"{trans('debtors_date_recorded', default='Date Recorded')}: {utils.format_date(debtor['created_at'])}")
+        y_position -= 0.3
+        p.drawString(inch, y_position * inch, f"{trans('debtors_reminders_sent', default='Reminders Sent')}: {debtor.get('reminder_count', 0)}")
         
         p.setFont("Helvetica-Oblique", 10)
         p.drawString(inch, inch, trans('debtors_iou_footer', default='This document serves as an IOU recorded on FiCore Records.'))
