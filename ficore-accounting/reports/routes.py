@@ -14,6 +14,7 @@ from wtforms import DateField, StringField, SubmitField, SelectField
 from wtforms.validators import Optional
 import csv
 import logging
+from helpers.branding_helpers import draw_ficore_pdf_header, ficore_csv_header
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +128,6 @@ def to_dict_cashflow(record):
         'created_at': utils.format_date(record.get('created_at'), format_type='iso'),
         'updated_at': utils.format_date(record.get('updated_at'), format_type='iso') if record.get('updated_at') else None
     }
-    # Convert datetime.date to datetime.datetime for BSON compatibility
     for key, value in result.items():
         if isinstance(value, date) and not isinstance(value, datetime):
             result[key] = datetime.combine(value, datetime.min.time())
@@ -162,7 +162,6 @@ def profit_loss():
     if form.validate_on_submit():
         try:
             db = utils.get_mongo_db()
-            # Convert date objects to datetime objects for MongoDB compatibility
             if form.start_date.data:
                 start_datetime = datetime.combine(form.start_date.data, datetime.min.time())
                 query['created_at'] = {'$gte': start_datetime}
@@ -219,7 +218,6 @@ def debtors_creditors():
     if form.validate_on_submit():
         try:
             db = utils.get_mongo_db()
-            # Convert date objects to datetime objects for MongoDB compatibility
             if form.start_date.data:
                 start_datetime = datetime.combine(form.start_date.data, datetime.min.time())
                 query['created_at'] = {'$gte': start_datetime}
@@ -278,7 +276,6 @@ def tax_obligations():
     if form.validate_on_submit():
         try:
             db = utils.get_mongo_db()
-            # Convert date objects to datetime objects for MongoDB compatibility
             if form.start_date.data:
                 start_datetime = datetime.combine(form.start_date.data, datetime.min.time())
                 query['due_date'] = {'$gte': start_datetime}
@@ -339,7 +336,6 @@ def budget_performance():
             db = utils.get_mongo_db()
             budget_query = query.copy()
             cashflow_query = query.copy()
-            # Convert date objects to datetime objects for MongoDB compatibility
             if form.start_date.data:
                 start_datetime = datetime.combine(form.start_date.data, datetime.min.time())
                 budget_query['created_at'] = {'$gte': start_datetime}
@@ -501,6 +497,7 @@ def customer_reports():
 def generate_profit_loss_pdf(cashflows):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
+    draw_ficore_pdf_header(p, current_user, y_start=11.2)
     p.setFont("Helvetica", 12)
     p.drawString(1 * inch, 10.5 * inch, trans('reports_profit_loss_report', default='Profit/Loss Report'))
     p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
@@ -525,6 +522,7 @@ def generate_profit_loss_pdf(cashflows):
         y -= 0.3 * inch
         if y < 1 * inch:
             p.showPage()
+            draw_ficore_pdf_header(p, current_user, y_start=11.2)
             y = 10.5 * inch
     y -= 0.3 * inch
     p.drawString(1 * inch, y, f"{trans('reports_total_income', default='Total Income')}: {utils.format_currency(total_income)}")
@@ -539,6 +537,7 @@ def generate_profit_loss_pdf(cashflows):
 
 def generate_profit_loss_csv(cashflows):
     output = []
+    output.extend(ficore_csv_header(current_user))
     output.append([trans('general_date', default='Date'), trans('general_party_name', default='Party Name'), trans('general_type', default='Type'), trans('general_amount', default='Amount')])
     total_income = 0
     total_expense = 0
@@ -560,6 +559,7 @@ def generate_profit_loss_csv(cashflows):
 def generate_debtors_creditors_pdf(records):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
+    draw_ficore_pdf_header(p, current_user, y_start=11.2)
     p.setFont("Helvetica", 12)
     p.drawString(1 * inch, 10.5 * inch, trans('reports_debtors_creditors_report', default='Debtors/Creditors Report'))
     p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
@@ -578,7 +578,7 @@ def generate_debtors_creditors_pdf(records):
         p.drawString(2.5 * inch, y, r['name'])
         p.drawString(4 * inch, y, trans(r['type'], default=r['type']))
         p.drawString(5 * inch, y, utils.format_currency(r['amount_owed']))
-        p.drawString(6.5 * inch, y, r.get('description', '')[:20])  # Truncate description
+        p.drawString(6.5 * inch, y, r.get('description', '')[:20])
         if r['type'] == 'debtor':
             total_debtors += r['amount_owed']
         else:
@@ -586,6 +586,7 @@ def generate_debtors_creditors_pdf(records):
         y -= 0.3 * inch
         if y < 1 * inch:
             p.showPage()
+            draw_ficore_pdf_header(p, current_user, y_start=11.2)
             y = 10.5 * inch
     y -= 0.3 * inch
     p.drawString(1 * inch, y, f"{trans('reports_total_debtors', default='Total Debtors')}: {utils.format_currency(total_debtors)}")
@@ -598,6 +599,7 @@ def generate_debtors_creditors_pdf(records):
 
 def generate_debtors_creditors_csv(records):
     output = []
+    output.extend(ficore_csv_header(current_user))
     output.append([trans('general_date', default='Date'), trans('general_name', default='Name'), trans('general_type', default='Type'), trans('general_amount_owed', default='Amount Owed'), trans('general_description', default='Description')])
     total_debtors = 0
     total_creditors = 0
@@ -618,6 +620,7 @@ def generate_debtors_creditors_csv(records):
 def generate_tax_obligations_pdf(tax_reminders):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
+    draw_ficore_pdf_header(p, current_user, y_start=11.2)
     p.setFont("Helvetica", 12)
     p.drawString(1 * inch, 10.5 * inch, trans('reports_tax_obligations_report', default='Tax Obligations Report'))
     p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
@@ -638,6 +641,7 @@ def generate_tax_obligations_pdf(tax_reminders):
         y -= 0.3 * inch
         if y < 1 * inch:
             p.showPage()
+            draw_ficore_pdf_header(p, current_user, y_start=11.2)
             y = 10.5 * inch
     y -= 0.3 * inch
     p.drawString(1 * inch, y, f"{trans('reports_total_tax_amount', default='Total Tax Amount')}: {utils.format_currency(total_amount)}")
@@ -648,6 +652,7 @@ def generate_tax_obligations_pdf(tax_reminders):
 
 def generate_tax_obligations_csv(tax_reminders):
     output = []
+    output.extend(ficore_csv_header(current_user))
     output.append([trans('general_due_date', default='Due Date'), trans('general_tax_type', default='Tax Type'), trans('general_amount', default='Amount'), trans('general_status', default='Status')])
     total_amount = 0
     for tr in tax_reminders:
@@ -663,6 +668,7 @@ def generate_tax_obligations_csv(tax_reminders):
 def generate_budget_performance_pdf(budget_data):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
+    draw_ficore_pdf_header(p, current_user, y_start=11.2)
     p.setFont("Helvetica", 10)
     p.drawString(1 * inch, 10.5 * inch, trans('reports_budget_performance_report', default='Budget Performance Report'))
     p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
@@ -698,6 +704,7 @@ def generate_budget_performance_pdf(budget_data):
         y -= 0.3 * inch
         if y < 1 * inch:
             p.showPage()
+            draw_ficore_pdf_header(p, current_user, y_start=11.2)
             y = 10.5 * inch
     p.showPage()
     p.save()
@@ -706,6 +713,7 @@ def generate_budget_performance_pdf(budget_data):
 
 def generate_budget_performance_csv(budget_data):
     output = []
+    output.extend(ficore_csv_header(current_user))
     output.append([
         trans('general_date', default='Date'),
         trans('general_income', default='Income'),
@@ -736,6 +744,7 @@ def generate_budget_performance_csv(budget_data):
 def generate_customer_report_pdf(report_data):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
+    draw_ficore_pdf_header(p, current_user, y_start=11.2)
     p.setFont("Helvetica", 8)
     p.drawString(0.5 * inch, 10.5 * inch, trans('reports_customer_report', default='Customer Report'))
     p.drawString(0.5 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
@@ -758,10 +767,11 @@ def generate_customer_report_pdf(report_data):
             str(data['lessons_completed']), data['next_tax_due_date'], str(data['next_tax_amount'])
         ]
         for value, x in zip(values, x_positions):
-            p.drawString(x, y, str(value)[:15])  # Truncate long values
+            p.drawString(x, y, str(value)[:15])
         y -= 0.2 * inch
         if y < 0.5 * inch:
             p.showPage()
+            draw_ficore_pdf_header(p, current_user, y_start=11.2)
             y = 10.5 * inch
     p.showPage()
     p.save()
@@ -770,6 +780,7 @@ def generate_customer_report_pdf(report_data):
 
 def generate_customer_report_csv(report_data):
     output = []
+    output.extend(ficore_csv_header(current_user))
     headers = [
         'Username', 'Email', 'Role', 'Ficore Credit Balance', 'Language',
         'Budget Income', 'Budget Fixed Expenses', 'Budget Variable Expenses', 'Budget Surplus/Deficit',
