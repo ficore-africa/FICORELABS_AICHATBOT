@@ -34,6 +34,7 @@ try:
     # Personal Finance Tools
     from .personal_finance.bill_translations import BILL_TRANSLATIONS
     from .personal_finance.budget_translations import BUDGET_TRANSLATIONS
+    from .personal_finance.grocery_translations import GROCERY_TRANSLATIONS
     
     # Accounting Tools
     from .accounting_tools.admin_translations import ADMIN_TRANSLATIONS
@@ -58,6 +59,7 @@ translation_modules = {
     # Personal Finance
     'bill': BILL_TRANSLATIONS,
     'budget': BUDGET_TRANSLATIONS,
+    'grocery': GROCERY_TRANSLATIONS,
     
     # Accounting Tools
     'admin': ADMIN_TRANSLATIONS,
@@ -79,6 +81,7 @@ KEY_PREFIX_TO_MODULE = {
     # Personal Finance prefixes
     'bill_': 'bill',
     'budget_': 'budget',
+    'grocery_': 'grocery',
     
     # Accounting Tools prefixes
     'admin_': 'admin',
