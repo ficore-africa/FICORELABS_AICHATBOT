@@ -23,8 +23,6 @@ logger = getLogger(__name__)
 
 credits_bp = Blueprint('credits', __name__, template_folder='templates/credits')
 
-# Note: Ensure Flask app has SECRET_KEY configured for session support (e.g., app.secret_key = 'your-secret-key')
-
 class RequestCreditsForm(FlaskForm):
     amount = SelectField(
         trans('credits_amount', default='Ficore Credit Amount'),
@@ -43,9 +41,10 @@ class RequestCreditsForm(FlaskForm):
         render_kw={'class': 'form-select'}
     )
     receipt = FileField(
-        trans('credits_receipt', default='Receipt (Optional)'),
+        trans('credits_receipt', default='Receipt'),
         validators=[
-            FileAllowed(['jpg', 'png', 'pdf'], trans('credits_invalid_file_type', default='Only JPG, PNG, or PDF files are allowed'))
+            FileAllowed(['jpg', 'png', 'pdf'], trans('credits_invalid_file_type', default='Only JPG, PNG, or PDF files are allowed')),
+            validators.DataRequired(message=trans('credits_receipt_required', default='Receipt file is required'))
         ],
         render_kw={'class': 'form-control'}
     )
@@ -122,6 +121,16 @@ def credit_ficore_credits(user_id: str, amount: int, ref: str, type: str = 'add'
 def request_credits():
     """Handle Ficore Credit request submissions."""
     form = RequestCreditsForm()
+    price = None
+    if form.amount.data:
+        try:
+            amount = int(form.amount.data)
+            price = amount * 50  # 50 Naira per 1 FC
+        except ValueError:
+            price = 500  # Default to minimum purchase (10 FCs)
+    else:
+        price = 500  # Default to minimum purchase (10 FCs)
+
     if form.validate_on_submit():
         try:
             db = utils.get_mongo_db()
@@ -141,18 +150,17 @@ def request_credits():
 
             receipt_file_id = None
             # Step 1: Handle file upload outside the transaction
-            if receipt_file:
-                try:
-                    receipt_file_id = fs.put(
-                        receipt_file,
-                        filename=receipt_file.filename,
-                        user_id=str(current_user.id),
-                        upload_date=datetime.utcnow()
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to upload receipt to GridFS for user {current_user.id}, ref {ref}: {str(e)}")
-                    flash(trans('credits_file_upload_failed', default='Failed to upload receipt file'), 'danger')
-                    return redirect(url_for('credits.request_credits'))
+            try:
+                receipt_file_id = fs.put(
+                    receipt_file,
+                    filename=receipt_file.filename,
+                    user_id=str(current_user.id),
+                    upload_date=datetime.utcnow()
+                )
+            except Exception as e:
+                logger.error(f"Failed to upload receipt to GridFS for user {current_user.id}, ref {ref}: {str(e)}")
+                flash(trans('credits_file_upload_failed', default='Failed to upload receipt file'), 'danger')
+                return redirect(url_for('credits.request_credits'))
 
             # Step 2: Create credit request
             request_data = {
@@ -194,13 +202,14 @@ def request_credits():
             if receipt_file_id:
                 try:
                     fs.delete(receipt_file_id)
-                    logger.info(f"Deleted orphaned GridFS file {receipt_file_id} for user {current_user.id},Struct ref {ref}")
+                    logger.info(f"Deleted orphaned GridFS file {receipt_file_id} for user {current_user.id}, ref {ref}")
                 except Exception as delete_err:
                     logger.error(f"Failed to delete orphaned GridFS file {receipt_file_id}: {str(delete_err)}")
             flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
     return render_template(
         'credits/request.html',
         form=form,
+        price=price,
         title=trans('credits_request_title', default='Request Ficore Credits', lang=session.get('lang', 'en'))
     )
 
