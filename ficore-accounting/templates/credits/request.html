@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}{{ t('credits_request_title', default='Request Ficore Credits') }} - FiCore{% endblock %}
+{% block title %}{{ title }} - FiCore{% endblock %}
 {% block content %}
 <div class="container mt-5">
     <div class="page-title">
-        <h1>{{ t('credits_request_title', default='Request Ficore Credits') }}</h1>
+        <h1>{{ title }}</h1>
         <small class="subtext">{{ t('credits_wallet_subtext', default='Tsabobin Cikin App') }}</small>
     </div>
     <form action="{{ url_for('credits.request_credits') }}" method="POST" enctype="multipart/form-data" class="row g-3">
@@ -16,14 +16,8 @@
             {% endif %}
         </div>
         <div class="col-12">
-            <p id="price-display" class="text-info">
-                {% if price %}
-                    {{ t('credits_price', default='Price: N{price} for {amount} FCs')|format(price=price, amount=form.amount.data or 10) }}
-                {% else %}
-                    {{ t('credits_price', default='Price: N500 for 10 FCs') }}
-                {% endif %}
-            </p>
-            <p class="text-muted">{{ t('credits_payment_instructions', default='Pay N{price} to this account and upload receipt')|format(price=price or 500) }}</p>
+            <p id="price-display" class="text-info">{{ credits_price }}</p>
+            <p class="text-muted" id="payment-instructions">{{ payment_instructions }}</p>
         </div>
         <div class="col-12">
             <label for="payment_method" class="form-label">{{ t('general_payment_method', default='Payment Method') }}</label>
@@ -51,11 +45,14 @@
 function updatePrice() {
     const amountSelect = document.getElementById('amount');
     const priceDisplay = document.getElementById('price-display');
-    const paymentInstructions = document.querySelector('.text-muted');
+    const paymentInstructions = document.getElementById('payment-instructions');
     const amount = parseInt(amountSelect.value) || 10;
     const price = amount * 50;
-    priceDisplay.textContent = `{{ t('credits_price', default='Price: N{price} for {amount} FCs') }}`.replace('{price}', price).replace('{amount}', amount);
-    paymentInstructions.textContent = `{{ t('credits_payment_instructions', default='Pay N{price} to this account and upload receipt') }}`.replace('{price}', price);
+    // Use pre-translated strings with placeholders
+    const priceTemplate = "{{ t('credits_price', default='Price: N{price} for {amount} FCs') }}";
+    const instructionsTemplate = "{{ t('credits_payment_instructions', default='Pay N{price} to this account and upload receipt') }}";
+    priceDisplay.textContent = priceTemplate.replace('{price}', price).replace('{amount}', amount);
+    paymentInstructions.textContent = instructionsTemplate.replace('{price}', price);
 }
 </script>
 {% endblock %}
