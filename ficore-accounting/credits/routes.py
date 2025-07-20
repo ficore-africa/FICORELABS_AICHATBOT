@@ -213,7 +213,6 @@ def request_credits():
         form=form,
         price=price,
         amount=amount,
-        price=price,
         title=trans('credits_request_title', default='Request Ficore Credits', lang=session.get('lang', 'en'))
     )
 
