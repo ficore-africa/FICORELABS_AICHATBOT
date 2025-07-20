@@ -14,6 +14,9 @@ from bson import ObjectId
 from datetime import datetime
 from logging import getLogger
 from pymongo import errors
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+limiter = Limiter(key_func=get_remote_address)
 
 logger = getLogger(__name__)
 
@@ -114,7 +117,7 @@ def credit_ficore_credits(user_id: str, amount: int, ref: str, type: str = 'add'
 @credits_bp.route('/request', methods=['GET', 'POST'])
 @login_required
 @utils.requires_role(['trader', 'personal'])
-@utils.limiter.limit("50 per hour")
+@limiter.limit("50 per hour")
 def request_credits():
     """Handle Ficore Credit request submissions."""
     form = RequestCreditsForm()
@@ -202,7 +205,7 @@ def request_credits():
 
 @credits_bp.route('/history', methods=['GET'])
 @login_required
-@utils.limiter.limit("100 per hour")
+@limiter.limit("100 per hour")
 def history():
     """View Ficore Credit transaction and request history, including all statuses."""
     try:
@@ -249,7 +252,7 @@ def history():
 @credits_bp.route('/requests', methods=['GET'])
 @login_required
 @utils.requires_role('admin')
-@utils.limiter.limit("50 per hour")
+@limiter.limit("50 per hour")
 def view_credit_requests():
     """View all credit requests (admin only)."""
     try:
@@ -281,7 +284,7 @@ def view_credit_requests():
 @credits_bp.route('/request/<request_id>', methods=['GET', 'POST'])
 @login_required
 @utils.requires_role('admin')
-@utils.limiter.limit("20 per hour")
+@limiter.limit("20 per hour")
 def manage_credit_request(request_id):
     """Approve or deny a credit request (admin only)."""
     form = ApproveCreditRequestForm()
@@ -346,7 +349,7 @@ def manage_credit_request(request_id):
 @credits_bp.route('/receipt_upload', methods=['GET', 'POST'])
 @login_required
 @utils.requires_role(['trader', 'personal'])
-@utils.limiter.limit("10 per hour")
+@limiter.limit("10 per hour")
 def receipt_upload():
     """Handle payment receipt uploads with transaction for Ficore Credit deduction."""
     form = ReceiptUploadForm()
@@ -439,7 +442,7 @@ def receipt_upload():
 @credits_bp.route('/receipts', methods=['GET'])
 @login_required
 @utils.requires_role('admin')
-@utils.limiter.limit("50 per hour")
+@limiter.limit("50 per hour")
 def view_receipts():
     """View all uploaded receipts (admin only)."""
     try:
@@ -474,7 +477,7 @@ def view_receipts():
 @credits_bp.route('/receipt/<file_id>', methods=['GET'])
 @login_required
 @utils.requires_role('admin')
-@utils.limiter.limit("20 per hour")
+@limiter.limit("20 per hour")
 def view_receipt(file_id):
     """Serve a specific receipt file (admin only)."""
     try:
@@ -507,7 +510,7 @@ def view_receipt(file_id):
 
 @credits_bp.route('/api/balance', methods=['GET'])
 @login_required
-@utils.limiter.limit("100 per hour")
+@limiter.limit("100 per hour")
 def get_balance():
     """API endpoint to get current user's Ficore Credit balance."""
     try:
@@ -524,7 +527,7 @@ def get_balance():
 
 @credits_bp.route('/info', methods=['GET'])
 @login_required
-@utils.limiter.limit("100 per hour")
+@limiter.limit("100 per hour")
 def ficore_credits_info():
     """Display information about Ficore Credits."""
     return render_template(
