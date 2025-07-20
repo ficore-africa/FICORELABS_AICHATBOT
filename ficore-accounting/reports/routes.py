@@ -63,7 +63,7 @@ def to_dict_budget(record):
         'dependents': record.get('dependents', 0),
         'miscellaneous': record.get('miscellaneous', 0),
         'others': record.get('others', 0),
-        'created_at': record.get('created_at')
+        'created_at': utils.format_date(record.get('created_at'), format_type='iso')
     }
 
 def to_dict_bill(record):
@@ -73,7 +73,7 @@ def to_dict_bill(record):
         'id': str(record.get('_id', '')),
         'bill_name': record.get('bill_name', ''),
         'amount': record.get('amount', 0),
-        'due_date': record.get('due_date', ''),
+        'due_date': utils.format_date(record.get('due_date'), format_type='iso'),
         'frequency': record.get('frequency', ''),
         'category': record.get('category', ''),
         'status': record.get('status', ''),
@@ -90,12 +90,12 @@ def to_dict_tax_reminder(record):
         'id': str(record.get('_id', '')),
         'user_id': record.get('user_id', ''),
         'tax_type': record.get('tax_type', ''),
-        'due_date': record.get('due_date'),
+        'due_date': utils.format_date(record.get('due_date'), format_type='iso'),
         'amount': record.get('amount', 0),
         'status': record.get('status', ''),
-        'created_at': record.get('created_at'),
+        'created_at': utils.format_date(record.get('created_at'), format_type='iso'),
         'notification_id': record.get('notification_id'),
-        'sent_at': record.get('sent_at'),
+        'sent_at': utils.format_date(record.get('sent_at'), format_type='iso') if record.get('sent_at') else None,
         'payment_location_id': record.get('payment_location_id')
     }
 
@@ -111,17 +111,13 @@ def to_dict_record(record):
         'amount_owed': record.get('amount_owed', 0),
         'description': record.get('description', ''),
         'reminder_count': record.get('reminder_count', 0),
-        'created_at': record.get('created_at'),
-        'updated_at': record.get('updated_at')
+        'created_at': utils.format_date(record.get('created_at'), format_type='iso'),
+        'updated_at': utils.format_date(record.get('updated_at'), format_type='iso') if record.get('updated_at') else None
     }
 
 def to_dict_cashflow(record):
     if not record:
         return {'party_name': None, 'amount': None}
-    created_at = record.get('created_at')
-    # Convert datetime.date or datetime.datetime to string
-    if isinstance(created_at, (date, datetime)):
-        created_at = created_at.isoformat()
     return {
         'id': str(record.get('_id', '')),
         'user_id': record.get('user_id', ''),
@@ -130,8 +126,8 @@ def to_dict_cashflow(record):
         'amount': record.get('amount', 0),
         'method': record.get('method', ''),
         'category': record.get('category', ''),
-        'created_at': created_at,
-        'updated_at': record.get('updated_at')
+        'created_at': utils.format_date(record.get('created_at'), format_type='iso'),
+        'updated_at': utils.format_date(record.get('updated_at'), format_type='iso') if record.get('updated_at') else None
     }
 
 @reports_bp.route('/')
@@ -225,7 +221,7 @@ def debtors_creditors():
                 query['created_at'] = query.get('created_at', {}) | {'$lte': form.end_date.data}
             if form.record_type.data:
                 query['type'] = form.record_type.data
-            records = list(db.records.find(query).sort('created_at', -1))
+            records = [to_dict_record(r) for r in db.records.find(query).sort('created_at', -1)]
             output_format = request.form.get('format', 'html')
             if output_format == 'pdf':
                 return generate_debtors_creditors_pdf(records)
@@ -248,8 +244,12 @@ def debtors_creditors():
             logger.error(f"Error generating debtors/creditors report for user {current_user.id}: {str(e)}", exc_info=True)
             flash(trans('reports_generation_error', default='An error occurred'), 'danger')
     else:
-        db = utils.get_mongo_db()
-        records = list(db.records.find(query).sort('created_at', -1))
+        try:
+            db = utils.get_mongo_db()
+            records = [to_dict_record(r) for r in db.records.find(query).sort('created_at', -1)]
+        except Exception as e:
+            logger.error(f"Error fetching records for user {current_user.id}: {str(e)}", exc_info=True)
+            flash(trans('reports_generation_error', default='An error occurred'), 'danger')
     return render_template(
         'reports/debtors_creditors.html',
         form=form,
@@ -277,7 +277,7 @@ def tax_obligations():
                 query['due_date'] = query.get('due_date', {}) | {'$lte': form.end_date.data}
             if form.status.data:
                 query['status'] = form.status.data
-            tax_reminders = list(db.tax_reminders.find(query).sort('due_date', 1))
+            tax_reminders = [to_dict_tax_reminder(tr) for tr in db.tax_reminders.find(query).sort('due_date', 1)]
             output_format = request.form.get('format', 'html')
             if output_format == 'pdf':
                 return generate_tax_obligations_pdf(tax_reminders)
@@ -300,8 +300,12 @@ def tax_obligations():
             logger.error(f"Error generating tax obligations report for user {current_user.id}: {str(e)}", exc_info=True)
             flash(trans('reports_generation_error', default='An error occurred'), 'danger')
     else:
-        db = utils.get_mongo_db()
-        tax_reminders = list(db.tax_reminders.find(query).sort('due_date', 1))
+        try:
+            db = utils.get_mongo_db()
+            tax_reminders = [to_dict_tax_reminder(tr) for tr in db.tax_reminders.find(query).sort('due_date', 1)]
+        except Exception as e:
+            logger.error(f"Error fetching tax reminders for user {current_user.id}: {str(e)}", exc_info=True)
+            flash(trans('reports_generation_error', default='An error occurred'), 'danger')
     return render_template(
         'reports/tax_obligations.html',
         form=form,
@@ -314,7 +318,6 @@ def tax_obligations():
 @utils.requires_role('personal')
 def budget_performance():
     """Generate budget performance report with filters."""
-   Wind
     form = BudgetPerformanceReportForm()
     if not utils.is_admin() and not utils.check_ficore_credit_balance(1):
         flash(trans('debtors_insufficient_credits', default='Insufficient credits to generate a report. Request more credits.'), 'danger')
@@ -333,7 +336,7 @@ def budget_performance():
                 budget_query['created_at'] = budget_query.get('created_at', {}) | {'$lte': form.end_date.data}
                 cashflow_query['created_at'] = cashflow_query.get('created_at', {}) | {'$lte': form.end_date.data}
             budgets = list(db.budgets.find(budget_query).sort('created_at', -1))
-            cashflows = list(db.cashflows.find(cashflow_query).sort('created_at', -1))
+            cashflows = [to_dict_cashflow(cf) for cf in db.cashflows.find(cashflow_query).sort('created_at', -1)]
             for budget in budgets:
                 budget_dict = to_dict_budget(budget)
                 actual_income = sum(cf['amount'] for cf in cashflows if cf['type'] == 'receipt')
@@ -365,18 +368,22 @@ def budget_performance():
             logger.error(f"Error generating budget performance report for user {current_user.id}: {str(e)}", exc_info=True)
             flash(trans('reports_generation_error', default='An error occurred'), 'danger')
     else:
-        db = utils.get_mongo_db()
-        budgets = list(db.budgets.find(query).sort('created_at', -1))
-        cashflows = list(db.cashflows.find(query).sort('created_at', -1))
-        for budget in budgets:
-            budget_dict = to_dict_budget(budget)
-            actual_income = sum(cf['amount'] for cf in cashflows if cf['type'] == 'receipt')
-            actual_expenses = sum(cf['amount'] for cf in cashflows if cf['type'] == 'payment')
-            budget_dict['actual_income'] = actual_income
-            budget_dict['actual_expenses'] = actual_expenses
-            budget_dict['income_variance'] = actual_income - budget_dict['income']
-            budget_dict['expense_variance'] = actual_expenses - (budget_dict['fixed_expenses'] + budget_dict['variable_expenses'])
-            budget_data.append(budget_dict)
+        try:
+            db = utils.get_mongo_db()
+            budgets = list(db.budgets.find(query).sort('created_at', -1))
+            cashflows = [to_dict_cashflow(cf) for cf in db.cashflows.find(query).sort('created_at', -1)]
+            for budget in budgets:
+                budget_dict = to_dict_budget(budget)
+                actual_income = sum(cf['amount'] for cf in cashflows if cf['type'] == 'receipt')
+                actual_expenses = sum(cf['amount'] for cf in cashflows if cf['type'] == 'payment')
+                budget_dict['actual_income'] = actual_income
+                budget_dict['actual_expenses'] = actual_expenses
+                budget_dict['income_variance'] = actual_income - budget_dict['income']
+                budget_dict['expense_variance'] = actual_expenses - (budget_dict['fixed_expenses'] + budget_dict['variable_expenses'])
+                budget_data.append(budget_dict)
+        except Exception as e:
+            logger.error(f"Error fetching budget data for user {current_user.id}: {str(e)}", exc_info=True)
+            flash(trans('reports_generation_error', default='An error occurred'), 'danger')
     return render_template(
         'reports/budget_performance.html',
         form=form,
@@ -446,10 +453,9 @@ def customer_reports():
             report_data = []
             for user in users:
                 budget = to_dict_budget(user['latest_budget'][0] if user['latest_budget'] else None)
-                bill_counts = {status['_id']: status['count'] for status in user['bill_status_counts']} if user['bill_status_counts'] else {'pending': 0, 'paid': 0, 'overdue': 0}
+                bill(counts = {status['_id']: status['count'] for status in user['bill_status_counts']} if user['bill_status_counts'] else {'pending': 0, 'paid': 0, 'overdue': 0}
                 learning_progress = user['learning_progress'][0]['total_lessons_completed'] if user['learning_progress'] else 0
                 tax_reminder = to_dict_tax_reminder(user['next_tax_reminder'][0] if user['next_tax_reminder'] else None)
-
                 data = {
                     'username': user['_id'],
                     'email': user.get('email', ''),
@@ -468,7 +474,6 @@ def customer_reports():
                     'next_tax_amount': tax_reminder['amount'] if tax_reminder['amount'] is not None else '-'
                 }
                 report_data.append(data)
-
             if report_format == 'html':
                 return render_template('reports/customer_reports.html', report_data=report_data, title='Facore Credits')
             elif report_format == 'pdf':
@@ -604,7 +609,7 @@ def generate_tax_obligations_pdf(tax_reminders):
     p = canvas.Canvas(buffer, pagesize=A4)
     p.setFont("Helvetica", 12)
     p.drawString(1 * inch, 10.5 * inch, trans('reports_tax_obligations_report', default='Tax Obligations Report'))
-    p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
+    p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime UTC.now())}")
     y = 9.5 * inch
     p.setFillColor(colors.black)
     p.drawString(1 * inch, y, trans('general_due_date', default='Due Date'))
@@ -642,7 +647,7 @@ def generate_tax_obligations_csv(tax_reminders):
     writer = csv.writer(buffer, lineterminator='\n')
     writer.writerows(output)
     buffer.seek(0)
-    return Response(buffer, mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=tax_obligations.csv'})
+    return Response(buffer, mimetype='text/csv', headers={'ContentੀDisposition': 'attachment;filename=tax_obligations.csv'})
 
 def generate_budget_performance_pdf(budget_data):
     buffer = BytesIO()
@@ -672,7 +677,7 @@ def generate_budget_performance_pdf(budget_data):
             utils.format_currency(bd['income']),
             utils.format_currency(bd['actual_income']),
             utils.format_currency(bd['income_variance']),
-            utils.format_currency(bd['fixed_expenses']),
+            utils.format斯坦_currency(bd['fixed_expenses']),
             utils.format_currency(bd['variable_expenses']),
             utils.format_currency(bd['actual_expenses']),
             utils.format_currency(bd['expense_variance'])
