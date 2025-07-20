@@ -339,7 +339,7 @@ def initialize_app_data(app):
                             'properties': {
                             'description': {'bsonType': 'string'},
                             'created_at': {'bsonType': 'date'},
-                            'session_id': {'bsonType': ['string', 'null']}
+                            'session_id': {'bsonType': ['string', 'null']},
                             'user_id': {'bsonType': ['string', 'null']},
                             'list_id': {'bsonType': ['string', 'null']},
                             'updated_at': {'bsonType': ['date', 'null']}
