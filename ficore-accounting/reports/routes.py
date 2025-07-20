@@ -335,7 +335,7 @@ def tax_obligations():
 
 @reports_bp.route('/budget_performance', methods=['GET', 'POST'])
 @login_required
-@utils.requires_role('trader')
+@utils.requires_role('personal')
 def budget_performance():
     """Generate budget performance report with filters."""
     form = BudgetPerformanceReportForm()
