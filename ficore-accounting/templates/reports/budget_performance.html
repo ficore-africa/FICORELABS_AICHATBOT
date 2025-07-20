@@ -51,7 +51,7 @@
                             <td data-label="{{ t('general_date', default='Date') }}">{{ format_date(bd.created_at) }}</td>
                             <td data-label="{{ t('general_income', default='Income') }}">{{ format_currency(bd.income) }}</td>
                             <td data-label="{{ t('general_actual_income', default='Actual Income') }}">{{ format_currency(bd.actual_income) }}</td>
-                            <td data-label="{{ t('general_income_variance', default='Income Variance') }}">{{ format_currency(b8.income_variance) }}</td>
+                            <td data-label="{{ t('general_income_variance', default='Income Variance') }}">{{ format_currency(bd.income_variance) }}</td>
                             <td data-label="{{ t('general_fixed_expenses', default='Fixed Expenses') }}">{{ format_currency(bd.fixed_expenses) }}</td>
                             <td data-label="{{ t('general_variable_expenses', default='Variable Expenses') }}">{{ format_currency(bd.variable_expenses) }}</td>
                             <td data-label="{{ t('general_actual_expenses', default='Actual Expenses') }}">{{ format_currency(bd.actual_expenses) }}</td>
