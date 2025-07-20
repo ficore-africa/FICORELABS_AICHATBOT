@@ -3,28 +3,28 @@
 
 {% block content %}
 <div class="container">
-    <!-- Welcome Section - Streamlined -->
-    <div class="section-card welcome-section-card text-center">
-        <h1 class="section-title">{{ t('general_welcome', default='Manage Your Finances with FiCore Africa') | e }}</h1>
-        <p class="text-muted">{{ t('general_ficore_desc', default='Africa\'s leading platform for personal finance, business management, and agent services, tailored for you.') | e }}</p>
-        
-        <!-- Initial Get Started Button -->
-        <div id="initial-cta" class="mb-3">
-            <button id="get-started-btn" class="btn btn-primary btn-lg" data-bs-toggle="tooltip" data-bs-title="{{ t('general_get_started_tooltip', default='Start your financial journey') | e }}">
-                {{ t('general_get_started', default='Get Started') | e }}
-                <i class="bi bi-chevron-down ms-2"></i>
-            </button>
-        </div>
+<!-- Welcome Section - Streamlined -->
+<div class="section-card welcome-section-card text-center">
+    <h1 class="section-title">{{ t('general_welcome', default='Manage Your Finances with FiCore Africa') | e }}</h1>
+    <p class="text-muted">{{ t('general_ficore_desc', default='Africa\'s leading platform for personal finance, business management, and agent services, tailored for you.') | e }}</p>
+    
+    <!-- Initial Get Started Button -->
+    <div id="initial-cta" class="mb-3">
+        <button id="get-started-btn" class="btn btn-primary btn-lg" type="button" data-bs-toggle="collapse" data-bs-target="#auth-options" aria-expanded="false" aria-controls="auth-options" data-bs-title="{{ t('general_get_started_tooltip', default='Start your financial journey') | e }}">
+            {{ t('general_get_started', default='Get Started') | e }}
+            <i class="bi bi-chevron-down ms-2"></i>
+        </button>
+     </div>
 
-        <!-- Hidden Auth Options (revealed on Get Started click) -->
-        <div id="auth-options" class="btn-group btn-group-vertical d-md-flex mb-3" style="display: none;">
-            <a href="{{ url_for('users.signup') }}" class="btn btn-outline-primary" data-bs-toggle="tooltip" data-bs-title="{{ t('general_signup_tooltip', default='Create your FiCore account') | e }}">
-                <i class="bi bi-person-plus me-2"></i>{{ t('general_signup', default='Sign Up') | e }}
-            </a>
-            <a href="{{ url_for('users.login') }}" class="btn btn-outline-primary" data-bs-toggle="tooltip" data-bs-title="{{ t('general_login_tooltip', default='Log in to your account') | e }}">
-                <i class="bi bi-box-arrow-in-right me-2"></i>{{ t('general_login', default='Log In') | e }}
-            </a>
-        </div>
+    <!-- Hidden Auth Options (revealed on Get Started click) -->
+    <div id="auth-options" class="btn-group btn-group-vertical d-md-flex mb-3 collapse">
+        <a href="{{ url_for('users.signup') }}" class="btn btn-outline-primary" data-bs-toggle="tooltip" data-bs-title="{{ t('general_signup_tooltip', default='Create your FiCore account') | e }}">
+            <i class="bi bi-person-plus me-2"></i>{{ t('general_signup', default='Sign Up') | e }}
+        </a>
+        <a href="{{ url_for('users.login') }}" class="btn btn-outline-primary" data-bs-toggle="tooltip" data-bs-title="{{ t('general_login_tooltip', default='Log in to your account') | e }}">
+            <i class="bi bi-box-arrow-in-right me-2"></i>{{ t('general_login', default='Log In') | e }}
+        </a>
+    </div>
     </div>
 
     <!-- Notifications Placeholder (Unauthenticated) -->
