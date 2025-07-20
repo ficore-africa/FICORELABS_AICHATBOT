@@ -483,7 +483,7 @@ def customer_reports():
 def generate_profit_loss_pdf(cashflows):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
-    draw_ficore_pdf_header(p, current_user, y_start=11.2)
+    draw_ficore_pdf_header(p, current_user, y_start=9.0)
     p.setFont("Helvetica", 12)
     p.drawString(1 * inch, 10.5 * inch, trans('reports_profit_loss_report', default='Profit/Loss Report'))
     p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
@@ -508,7 +508,7 @@ def generate_profit_loss_pdf(cashflows):
         y -= 0.3 * inch
         if y < 1 * inch:
             p.showPage()
-            draw_ficore_pdf_header(p, current_user, y_start=11.2)
+            draw_ficore_pdf_header(p, current_user, y_start=9.0)
             y = 10.5 * inch
     y -= 0.3 * inch
     p.drawString(1 * inch, y, f"{trans('reports_total_income', default='Total Income')}: {utils.format_currency(total_income)}")
@@ -545,7 +545,7 @@ def generate_profit_loss_csv(cashflows):
 def generate_debtors_creditors_pdf(records):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
-    draw_ficore_pdf_header(p, current_user, y_start=11.2)
+    draw_ficore_pdf_header(p, current_user, y_start=9.0)
     p.setFont("Helvetica", 12)
     p.drawString(1 * inch, 10.5 * inch, trans('reports_debtors_creditors_report', default='Debtors/Creditors Report'))
     p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
@@ -572,7 +572,7 @@ def generate_debtors_creditors_pdf(records):
         y -= 0.3 * inch
         if y < 1 * inch:
             p.showPage()
-            draw_ficore_pdf_header(p, current_user, y_start=11.2)
+            draw_ficore_pdf_header(p, current_user, y_start=9.0)
             y = 10.5 * inch
     y -= 0.3 * inch
     p.drawString(1 * inch, y, f"{trans('reports_total_debtors', default='Total Debtors')}: {utils.format_currency(total_debtors)}")
@@ -606,7 +606,7 @@ def generate_debtors_creditors_csv(records):
 def generate_tax_obligations_pdf(tax_reminders):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
-    draw_ficore_pdf_header(p, current_user, y_start=11.2)
+    draw_ficore_pdf_header(p, current_user, y_start=9.0)
     p.setFont("Helvetica", 12)
     p.drawString(1 * inch, 10.5 * inch, trans('reports_tax_obligations_report', default='Tax Obligations Report'))
     p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
@@ -627,7 +627,7 @@ def generate_tax_obligations_pdf(tax_reminders):
         y -= 0.3 * inch
         if y < 1 * inch:
             p.showPage()
-            draw_ficore_pdf_header(p, current_user, y_start=11.2)
+            draw_ficore_pdf_header(p, current_user, y_start=9.0)
             y = 10.5 * inch
     y -= 0.3 * inch
     p.drawString(1 * inch, y, f"{trans('reports_total_tax_amount', default='Total Tax Amount')}: {utils.format_currency(total_amount)}")
@@ -654,7 +654,7 @@ def generate_tax_obligations_csv(tax_reminders):
 def generate_budget_performance_pdf(budget_data):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
-    draw_ficore_pdf_header(p, current_user, y_start=11.2)
+    draw_ficore_pdf_header(p, current_user, y_start=9.0)
     p.setFont("Helvetica", 10)
     p.drawString(1 * inch, 10.5 * inch, trans('reports_budget_performance_report', default='Budget Performance Report'))
     p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
@@ -690,7 +690,7 @@ def generate_budget_performance_pdf(budget_data):
         y -= 0.3 * inch
         if y < 1 * inch:
             p.showPage()
-            draw_ficore_pdf_header(p, current_user, y_start=11.2)
+            draw_ficore_pdf_header(p, current_user, y_start=9.0)
             y = 10.5 * inch
     p.showPage()
     p.save()
@@ -730,7 +730,7 @@ def generate_budget_performance_csv(budget_data):
 def generate_customer_report_pdf(report_data):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
-    draw_ficore_pdf_header(p, current_user, y_start=11.2)
+    draw_ficore_pdf_header(p, current_user, y_start=9.0)
     p.setFont("Helvetica", 8)
     p.drawString(0.5 * inch, 10.5 * inch, trans('reports_customer_report', default='Customer Report'))
     p.drawString(0.5 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
@@ -757,7 +757,7 @@ def generate_customer_report_pdf(report_data):
         y -= 0.2 * inch
         if y < 0.5 * inch:
             p.showPage()
-            draw_ficore_pdf_header(p, current_user, y_start=11.2)
+            draw_ficore_pdf_header(p, current_user, y_start=9.0)
             y = 10.5 * inch
     p.showPage()
     p.save()
