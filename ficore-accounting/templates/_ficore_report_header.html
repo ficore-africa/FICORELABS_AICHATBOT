@@ -5,7 +5,7 @@
         <h2 style="color: #b88a44; margin: 0;">Ficore Africa</h2>
         <div style="font-size: 0.95rem; color: #333;">Empowering Africa's Businesses and Households. Contact: FicoreAfrica@gmail.com | +234-xxx-xxxx</div>
         <div style="font-size: 0.93rem; color: #555; margin-top: 0.5rem;">
-            Username: {{ user._id | escape }} | Email: {{ user.email | escape }}
+            Username: {{ user.display_name or user._id }} | Email: {{ user.email | escape }}
         </div>
     </div>
 </div>
