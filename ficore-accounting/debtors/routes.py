@@ -260,25 +260,25 @@ def generate_iou(id):
         p = canvas.Canvas(buffer, pagesize=letter)
         draw_ficore_pdf_header(p, current_user, y_start=10.5)
         
-        p.setFont("Helvetica-Bold", 20)
-        p.drawString(inch, 9.8 * inch, trans('debtors_iou_title', default='FiCore Records - IOU'))
+        p.setFont("Helvetica-Bold", 24)
+        p.drawString(inch, 10.5 * inch, trans('debtors_iou_title', default='FiCore Records - IOU'))
         
-        p.setFont("Helvetica", 11)
-        y_position = 9.3 * inch
+        p.setFont("Helvetica", 12)
+        y_position = 10 * inch
         p.drawString(inch, y_position, f"{trans('general_name', default='Debtor')}: {debtor['name']}")
-        y_position -= 0.25 * inch
+        y_position -= 0.3 * inch
         p.drawString(inch, y_position, f"{trans('debtors_amount_owed', default='Amount Owed')}: {utils.format_currency(debtor['amount_owed'])}")
-        y_position -= 0.25 * inch
+        y_position -= 0.3 * inch
         p.drawString(inch, y_position, f"{trans('general_contact', default='Contact')}: {debtor.get('contact', 'N/A')}")
-        y_position -= 0.25 * inch
+        y_position -= 0.3 * inch
         p.drawString(inch, y_position, f"{trans('general_description', default='Description')}: {debtor.get('description', 'No description provided')}")
-        y_position -= 0.25 * inch
+        y_position -= 0.3 * inch
         p.drawString(inch, y_position, f"{trans('debtors_date_recorded', default='Date Recorded')}: {utils.format_date(debtor['created_at'])}")
-        y_position -= 0.25 * inch
+        y_position -= 0.3 * inch
         p.drawString(inch, y_position, f"{trans('debtors_reminders_sent', default='Reminders Sent')}: {debtor.get('reminder_count', 0)}")
         
-        p.setFont("Helvetica-Oblique", 9)
-        p.drawString(inch, 1 * inch, trans('debtors_iou_footer', default='This document serves as an IOU recorded on FiCore Records.'))
+        p.setFont("Helvetica-Oblique", 10)
+        p.drawString(inch, inch, trans('debtors_iou_footer', default='This document serves as an IOU recorded on FiCore Records.'))
         
         p.showPage()
         p.save()
