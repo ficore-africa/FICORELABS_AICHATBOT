@@ -47,11 +47,6 @@ class BudgetPerformanceReportForm(FlaskForm):
     end_date = DateField(trans('reports_end_date', default='End Date'), validators=[Optional()])
     submit = SubmitField(trans('reports_generate_report', default='Generate Report'))
 
-class CreditUsageReportForm(FlaskForm):
-    start_date = DateField(trans('reports_start_date', default='Start Date'), validators=[Optional()])
-    end_date = DateField(trans('reports_end_date', default='End Date'), validators=[Optional()])
-    transaction_type = SelectField('Transaction Type', choices=[('', 'All'), ('add', 'Add'), ('spend', 'Spend'), ('purchase', 'Purchase'), ('admin_credit', 'Admin Credit')], validators=[Optional()])
-    submit = SubmitField(trans('reports_generate_report', default='Generate Report'))
 
 def to_dict_budget(record):
     if not record:
@@ -89,15 +84,6 @@ def to_dict_bill(record):
         'first_name': record.get('first_name', '')
     }
 
-def to_dict_learning_progress(record):
-    if not record:
-        return {'lessons_completed': [], 'quiz_scores': {}}
-    return {
-        'course_id': record.get('course_id', ''),
-        'lessons_completed': record.get('lessons_completed', []),
-        'quiz_scores': record.get('quiz_scores', {}),
-        'current_lesson': record.get('current_lesson')
-    }
 
 def to_dict_tax_reminder(record):
     if not record:
@@ -146,21 +132,6 @@ def to_dict_cashflow(record):
         'updated_at': record.get('updated_at')
     }
 
-def to_dict_ficore_credit_transaction(record):
-    if not record:
-        return {'amount': None, 'type': None}
-    return {
-        'id': str(record.get('_id', '')),
-        'user_id': record.get('user_id', ''),
-        'amount': record.get('amount', 0),
-        'type': record.get('type', ''),
-        'ref': record.get('ref', ''),
-        'date': record.get('date'),
-        'facilitated_by_agent': record.get('facilitated_by_agent', ''),
-        'payment_method': record.get('payment_method', ''),
-        'cash_amount': record.get('cash_amount', 0),
-        'notes': record.get('notes', '')
-    }
 
 @reports_bp.route('/')
 @login_required
@@ -407,57 +378,6 @@ def budget_performance():
         title=utils.trans('reports_budget_performance', default='Budget Performance Report', lang=session.get('lang', 'en'))
     )
 
-@reports_bp.route('/credit_usage', methods=['GET', 'POST'])
-@login_required
-@utils.requires_role('trader')
-def credit_usage():
-    """Generate credit usage report with filters."""
-    form = CreditUsageReportForm()
-    if not utils.is_admin() and not utils.check_ficore_credit_balance(1):
-        flash(trans('debtors_insufficient_credits', default='Insufficient credits to generate a report. Request more credits.'), 'danger')
-        return redirect(url_for('credits.request_credits'))
-    transactions = []
-    query = {} if utils.is_admin() else {'user_id': str(current_user.id)}
-    if form.validate_on_submit():
-        try:
-            db = utils.get_mongo_db()
-            if form.start_date.data:
-                query['date'] = {'$gte': form.start_date.data}
-            if form.end_date.data:
-                query['date'] = query.get('date', {}) | {'$lte': form.end_date.data}
-            if form.transaction_type.data:
-                query['type'] = form.transaction_type.data
-            transactions = list(db.ficore_ficore_credit_transactions.find(query).sort('date', -1))
-            output_format = request.form.get('format', 'html')
-            if output_format == 'pdf':
-                return generate_credit_usage_pdf(transactions)
-            elif output_format == 'csv':
-                return generate_credit_usage_csv(transactions)
-            if not utils.is_admin():
-                user_query = utils.get_user_query(str(current_user.id))
-                db.users.update_one(
-                    user_query,
-                    {'$inc': {'ficore_credit_balance': -1}}
-                )
-                db.ficore_ficore_credit_transactions.insert_one({
-                    'user_id': str(current_user.id),
-                    'amount': -1,
-                    'type': 'spend',
-                    'date': datetime.utcnow(),
-                    'ref': 'Credit Usage report generation (Ficore Credits)'
-                })
-        except Exception as e:
-            logger.error(f"Error generating credit usage report for user {current_user.id}: {str(e)}")
-            flash(trans('reports_generation_error', default='An error occurred'), 'danger')
-    else:
-        db = utils.get_mongo_db()
-        transactions = list(db.ficore_ficore_credit_transactions.find(query).sort('date', -1))
-    return render_template(
-        'reports/credit_usage.html',
-        form=form,
-        transactions=transactions,
-        title=utils.trans('reports_credit_usage', default='Credit Usage Report', lang=session.get('lang', 'en'))
-    )
 
 @reports_bp.route('/admin/customer-reports', methods=['GET', 'POST'])
 @login_required
@@ -791,53 +711,6 @@ def generate_budget_performance_csv(budget_data):
     writer.writerows(output)
     buffer.seek(0)
     return Response(buffer, mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=budget_performance.csv'})
-
-def generate_credit_usage_pdf(transactions):
-    buffer = BytesIO()
-    p = canvas.Canvas(buffer, pagesize=A4)
-    p.setFont("Helvetica", 12)
-    p.drawString(1 * inch, 10.5 * inch, trans('reports_credit_usage_report', default='Credit Usage Report'))
-    p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
-    y = 9.5 * inch
-    p.setFillColor(colors.black)
-    p.drawString(1 * inch, y, trans('general_date', default='Date'))
-    p.drawString(2.5 * inch, y, trans('general_type', default='Type'))
-    p.drawString(3.5 * inch, y, trans('general_amount', default='Amount'))
-    p.drawString(4.5 * inch, y, trans('general_reference', default='Reference'))
-    p.drawString(6 * inch, y, trans('general_payment_method', default='Payment Method'))
-    y -= 0.3 * inch
-    total_amount = 0
-    for t in transactions:
-        p.drawString(1 * inch, y, utils.format_date(t['date']))
-        p.drawString(2.5 * inch, y, trans(t['type'], default=t['type']))
-        p.drawString(3.5 * inch, y, str(t['amount']))
-        p.drawString(4.5 * inch, y, t.get('ref', '')[:20])
-        p.drawString(6 * inch, y, t.get('payment_method', '') or '')
-        total_amount += t['amount']
-        y -= 0.3 * inch
-        if y < 1 * inch:
-            p.showPage()
-            y = 10.5 * inch
-    y -= 0.3 * inch
-    p.drawString(1 * inch, y, f"{trans('reports_total_credit_amount', default='Total Credit Amount')}: {total_amount}")
-    p.showPage()
-    p.save()
-    buffer.seek(0)
-    return Response(buffer, mimetype='application/pdf', headers={'Content-Disposition': 'attachment;filename=credit_usage.pdf'})
-
-def generate_credit_usage_csv(transactions):
-    output = []
-    output.append([trans('general_date', default='Date'), trans('general_type', default='Type'), trans('general_amount', default='Amount'), trans('general_reference', default='Reference'), trans('general_payment_method', default='Payment Method')])
-    total_amount = 0
-    for t in transactions:
-        output.append([utils.format_date(t['date']), trans(t['type'], default=t['type']), str(t['amount']), t.get('ref', ''), t.get('payment_method', '') or ''])
-        total_amount += t['amount']
-    output.append(['', '', f"{trans('reports_total_credit_amount', default='Total Credit Amount')}: {total_amount}", '', ''])
-    buffer = BytesIO()
-    writer = csv.writer(buffer, lineterminator='\n')
-    writer.writerows(output)
-    buffer.seek(0)
-    return Response(buffer, mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=credit_usage.csv'})
 
 def generate_customer_report_pdf(report_data):
     buffer = BytesIO()
