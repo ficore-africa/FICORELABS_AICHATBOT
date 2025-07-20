@@ -22,13 +22,6 @@
                 <p class="text-danger mt-1">{{ form.end_date.errors[0] }}</p>
             {% endif %}
         </div>
-        <div class="col-12">
-            <label for="category" class="form-label">{{ t('general_category', default='Category') }}</label>
-            {{ form.category(class="form-control") }}
-            {% if form.category.errors %}
-                <p class="text-danger mt-1">{{ form.category.errors[0] }}</p>
-            {% endif %}
-        </div>
         <div class="col-12 d-flex gap-2">
             <button type="submit" name="format" value="html" class="btn btn-primary">{{ t('general_view', default='View') }}</button>
             <button type="submit" name="format" value="pdf" class="btn btn-success">{{ t('general_download_pdf', default='Download PDF') }}</button>
@@ -44,7 +37,6 @@
                         <th>{{ t('reports_party_name', default='Party Name') }}</th>
                         <th>{{ t('reports_type', default='Type') }}</th>
                         <th>{{ t('general_amount', default='Amount') }}</th>
-                        <th>{{ t('general_category', default='Category') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -54,7 +46,6 @@
                             <td data-label="{{ t('reports_party_name', default='Party Name') }}">{{ cashflow.party_name }}</td>
                             <td data-label="{{ t('reports_type', default='Type') }}">{{ t(cashflow.type, default=cashflow.type) }}</td>
                             <td data-label="{{ t('general_amount', default='Amount') }}">{{ format_currency(cashflow.amount) }}</td>
-                            <td data-label="{{ t('general_category', default='Category') }}">{{ t(cashflow.category, default=cashflow.category) }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
