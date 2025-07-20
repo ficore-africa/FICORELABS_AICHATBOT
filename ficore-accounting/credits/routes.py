@@ -121,12 +121,14 @@ def credit_ficore_credits(user_id: str, amount: int, ref: str, type: str = 'add'
 def request_credits():
     """Handle Ficore Credit request submissions."""
     form = RequestCreditsForm()
-    price = None
+    price = 500
+    amount = 10
     if form.amount.data:
         try:
             amount = int(form.amount.data)
             price = amount * 50  # 50 Naira per 1 FC
         except ValueError:
+            amount = 10
             price = 500  # Default to minimum purchase (10 FCs)
     else:
         price = 500  # Default to minimum purchase (10 FCs)
@@ -209,6 +211,8 @@ def request_credits():
     return render_template(
         'credits/request.html',
         form=form,
+        price=price,
+        amount=amount,
         price=price,
         title=trans('credits_request_title', default='Request Ficore Credits', lang=session.get('lang', 'en'))
     )
