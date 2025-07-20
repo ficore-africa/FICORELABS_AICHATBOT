@@ -7,17 +7,17 @@ FICORE_PRIMARY_COLOR = "#b88a44"
 FICORE_HEADER_BG = "#F2EFEA"
 FICORE_TEXT_COLOR = "#1e293b"
 FICORE_LOGO_PATH = "img/ficore_logo.png"  # relative to static folder
-TOP_MARGIN = 9.0  # in inches, updated to match new y_start
+TOP_MARGIN = 10.5  # in inches, adjusted to match new y_start
 
-FICORE_MARKETING = "Empowering Africa's businesses. Contact: ficoreafrica@gmail.com | +234-xxx-xxxx"
-FICORE_BRAND = "Ficore Africa"
+FICORE_MARKETING = "Empowering Africa's businesses. Contact: ficorelabs@gmail.com | +234-xxx-xxxx"
+FICORE_BRAND = "Ficore Labs"
 
-def draw_ficore_pdf_header(canvas, user, y_start=9.0):
+def draw_ficore_pdf_header(canvas, user, y_start=10.5):
     """
-    Draw Ficore Africa branding and user info at the top of a PDF page.
+    Draw Ficore Labs branding and user info at the top of a PDF page.
     - canvas: reportlab.pdfgen.canvas.Canvas
     - user: Flask-Login user object (current_user)
-    - y_start: vertical start position in inches (default is 9.0 inches from bottom)
+    - y_start: vertical start position in inches (default is 10.5 inches from bottom)
     """
     inch = 72  # 1 inch in points
     static_folder = current_app.static_folder
@@ -30,25 +30,25 @@ def draw_ficore_pdf_header(canvas, user, y_start=9.0):
     try:
         logo = ImageReader(logo_path)
         # Constrain logo size to prevent overflow
-        canvas.drawImage(logo, 1 * inch, (y_start - 0.75) * inch, width=0.75 * inch, height=0.75 * inch, mask='auto')
+        canvas.drawImage(logo, 1 * inch, (y_start - 0.6) * inch, width=0.6 * inch, height=0.6 * inch, mask='auto')
     except Exception:
         # Don't break PDF if logo fails
         pass
 
     # Brand name
-    canvas.setFont("Helvetica-Bold", 18)
+    canvas.setFont("Helvetica-Bold", 16)
     canvas.setFillColor(FICORE_PRIMARY_COLOR)
-    canvas.drawString(2.1 * inch, y_start * inch, FICORE_BRAND)
+    canvas.drawString(1.8 * inch, (y_start - 0.1) * inch, FICORE_BRAND)
     
     # Marketing
-    canvas.setFont("Helvetica", 10)
+    canvas.setFont("Helvetica", 9)
     canvas.setFillColor(colors.black)
-    canvas.drawString(2.1 * inch, (y_start - 0.25) * inch, FICORE_MARKETING)
+    canvas.drawString(1.8 * inch, (y_start - 0.3) * inch, FICORE_MARKETING)
     
     # User info
     user_name = getattr(user, "name", "") or getattr(user, "username", "User")
     user_email = getattr(user, "email", "")
-    canvas.setFont("Helvetica", 10)
+    canvas.setFont("Helvetica", 9)
     canvas.setFillColor(FICORE_TEXT_COLOR)
     canvas.drawString(1 * inch, (y_start - 0.5) * inch, f"User: {user_name} | Email: {user_email}")
     
