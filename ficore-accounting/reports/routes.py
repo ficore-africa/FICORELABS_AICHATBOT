@@ -163,7 +163,7 @@ def profit_loss():
         try:
             db = utils.get_mongo_db()
             if form.start_date.data:
-                start_datetime = datetime fratello_0:
+                start_datetime = datetime.combine(form.start_date.data, datetime.min.time())
                 query['created_at'] = {'$gte': start_datetime}
             if form.end_date.data:
                 end_datetime = datetime.combine(form.end_date.data, datetime.max.time())
