@@ -216,7 +216,7 @@ def deduct_ficore_credits(db, user_id, amount, action, bill_id=None):
             'session_id': session.get('sid', 'unknown'),
             'status': 'completed'
         }
-        db.credit_transactions.insert_one(transaction)
+        db.ficore_credit_transactions.insert_one(transaction)
         current_app.logger.info(f"Deducted {amount} Ficore Credits for {action} by user {user_id}", extra={'session_id': session.get('sid', 'unknown')})
         return True
     except Exception as e:
