@@ -20,13 +20,13 @@ def draw_ficore_pdf_header(canvas, user, y_start=10.5):
     static_folder = current_app.static_folder
     logo_path = f"{static_folder}/{FICORE_LOGO_PATH}"
 
-    # Header height and Y positions for better spacing and alignment
-    header_height = 0.7
-    y_logo = y_start - 0.42
-    y_brand = y_start - 0.05
-    y_marketing = y_start - 0.22
-    y_user = y_start - 0.39
-    y_separator = y_start - header_height
+   # Improved header dimensions
+    header_height = 1.05       # big enough to cover everything + some padding
+    y_logo = y_start - 0.30    # logo a bit lower
+    y_brand = y_start - 0.07
+    y_marketing = y_start - 0.24
+    y_user = y_start - 0.7    # username well below logo/brand
+    y_separator = y_start - header_height + 0.05  # separator stays nicely at bottom
 
     # Background rectangle for header
     canvas.setFillColor(FICORE_HEADER_BG)
