@@ -1,7 +1,9 @@
 {% extends "base.html" %}
+{% from "_ficore_report_header.html" import ficore_report_header %}
 {% block title %}{{ t('reports_debtors_creditors', default='Debtors/Creditors Report') }} - FiCore{% endblock %}
 {% block content %}
 <div class="container mt-5">
+    {{ ficore_report_header(current_user) }}
     <div class="page-title">
         <h1>{{ t('reports_debtors_creditors', default='Debtors/Creditors Report') }}</h1>
         <small class="subtext">{{ t('reports_subtitle', default='Rahoton Kasuwanci') }}</small>
