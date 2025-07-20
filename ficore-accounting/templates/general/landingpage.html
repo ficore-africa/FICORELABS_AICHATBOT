@@ -146,7 +146,7 @@
                 </div>
             </div>
             <div class="text-center mt-4">
-                <span class="animated-counter display-5 fw-bold text-primary" data-count="Counting...">0</span>
+                <span class="animated-counter display-5 fw-bold text-primary" data-count="0">0</span>
                 <span class="fs-5">{{ t('general_users_served', default='Users Served') | e }}</span>
             </div>
         </div>
@@ -387,6 +387,14 @@
 </style>
 
 {% block extra_scripts %}
+{% set translations = {
+    'just_now': t('general_just_now', default='Just now') | e,
+    'minutes_ago': t('general_minutes_ago', default='m ago') | e,
+    'hours_ago': t('general_hours_ago', default='h ago') | e,
+    'days_ago': t('general_days_ago', default='d ago') | e,
+    'no_notifications': t('general_no_notifications', default='No notifications') | e,
+    'check_back_later': t('general_check_back_later', default='Check back later') | e
+} %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize tooltips with explicit touch handling
@@ -422,19 +430,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const counter = document.querySelector('.animated-counter');
     if (counter) {
         const target = parseInt(counter.getAttribute('data-count')) || 0;
-        let current = 0;
-        const increment = Math.ceil(target / 100);
-        const updateCounter = () => {
-            current += increment;
-            if (current >= target) {
-                current = target;
-                counter.textContent = current.toLocaleString();
-                clearInterval(counterInterval);
-            } else {
-                counter.textContent = current.toLocaleString();
-            }
-        };
-        const counterInterval = setInterval(updateCounter, 50);
+        if (target > 0) {
+            let current = 0;
+            const increment = Math.ceil(target / 100);
+            const updateCounter = () => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    counter.textContent = current.toLocaleString();
+                    clearInterval(counterInterval);
+                } else {
+                    counter.textContent = current.toLocaleString();
+                }
+            };
+            const counterInterval = setInterval(updateCounter, 50);
+        } else {
+            counter.textContent = '0'; // Explicitly set to 0 if no users
+        }
     }
 
     // Enhanced navbar touch handling
@@ -472,14 +484,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function formatTimeAgo(timestamp) {
-    const translations = {
-        just_now: '{{ t("general_just_now", default="Just now") | e }}',
-        minutes_ago: '{{ t("general_minutes_ago", default="m ago") | e }}',
-        hours_ago: '{{ t("general_hours_ago", default="h ago") | e }}',
-        days_ago: '{{ t("general_days_ago", default="d ago") | e }}',
-        no_notifications: '{{ t("general_no_notifications", default="No notifications") | e }}',
-        check_back_later: '{{ t("general_check_back_later", default="Check back later") | e }}'
-    };
+    const translations = {{ translations | tojson }};
     const now = new Date();
     const time = new Date(timestamp);
     const diffInSeconds = Math.floor((now - time) / 1000);
