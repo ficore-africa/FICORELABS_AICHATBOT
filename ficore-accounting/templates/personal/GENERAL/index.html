@@ -177,7 +177,7 @@
                                     <div class="input-group">
                                         <input type="text" class="form-control" id="newItemName" placeholder="{{ t('grocery_item_name', default='Item Name') | e }}">
                                         <input type="number" class="form-control" id="newItemQuantity" placeholder="{{ t('grocery_quantity', default='Quantity') | e }}" min="1">
-                                        <input type="number" class="form-control" id="newItemPrice" placeholder="{{ t('grocery_price', default='Price') | e }}" min="0arlos, step="0.01">
+                                        <input type="number" class="form-control" id="newItemPrice" placeholder="{{ t('grocery_price', default='Price') | e }}" min="0" step="0.01">
                                         <select class="form-select" id="newItemStatus">
                                             <option value="to_buy">{{ t('grocery_to_buy', default='To Buy') | e }}</option>
                                             <option value="in_pantry">{{ t('grocery_in_pantry', default='In Pantry') | e }}</option>
@@ -391,7 +391,8 @@ const translations = {
     no_lists: '{{ t("grocery_no_lists", default="No grocery lists found") | e }}',
     no_items: '{{ t("grocery_no_items", default="No items in this list") | e }}',
     no_meal_plans: '{{ t("grocery_no_meal_plans", default="No meal plans found") | e }}',
-    no_suggestions: '{{ t("grocery_no_suggestions", default="No suggestions available") | e }}'
+    no_suggestions: '{{ t("grocery_no_suggestions", default="No suggestions available") | e }}',
+    no_price_history: '{{ t("grocery_no_price_history", default="No price history available") | e }}'
 };
 
 // Load financial data
@@ -1048,7 +1049,7 @@ function renderCollaboratorSuggestions(suggestions) {
                 <div>
                     <span>Qty: ${s.quantity}</span>
                     <span class="ms-2">Price: ${format_currency(s.price)}</span>
-                    ${s.status === 'pending' ? `<button class="btn btn-sm btn-outline-success ms-2" onclick="approveSuggestion('${s.id}')">${translations.grocery_suggestion_approved}</button>` : ''}
+                    ${s.status === 'pending' ? `<button class="btn btn-sm btn-outline-success ms-2" onclick="approveSuggestion('${s.id}', '${currentListId}')">${translations.grocery_suggestion_approved}</button>` : ''}
                 </div>
             </div>
         `).join('');
@@ -1092,8 +1093,9 @@ function suggestItem() {
         });
 }
 
-function approveSuggestion(suggestionId) {
-    fetch('{{ url_for("personal.grocery.approve_suggestion", list_id="") | e }}' + currentListId + '/suggestions/' + suggestionId + '/approve', {
+function approveSuggestion(suggestionId, listId) {
+    // Fixed: Use url_for with both list_id and suggestion_id
+    fetch('{{ url_for("personal.grocery.approve_suggestion", list_id=listId, suggestion_id=suggestionId) | e }}', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
     })
