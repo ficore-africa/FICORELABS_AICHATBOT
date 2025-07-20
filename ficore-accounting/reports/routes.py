@@ -47,6 +47,12 @@ class BudgetPerformanceReportForm(FlaskForm):
     end_date = DateField(trans('reports_end_date', default='End Date'), validators=[Optional()])
     submit = SubmitField(trans('reports_generate_report', default='Generate Report'))
 
+class GroceryReportForm(FlaskForm):
+    start_date = DateField(trans('reports_start_date', default='Start Date'), validators=[Optional()])
+    end_date = DateField(trans('reports_end_date', default='End Date'), validators=[Optional()])
+    format = SelectField('Format', choices=[('html', 'HTML'), ('pdf', 'PDF'), ('csv', 'CSV')], default='html')
+    submit = SubmitField(trans('reports_generate_report', default='Generate Report'))
+
 def to_dict_budget(record):
     if not record:
         return {'surplus_deficit': None, 'savings_goal': None}
@@ -104,7 +110,7 @@ def to_dict_record(record):
         return {'name': None, 'amount_owed': None}
     return {
         'id': str(record.get('_id', '')),
-        'user_id': record.get('user_id', ''),
+        'user_id': str(record.get('user_id', '')),
         'type': record.get('type', ''),
         'name': record.get('name', ''),
         'contact': record.get('contact', ''),
@@ -120,7 +126,7 @@ def to_dict_cashflow(record):
         return {'party_name': None, 'amount': None}
     result = {
         'id': str(record.get('_id', '')),
-        'user_id': record.get('user_id', ''),
+        'user_id': str(record.get('user_id', '')),
         'type': record.get('type', ''),
         'party_name': record.get('party_name', ''),
         'amount': record.get('amount', 0),
@@ -133,9 +139,55 @@ def to_dict_cashflow(record):
             result[key] = datetime.combine(value, datetime.min.time())
     return result
 
+def to_dict_grocery_list(record):
+    if not record:
+        return {'name': None, 'budget': None}
+    return {
+        'id': str(record.get('_id', '')),
+        'user_id': str(record.get('user_id', '')),
+        'name': record.get('name', ''),
+        'budget': record.get('budget', 0),
+        'total_spent': record.get('total_spent', 0),
+        'created_at': utils.format_date(record.get('created_at'), format_type='iso'),
+        'updated_at': utils.format_date(record.get('updated_at'), format_type='iso') if record.get('updated_at') else None,
+        'collaborators': record.get('collaborators', [])
+    }
+
+def to_dict_grocery_item(record):
+    if not record:
+        return {'name': None, 'price': None}
+    return {
+        'id': str(record.get('_id', '')),
+        'list_id': str(record.get('list_id', '')),
+        'name': record.get('name', ''),
+        'quantity': record.get('quantity', 0),
+        'price': record.get('price', 0),
+        'status': record.get('status', ''),
+        'category': record.get('category', ''),
+        'store': record.get('store', ''),
+        'created_at': utils.format_date(record.get('created_at'), format_type='iso'),
+        'updated_at': utils.format_date(record.get('updated_at'), format_type='iso') if record.get('updated_at') else None
+    }
+
+def to_dict_grocery_suggestion(record):
+    if not record:
+        return {'name': None, 'price': None}
+    return {
+        'id': str(record.get('_id', '')),
+        'list_id': str(record.get('list_id', '')),
+        'user_id': str(record.get('user_id', '')),
+        'name': record.get('name', ''),
+        'quantity': record.get('quantity', 0),
+        'price': record.get('price', 0),
+        'category': record.get('category', ''),
+        'status': record.get('status', ''),
+        'created_at': utils.format_date(record.get('created_at'), format_type='iso'),
+        'updated_at': utils.format_date(record.get('updated_at'), format_type='iso') if record.get('updated_at') else None
+    }
+
 @reports_bp.route('/')
 @login_required
-@utils.requires_role('trader')
+@utils.requires_role(['personal', 'trader'])
 def index():
     """Display report selection page."""
     try:
@@ -398,6 +450,75 @@ def budget_performance():
         form=form,
         budget_data=budget_data,
         title=utils.trans('reports_budget_performance', default='Budget Performance Report', lang=session.get('lang', 'en'))
+    )
+
+@reports_bp.route('/grocery', methods=['GET', 'POST'])
+@login_required
+@utils.requires_role('personal')
+def grocery_report():
+    """Generate grocery report with filters for personal users."""
+    form = GroceryReportForm()
+    if not utils.is_admin() and not utils.check_ficore_credit_balance(1):
+        flash(trans('debtors_insufficient_credits', default='Insufficient credits to generate a report. Request more credits.'), 'danger')
+        return redirect(url_for('credits.request_credits'))
+    grocery_data = {'lists': [], 'items': [], 'suggestions': []}
+    query = {} if utils.is_admin() else {'user_id': str(current_user.id)}
+    if form.validate_on_submit():
+        try:
+            db = utils.get_mongo_db()
+            list_query = query.copy()
+            item_query = query.copy()
+            suggestion_query = query.copy()
+            if form.start_date.data:
+                start_datetime = datetime.combine(form.start_date.data, datetime.min.time())
+                list_query['created_at'] = {'$gte': start_datetime}
+                item_query['created_at'] = {'$gte': start_datetime}
+                suggestion_query['created_at'] = {'$gte': start_datetime}
+            if form.end_date.data:
+                end_datetime = datetime.combine(form.end_date.data, datetime.max.time())
+                list_query['created_at'] = list_query.get('created_at', {}) | {'$lte': end_datetime}
+                item_query['created_at'] = item_query.get('created_at', {}) | {'$lte': end_datetime}
+                suggestion_query['created_at'] = suggestion_query.get('created_at', {}) | {'$lte': end_datetime}
+            lists = [to_dict_grocery_list(lst) for lst in db.grocery_lists.find(list_query).sort('created_at', -1)]
+            items = [to_dict_grocery_item(item) for item in db.grocery_items.find(item_query).sort('created_at', -1)]
+            suggestions = [to_dict_grocery_suggestion(sug) for sug in db.grocery_suggestions.find(suggestion_query).sort('created_at', -1)]
+            grocery_data = {'lists': lists, 'items': items, 'suggestions': suggestions}
+            output_format = form.format.data
+            if output_format == 'pdf':
+                return generate_grocery_report_pdf(grocery_data)
+            elif output_format == 'csv':
+                return generate_grocery_report_csv(grocery_data)
+            if not utils.is_admin():
+                user_query = utils.get_user_query(str(current_user.id))
+                db.users.update_one(
+                    user_query,
+                    {'$inc': {'ficore_credit_balance': -1}}
+                )
+                db.ficore_ficore_credit_transactions.insert_one({
+                    'user_id': str(current_user.id),
+                    'amount': -1,
+                    'type': 'spend',
+                    'date': datetime.utcnow(),
+                    'ref': 'Grocery Report generation (Ficore Credits)'
+                })
+        except Exception as e:
+            logger.error(f"Error generating grocery report for user {current_user.id}: {str(e)}", exc_info=True)
+            flash(trans('reports_generation_error', default='An error occurred'), 'danger')
+    else:
+        try:
+            db = utils.get_mongo_db()
+            lists = [to_dict_grocery_list(lst) for lst in db.grocery_lists.find(query).sort('created_at', -1)]
+            items = [to_dict_grocery_item(item) for item in db.grocery_items.find(query).sort('created_at', -1)]
+            suggestions = [to_dict_grocery_suggestion(sug) for sug in db.grocery_suggestions.find(query).sort('created_at', -1)]
+            grocery_data = {'lists': lists, 'items': items, 'suggestions': suggestions}
+        except Exception as e:
+            logger.error(f"Error fetching grocery data for user {current_user.id}: {str(e)}", exc_info=True)
+            flash(trans('reports_generation_error', default='An error occurred'), 'danger')
+    return render_template(
+        'reports/grocery.html',
+        form=form,
+        grocery_data=grocery_data,
+        title=utils.trans('reports_grocery', default='Grocery Report', lang=session.get('lang', 'en'))
     )
 
 @reports_bp.route('/admin/customer-reports', methods=['GET', 'POST'])
@@ -740,6 +861,211 @@ def generate_budget_performance_csv(budget_data):
     writer.writerows(output)
     buffer.seek(0)
     return Response(buffer.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=budget_performance.csv'})
+
+def generate_grocery_report_pdf(grocery_data):
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=A4)
+    draw_ficore_pdf_header(p, current_user, y_start=10.5)
+    p.setFont("Helvetica", 12)
+    p.drawString(1 * inch, 10.5 * inch, trans('reports_grocery_report', default='Grocery Report'))
+    p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
+    
+    # Grocery Lists Section
+    y = 9.5 * inch
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(1 * inch, y, trans('grocery_lists', default='Grocery Lists'))
+    y -= 0.3 * inch
+    p.setFont("Helvetica", 10)
+    headers = [
+        trans('general_date', default='Date'),
+        trans('grocery_list_name', default='List Name'),
+        trans('grocery_budget', default='Budget'),
+        trans('grocery_total_spent', default='Total Spent'),
+        trans('grocery_collaborators', default='Collaborators')
+    ]
+    x_positions = [1 * inch, 2 * inch, 3.5 * inch, 4.5 * inch, 5.5 * inch]
+    for header, x in zip(headers, x_positions):
+        p.drawString(x, y, header)
+    y -= 0.3 * inch
+    total_budget = 0
+    total_spent = 0
+    for lst in grocery_data['lists']:
+        p.drawString(x_positions[0], y, utils.format_date(lst['created_at']))
+        p.drawString(x_positions[1], y, lst['name'][:20])
+        p.drawString(x_positions[2], y, utils.format_currency(lst['budget']))
+        p.drawString(x_positions[3], y, utils.format_currency(lst['total_spent']))
+        p.drawString(x_positions[4], y, ', '.join(lst['collaborators'])[:20])
+        total_budget += lst['budget']
+        total_spent += lst['total_spent']
+        y -= 0.3 * inch
+        if y < 1 * inch:
+            p.showPage()
+            draw_ficore_pdf_header(p, current_user, y_start=10.5)
+            y = 10.5 * inch
+    y -= 0.3 * inch
+    p.drawString(x_positions[0], y, f"{trans('grocery_total_budget', default='Total Budget')}: {utils.format_currency(total_budget)}")
+    y -= 0.3 * inch
+    p.drawString(x_positions[0], y, f"{trans('grocery_total_spent', default='Total Spent')}: {utils.format_currency(total_spent)}")
+    y -= 0.5 * inch
+
+    # Grocery Items Section
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(1 * inch, y, trans('grocery_items', default='Grocery Items'))
+    y -= 0.3 * inch
+    p.setFont("Helvetica", 10)
+    headers = [
+        trans('general_date', default='Date'),
+        trans('grocery_item_name', default='Item Name'),
+        trans('grocery_quantity', default='Quantity'),
+        trans('grocery_price', default='Price'),
+        trans('grocery_status', default='Status'),
+        trans('grocery_category', default='Category'),
+        trans('grocery_store', default='Store')
+    ]
+    x_positions = [1 * inch, 2 * inch, 3 * inch, 3.5 * inch, 4 * inch, 4.8 * inch, 5.5 * inch]
+    for header, x in zip(headers, x_positions):
+        p.drawString(x, y, header)
+    y -= 0.3 * inch
+    total_price = 0
+    for item in grocery_data['items']:
+        p.drawString(x_positions[0], y, utils.format_date(item['created_at']))
+        p.drawString(x_positions[1], y, item['name'][:20])
+        p.drawString(x_positions[2], y, str(item['quantity']))
+        p.drawString(x_positions[3], y, utils.format_currency(item['price']))
+        p.drawString(x_positions[4], y, trans(item['status'], default=item['status']))
+        p.drawString(x_positions[5], y, item['category'][:15])
+        p.drawString(x_positions[6], y, item['store'][:15])
+        total_price += item['price'] * item['quantity']
+        y -= 0.3 * inch
+        if y < 1 * inch:
+            p.showPage()
+            draw_ficore_pdf_header(p, current_user, y_start=10.5)
+            y = 10.5 * inch
+    y -= 0.3 * inch
+    p.drawString(x_positions[0], y, f"{trans('grocery_total_price', default='Total Price')}: {utils.format_currency(total_price)}")
+    y -= 0.5 * inch
+
+    # Suggestions Section
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(1 * inch, y, trans('grocery_suggestions', default='Suggestions'))
+    y -= 0.3 * inch
+    p.setFont("Helvetica", 10)
+    headers = [
+        trans('general_date', default='Date'),
+        trans('grocery_item_name', default='Item Name'),
+        trans('grocery_quantity', default='Quantity'),
+        trans('grocery_price', default='Price'),
+        trans('grocery_status', default='Status'),
+        trans('grocery_category', default='Category')
+    ]
+    x_positions = [1 * inch, 2 * inch, 3 * inch, 3.5 * inch, 4 * inch, 4.8 * inch]
+    for header, x in zip(headers, x_positions):
+        p.drawString(x, y, header)
+    y -= 0.3 * inch
+    total_suggestion_price = 0
+    for sug in grocery_data['suggestions']:
+        p.drawString(x_positions[0], y, utils.format_date(sug['created_at']))
+        p.drawString(x_positions[1], y, sug['name'][:20])
+        p.drawString(x_positions[2], y, str(sug['quantity']))
+        p.drawString(x_positions[3], y, utils.format_currency(sug['price']))
+        p.drawString(x_positions[4], y, trans(sug['status'], default=sug['status']))
+        p.drawString(x_positions[5], y, sug['category'][:15])
+        total_suggestion_price += sug['price'] * sug['quantity']
+        y -= 0.3 * inch
+        if y < 1 * inch:
+            p.showPage()
+            draw_ficore_pdf_header(p, current_user, y_start=10.5)
+            y = 10.5 * inch
+    y -= 0.3 * inch
+    p.drawString(x_positions[0], y, f"{trans('grocery_total_suggestion_price', default='Total Suggestion Price')}: {utils.format_currency(total_suggestion_price)}")
+    
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return Response(buffer, mimetype='application/pdf', headers={'Content-Disposition': 'attachment;filename=grocery_report.pdf'})
+
+def generate_grocery_report_csv(grocery_data):
+    output = []
+    output.extend(ficore_csv_header(current_user))
+    
+    # Grocery Lists Section
+    output.append([trans('grocery_lists', default='Grocery Lists')])
+    output.append([
+        trans('general_date', default='Date'),
+        trans('grocery_list_name', default='List Name'),
+        trans('grocery_budget', default='Budget'),
+        trans('grocery_total_spent', default='Total Spent'),
+        trans('grocery_collaborators', default='Collaborators')
+    ])
+    total_budget = 0
+    total_spent = 0
+    for lst in grocery_data['lists']:
+        output.append([
+            utils.format_date(lst['created_at']),
+            lst['name'],
+            utils.format_currency(lst['budget']),
+            utils.format_currency(lst['total_spent']),
+            ', '.join(lst['collaborators'])
+        ])
+        total_budget += lst['budget']
+        total_spent += lst['total_spent']
+    output.append(['', '', f"{trans('grocery_total_budget', default='Total Budget')}: {utils.format_currency(total_budget)}", f"{trans('grocery_total_spent', default='Total Spent')}: {utils.format_currency(total_spent)}", ''])
+    output.append([])
+
+    # Grocery Items Section
+    output.append([trans('grocery_items', default='Grocery Items')])
+    output.append([
+        trans('general_date', default='Date'),
+        trans('grocery_item_name', default='Item Name'),
+        trans('grocery_quantity', default='Quantity'),
+        trans('grocery_price', default='Price'),
+        trans('grocery_status', default='Status'),
+        trans('grocery_category', default='Category'),
+        trans('grocery_store', default='Store')
+    ])
+    total_price = 0
+    for item in grocery_data['items']:
+        output.append([
+            utils.format_date(item['created_at']),
+            item['name'],
+            item['quantity'],
+            utils.format_currency(item['price']),
+            trans(item['status'], default=item['status']),
+            item['category'],
+            item['store']
+        ])
+        total_price += item['price'] * item['quantity']
+    output.append(['', '', '', f"{trans('grocery_total_price', default='Total Price')}: {utils.format_currency(total_price)}", '', '', ''])
+    output.append([])
+
+    # Suggestions Section
+    output.append([trans('grocery_suggestions', default='Suggestions')])
+    output.append([
+        trans('general_date', default='Date'),
+        trans('grocery_item_name', default='Item Name'),
+        trans('grocery_quantity', default='Quantity'),
+        trans('grocery_price', default='Price'),
+        trans('grocery_status', default='Status'),
+        trans('grocery_category', default='Category')
+    ])
+    total_suggestion_price = 0
+    for sug in grocery_data['suggestions']:
+        output.append([
+            utils.format_date(sug['created_at']),
+            sug['name'],
+            sug['quantity'],
+            utils.format_currency(sug['price']),
+            trans(sug['status'], default=sug['status']),
+            sug['category']
+        ])
+        total_suggestion_price += sug['price'] * sug['quantity']
+    output.append(['', '', '', f"{trans('grocery_total_suggestion_price', default='Total Suggestion Price')}: {utils.format_currency(total_suggestion_price)}", '', ''])
+
+    buffer = StringIO()
+    writer = csv.writer(buffer, lineterminator='\n')
+    writer.writerows(output)
+    buffer.seek(0)
+    return Response(buffer.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=grocery_report.csv'})
 
 def generate_customer_report_pdf(report_data):
     buffer = BytesIO()
