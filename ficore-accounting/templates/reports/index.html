@@ -1,17 +1,93 @@
 {% extends "base.html" %}
 {% block title %}{{ t('reports_title', default='Reports') }} - FiCore{% endblock %}
+
 {% block content %}
 <div class="container mt-5">
-    <div class="page-title">
+    <div class="page-title mb-4">
         <h1>{{ t('reports_title', default='Reports') }}</h1>
         <small class="subtext">{{ t('reports_subtitle', default='Rahoton Kasuwanci') }}</small>
     </div>
-    <div class="d-grid gap-2">
-        <a href="{{ url_for('reports.profit_loss') }}" class="btn btn-primary">{{ t('reports_profit_loss', default='Profit/Loss Report') }}</a>
-        <a href="{{ url_for('reports.debtors_creditors') }}" class="btn btn-primary">{{ t('reports_debtors_creditors', default='Debtors/Creditors Report') }}</a>
-        <a href="{{ url_for('reports.tax_obligations') }}" class="btn btn-primary">{{ t('reports_tax_obligations', default='Tax Obligations Report') }}</a>
-        <a href="{{ url_for('reports.budget_performance') }}" class="btn btn-primary">{{ t('reports_budget_performance', default='Budget Performance Report') }}</a>
-        <a href="{{ url_for('reports.credit_usage') }}" class="btn btn-primary">{{ t('reports_credit_usage', default='Credit Usage Report') }}</a>
+    
+    <div class="row g-4">
+        <!-- Profit/Loss Report Card -->
+        <div class="col-md-6 col-lg-4">
+            <a href="{{ url_for('reports.profit_loss') }}" class="text-decoration-none">
+                <div class="card h-100 report-card">
+                    <div class="card-body d-flex flex-column">
+                        <div class="report-icon mb-3">
+                            <i class="fas fa-chart-line text-success"></i>
+                        </div>
+                        <h5 class="card-title">{{ t('reports_profit_loss', default='Profit/Loss Report') }}</h5>
+                        <p class="card-text text-muted flex-grow-1">
+                            {{ t('profit_loss_description', default='View detailed profit and loss statements for your business performance analysis.') }}
+                        </p>
+                        <div class="mt-auto">
+                            <span class="btn btn-outline-primary btn-sm">{{ t('view_report', default='View Report') }} <i class="fas fa-arrow-right ms-1"></i></span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Debtors/Creditors Report Card -->
+        <div class="col-md-6 col-lg-4">
+            <a href="{{ url_for('reports.debtors_creditors') }}" class="text-decoration-none">
+                <div class="card h-100 report-card">
+                    <div class="card-body d-flex flex-column">
+                        <div class="report-icon mb-3">
+                            <i class="fas fa-users text-warning"></i>
+                        </div>
+                        <h5 class="card-title">{{ t('reports_debtors_creditors', default='Debtors/Creditors Report') }}</h5>
+                        <p class="card-text text-muted flex-grow-1">
+                            {{ t('debtors_creditors_description', default='Track outstanding receivables and payables to manage cash flow effectively.') }}
+                        </p>
+                        <div class="mt-auto">
+                            <span class="btn btn-outline-primary btn-sm">{{ t('view_report', default='View Report') }} <i class="fas fa-arrow-right ms-1"></i></span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Tax Obligations Report Card -->
+        <div class="col-md-6 col-lg-4">
+            <a href="{{ url_for('reports.tax_obligations') }}" class="text-decoration-none">
+                <div class="card h-100 report-card">
+                    <div class="card-body d-flex flex-column">
+                        <div class="report-icon mb-3">
+                            <i class="fas fa-file-invoice-dollar text-danger"></i>
+                        </div>
+                        <h5 class="card-title">{{ t('reports_tax_obligations', default='Tax Obligations Report') }}</h5>
+                        <p class="card-text text-muted flex-grow-1">
+                            {{ t('tax_obligations_description', default='Monitor tax liabilities and compliance requirements for your business.') }}
+                        </p>
+                        <div class="mt-auto">
+                            <span class="btn btn-outline-primary btn-sm">{{ t('view_report', default='View Report') }} <i class="fas fa-arrow-right ms-1"></i></span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Budget Performance Report Card -->
+        <div class="col-md-6 col-lg-4">
+            <a href="{{ url_for('reports.budget_performance') }}" class="text-decoration-none">
+                <div class="card h-100 report-card">
+                    <div class="card-body d-flex flex-column">
+                        <div class="report-icon mb-3">
+                            <i class="fas fa-chart-bar text-info"></i>
+                        </div>
+                        <h5 class="card-title">{{ t('reports_budget_performance', default='Budget Performance Report') }}</h5>
+                        <p class="card-text text-muted flex-grow-1">
+                            {{ t('budget_performance_description', default='Compare actual performance against budgeted targets and forecasts.') }}
+                        </p>
+                        <div class="mt-auto">
+                            <span class="btn btn-outline-primary btn-sm">{{ t('view_report', default='View Report') }} <i class="fas fa-arrow-right ms-1"></i></span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
 </div>
 {% endblock %}
