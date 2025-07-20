@@ -14,6 +14,10 @@ from bson import ObjectId
 from datetime import datetime
 from logging import getLogger
 from pymongo import errors
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+limiter = Limiter(key_func=get_remote_address)
 
 logger = getLogger(__name__)
 
@@ -69,12 +73,12 @@ class ReceiptUploadForm(FlaskForm):
 
 def credit_ficore_credits(user_id: str, amount: int, ref: str, type: str = 'add', admin_id: str = None) -> None:
     """Credit or log Ficore Credits with MongoDB transaction."""
-    db = utils.get_mongo_db()
-    client = db.client
-    user_query = utils.get_user_query(user_id)
-    with client.start_session() as mongo_session:
-        with mongo_session.start_transaction():
-            try:
+    try:
+        db = utils.get_mongo_db()
+        client = db.client
+        user_query = utils.get_user_query(user_id)
+        with client.start_session() as mongo_session:
+            with mongo_session.start_transaction():
                 if type == 'add':
                     result = db.users.update_one(
                         user_query,
@@ -99,19 +103,22 @@ def credit_ficore_credits(user_id: str, amount: int, ref: str, type: str = 'add'
                     'details': {'user_id': user_id, 'amount': amount, 'ref': ref},
                     'timestamp': datetime.utcnow()
                 }, session=mongo_session)
-            except ValueError as e:
-                logger.error(f"Transaction aborted for ref {ref}: {str(e)}")
-                mongo_session.abort_transaction()
-                raise
-            except errors.PyMongoError as e:
-                logger.error(f"MongoDB error during Ficore Credit transaction for user {user_id}, ref {ref}: {str(e)}")
-                mongo_session.abort_transaction()
-                raise
+    except ValueError as e:
+        logger.error(f"Transaction aborted for ref {ref}: {str(e)}")
+        mongo_session.abort_transaction()
+        raise
+    except errors.PyMongoError as e:
+        logger.error(f"MongoDB error during Ficore Credit transaction for user {user_id}, ref {ref}: {str(e)}")
+        mongo_session.abort_transaction()
+        raise
+    except AttributeError as e:
+        logger.error(f"AttributeError in credit_ficore_credits for user {user_id}, ref {ref}: {str(e)}")
+        raise
 
 @credits_bp.route('/request', methods=['GET', 'POST'])
 @login_required
 @utils.requires_role(['trader', 'personal'])
-@utils.limiter.limit("50 per hour")
+@limiter.limit("50 per hour")
 def request_credits():
     """Handle Ficore Credit request submissions."""
     form = RequestCreditsForm()
@@ -199,43 +206,77 @@ def request_credits():
 
 @credits_bp.route('/history', methods=['GET'])
 @login_required
-@utils.limiter.limit("100 per hour")
+@limiter.limit("100 per hour")
 def history():
     """View Ficore Credit transaction and request history, including all statuses."""
     try:
-        logger.debug(f"Loading utils module: {utils.__file__}")  # Added debug logging
+        logger.debug(f"Loading utils module: {utils.__file__}")
         db = utils.get_mongo_db()
         # Clear cache to ensure fresh data
         get_user.cache_clear()
         get_user_by_email.cache_clear()
         user = get_user(db, str(current_user.id))
         query = {} if utils.is_admin() else {'user_id': str(current_user.id)}
-        transactions = get_ficore_credit_transactions(db, query)
+
+        # Query ficore_credit_transactions
+        ficore_transactions = get_ficore_credit_transactions(db, query)
+
+        # Query legacy credit_transactions safely
+        try:
+            legacy_transactions = list(db.credit_transactions.find(query))
+            valid_legacy_transactions = [
+                tx for tx in legacy_transactions
+                if 'date' in tx and isinstance(tx['date'], datetime)
+            ]
+            if len(valid_legacy_transactions) < len(legacy_transactions):
+                logger.warning(f"Filtered out {len(legacy_transactions) - len(valid_legacy_transactions)} invalid credit_transactions for user {current_user.id}")
+        except errors.PyMongoError as e:
+            logger.warning(f"Failed to query legacy credit_transactions for user {current_user.id}: {str(e)}")
+            valid_legacy_transactions = []
+
+        # Combine and sort transactions by date in descending order
+        all_transactions = ficore_transactions + valid_legacy_transactions
+        all_transactions.sort(key=lambda x: x.get('date', datetime.min), reverse=True)
+
         requests = get_credit_requests(db, query)
-        formatted_transactions = [to_dict_ficore_credit_transaction(tx) for tx in transactions]
+        formatted_transactions = [to_dict_ficore_credit_transaction(tx) for tx in all_transactions]
         formatted_requests = [to_dict_credit_request(req) for req in requests]
+        logger.info(f"Fetched {len(ficore_transactions)} ficore_credit_transactions, {len(valid_legacy_transactions)} credit_transactions, and {len(requests)} requests for user {current_user.id}", extra={'session_id': session.get('sid', 'unknown')})
         return render_template(
             'credits/history.html',
             transactions=formatted_transactions,
             requests=formatted_requests,
             ficore_credit_balance=user.ficore_credit_balance if user else 0,
-            title=trans('credits_history_title', default='Ficore Credit Transaction History', lang=session.get('lang', 'en'))
+            title=trans('credits_history_title', default='Ficore Credit Transaction History', lang=session.get('lang', 'en')),
+            is_admin=utils.is_admin()
+        )
+    except AttributeError as e:
+        logger.error(f"AttributeError in history route for user {current_user.id}: {str(e)}", extra={'session_id': session.get('sid', 'unknown')})
+        flash('Error loading transaction history due to module configuration.', 'danger')
+        return render_template(
+            'credits/history.html',
+            transactions=[],
+            requests=[],
+            ficore_credit_balance=0,
+            title=trans('general_error', default='Error', lang=session.get('lang', 'en')),
+            is_admin=False
         )
     except Exception as e:
-        logger.error(f"Error fetching history for user {current_user.id}: {str(e)}")
+        logger.error(f"Unexpected error fetching history for user {current_user.id}: {str(e)}", extra={'session_id': session.get('sid', 'unknown')})
         flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
         return render_template(
             'credits/history.html',
             transactions=[],
             requests=[],
             ficore_credit_balance=0,
-            title=trans('general_error', default='Error', lang=session.get('lang', 'en'))
+            title=trans('general_error', default='Error', lang=session.get('lang', 'en')),
+            is_admin=False
         )
 
 @credits_bp.route('/requests', methods=['GET'])
 @login_required
 @utils.requires_role('admin')
-@utils.limiter.limit("50 per hour")
+@limiter.limit("50 per hour")
 def view_credit_requests():
     """View all credit requests (admin only)."""
     try:
@@ -246,6 +287,14 @@ def view_credit_requests():
             'credits/requests.html',
             requests=formatted_requests,
             title=trans('credits_requests_title', default='Pending Credit Requests', lang=session.get('lang', 'en'))
+        )
+    except AttributeError as e:
+        logger.error(f"AttributeError in view_credit_requests for admin {current_user.id}: {str(e)}")
+        flash('Error loading credit requests due to module configuration.', 'danger')
+        return render_template(
+            'credits/requests.html',
+            requests=[],
+            title=trans('general_error', default='Error', lang=session.get('lang', 'en'))
         )
     except Exception as e:
         logger.error(f"Error fetching credit requests for admin {current_user.id}: {str(e)}")
@@ -259,7 +308,7 @@ def view_credit_requests():
 @credits_bp.route('/request/<request_id>', methods=['GET', 'POST'])
 @login_required
 @utils.requires_role('admin')
-@utils.limiter.limit("20 per hour")
+@limiter.limit("20 per hour")
 def manage_credit_request(request_id):
     """Approve or deny a credit request (admin only)."""
     form = ApproveCreditRequestForm()
@@ -313,6 +362,9 @@ def manage_credit_request(request_id):
     except errors.PyMongoError as e:
         logger.error(f"MongoDB error managing credit request {request_id} by admin {current_user.id}, ref: {ref}: {str(e)}")
         flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
+    except AttributeError as e:
+        logger.error(f"AttributeError managing credit request {request_id} by admin {current_user.id}, ref: {ref}: {str(e)}")
+        flash('Error managing credit request due to module configuration.', 'danger')
     except Exception as e:
         logger.error(f"Unexpected error managing credit request {request_id} by admin {current_user.id}, ref: {ref}: {str(e)}")
         flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
@@ -321,15 +373,15 @@ def manage_credit_request(request_id):
 @credits_bp.route('/receipt_upload', methods=['GET', 'POST'])
 @login_required
 @utils.requires_role(['trader', 'personal'])
-@utils.limiter.limit("10 per hour")
+@limiter.limit("10 per hour")
 def receipt_upload():
     """Handle payment receipt uploads with transaction for Ficore Credit deduction."""
     form = ReceiptUploadForm()
-    if not utils.is_admin() and not utils.check_ficore_credit_balance(1):
-        flash(trans('credits_insufficient_credits', default='Insufficient Ficore Credits to upload receipt. Get more Ficore Credits.'), 'danger')
-        return redirect(url_for('credits.request_credits'))
-    if form.validate_on_submit():
-        try:
+    try:
+        if not utils.is_admin() and not utils.check_ficore_credit_balance(1):
+            flash(trans('credits_insufficient_credits', default='Insufficient Ficore Credits to upload receipt. Get more Ficore Credits.'), 'danger')
+            return redirect(url_for('credits.request_credits'))
+        if form.validate_on_submit():
             db = utils.get_mongo_db()
             client = db.client
             fs = GridFS(db)
@@ -392,15 +444,19 @@ def receipt_upload():
             flash(trans('credits_receipt_uploaded', default='Receipt uploaded successfully'), 'success')
             logger.info(f"User {current_user.id} uploaded receipt {file_id}, ref: {ref}")
             return redirect(url_for('credits.history'))
-        except Exception as e:
-            logger.error(f"Unexpected error uploading receipt for user {current_user.id}, ref {ref}: {str(e)}")
-            if file_id:
-                try:
-                    fs.delete(file_id)
-                    logger.info(f"Deleted orphaned GridFS file {file_id} for user {current_user.id}, ref {ref}")
-                except Exception as delete_err:
-                    logger.error(f"Failed to delete orphaned GridFS file {file_id}: {str(delete_err)}")
-            flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
+    except AttributeError as e:
+        logger.error(f"AttributeError in receipt_upload for user {current_user.id}, ref {ref}: {str(e)}")
+        flash('Error uploading receipt due to module configuration.', 'danger')
+        return redirect(url_for('credits.receipt_upload'))
+    except Exception as e:
+        logger.error(f"Unexpected error uploading receipt for user {current_user.id}, ref {ref}: {str(e)}")
+        if file_id:
+            try:
+                fs.delete(file_id)
+                logger.info(f"Deleted orphaned GridFS file {file_id} for user {current_user.id}, ref {ref}")
+            except Exception as delete_err:
+                logger.error(f"Failed to delete orphaned GridFS file {file_id}: {str(delete_err)}")
+        flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
     return render_template(
         'credits/receipt_upload.html',
         form=form,
@@ -410,7 +466,7 @@ def receipt_upload():
 @credits_bp.route('/receipts', methods=['GET'])
 @login_required
 @utils.requires_role('admin')
-@utils.limiter.limit("50 per hour")
+@limiter.limit("50 per hour")
 def view_receipts():
     """View all uploaded receipts (admin only)."""
     try:
@@ -425,6 +481,14 @@ def view_receipts():
             receipts=receipts,
             title=trans('credits_receipts_title', default='View Receipts', lang=session.get('lang', 'en'))
         )
+    except AttributeError as e:
+        logger.error(f"AttributeError in view_receipts for admin {current_user.id}: {str(e)}")
+        flash('Error loading receipts due to module configuration.', 'danger')
+        return render_template(
+            'credits/receipts.html',
+            receipts=[],
+            title=trans('general_error', default='Error', lang=session.get('lang', 'en'))
+        )
     except Exception as e:
         logger.error(f"Error fetching receipts for admin {current_user.id}: {str(e)}")
         flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
@@ -437,7 +501,7 @@ def view_receipts():
 @credits_bp.route('/receipt/<file_id>', methods=['GET'])
 @login_required
 @utils.requires_role('admin')
-@utils.limiter.limit("20 per hour")
+@limiter.limit("20 per hour")
 def view_receipt(file_id):
     """Serve a specific receipt file (admin only)."""
     try:
@@ -460,6 +524,9 @@ def view_receipt(file_id):
     except errors.PyMongoError as e:
         logger.error(f"MongoDB error serving receipt {file_id} for admin {current_user.id}: {str(e)}")
         flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
+    except AttributeError as e:
+        logger.error(f"AttributeError serving receipt {file_id} for admin {current_user.id}: {str(e)}")
+        flash('Error serving receipt due to module configuration.', 'danger')
     except Exception as e:
         logger.error(f"Unexpected error serving receipt {file_id} for admin {current_user.id}: {str(e)}")
         flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
@@ -467,7 +534,7 @@ def view_receipt(file_id):
 
 @credits_bp.route('/api/balance', methods=['GET'])
 @login_required
-@utils.limiter.limit("100 per hour")
+@limiter.limit("100 per hour")
 def get_balance():
     """API endpoint to get current user's Ficore Credit balance."""
     try:
@@ -475,13 +542,16 @@ def get_balance():
         user = get_user(db, str(current_user.id))
         balance = user.ficore_credit_balance if user else 0
         return jsonify({'balance': balance})
+    except AttributeError as e:
+        logger.error(f"AttributeError fetching Ficore Credit balance for user {current_user.id}: {str(e)}")
+        return jsonify({'error': 'Failed to fetch balance due to module configuration'}), 500
     except Exception as e:
         logger.error(f"Error fetching Ficore Credit balance for user {current_user.id}: {str(e)}")
         return jsonify({'error': 'Failed to fetch balance'}), 500
 
 @credits_bp.route('/info', methods=['GET'])
 @login_required
-@utils.limiter.limit("100 per hour")
+@limiter.limit("100 per hour")
 def ficore_credits_info():
     """Display information about Ficore Credits."""
     return render_template(
