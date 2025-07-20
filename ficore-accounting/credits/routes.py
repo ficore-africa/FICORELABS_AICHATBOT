@@ -16,6 +16,7 @@ from logging import getLogger
 from pymongo import errors
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+
 limiter = Limiter(key_func=get_remote_address)
 
 logger = getLogger(__name__)
@@ -216,11 +217,23 @@ def history():
         get_user_by_email.cache_clear()
         user = get_user(db, str(current_user.id))
         query = {} if utils.is_admin() else {'user_id': str(current_user.id)}
-        transactions = get_ficore_credit_transactions(db, query)
+
+        # Query both ficore_credit_transactions and legacy credit_transactions
+        ficore_transactions = get_ficore_credit_transactions(db, query)
+        try:
+            legacy_transactions = list(db.credit_transactions.find(query).sort('date', -1))
+        except errors.PyMongoError as e:
+            logger.warning(f"Failed to query legacy credit_transactions for user {current_user.id}: {str(e)}")
+            legacy_transactions = []
+        
+        # Combine and sort transactions by date in descending order
+        all_transactions = ficore_transactions + legacy_transactions
+        all_transactions.sort(key=lambda x: x['date'], reverse=True)
+        
         requests = get_credit_requests(db, query)
-        formatted_transactions = [to_dict_ficore_credit_transaction(tx) for tx in transactions]
+        formatted_transactions = [to_dict_ficore_credit_transaction(tx) for tx in all_transactions]
         formatted_requests = [to_dict_credit_request(req) for req in requests]
-        logger.info(f"Fetched {len(transactions)} transactions and {len(requests)} requests for user {current_user.id}", extra={'session_id': session.get('sid', 'unknown')})
+        logger.info(f"Fetched {len(ficore_transactions)} ficore_credit_transactions, {len(legacy_transactions)} credit_transactions, and {len(requests)} requests for user {current_user.id}", extra={'session_id': session.get('sid', 'unknown')})
         return render_template(
             'credits/history.html',
             transactions=formatted_transactions,
