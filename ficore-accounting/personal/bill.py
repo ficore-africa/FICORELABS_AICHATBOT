@@ -38,20 +38,23 @@ class BillFormProcessor:
             return None
         if isinstance(value, str):
             cleaned = re.sub(r'[^\d.]', '', value.strip())
-            if not cleaned:
+            parts = cleaned.split('.')
+            if len(parts) > 2:
+                cleaned = parts[0] + '.' + ''.join(parts[1:])
+            if not cleaned or cleaned == '.':
                 return None
         else:
             cleaned = str(value)
         try:
             decimal_value = Decimal(cleaned)
             if decimal_value < 0:
-                raise ValueError("Amount must be positive")
+                raise ValueError(trans('bill_amount_positive', default="Amount must be positive"))
             if decimal_value > 10000000000:
-                raise ValueError("Amount exceeds maximum limit")
+                raise ValueError(trans('bill_amount_max', default="Input cannot exceed 10 billion"))
             return decimal_value
         except (InvalidOperation, ValueError) as e:
-            raise ValueError(f"Invalid amount format: {e}")
-    
+            raise ValueError(trans('bill_amount_invalid', default=f"Invalid amount format: {e}"))
+
     @staticmethod
     def clean_integer_input(value, min_val=None, max_val=None):
         """Clean and convert integer input (like reminder days)."""
@@ -66,13 +69,13 @@ class BillFormProcessor:
         try:
             int_value = int(cleaned)
             if min_val is not None and int_value < min_val:
-                raise ValueError(f"Value must be at least {min_val}")
+                raise ValueError(trans('bill_reminder_days_min', default=f"Value must be at least {min_val}"))
             if max_val is not None and int_value > max_val:
-                raise ValueError(f"Value must be at most {max_val}")
+                raise ValueError(trans('bill_reminder_days_max', default=f"Value must be at most {max_val}"))
             return int_value
         except ValueError as e:
-            raise ValueError(f"Invalid integer format: {e}")
-    
+            raise ValueError(trans('bill_reminder_days_invalid', default=f"Invalid integer format: {e}"))
+
     @staticmethod
     def validate_date_input(value):
         """Validate and convert date input."""
@@ -82,17 +85,17 @@ class BillFormProcessor:
             try:
                 parsed_date = datetime.strptime(value, '%Y-%m-%d').date()
             except ValueError:
-                raise ValueError("Invalid date format. Use YYYY-MM-DD")
+                raise ValueError(trans('bill_due_date_invalid', default="Invalid date format. Use YYYY-MM-DD"))
         elif isinstance(value, datetime):
             parsed_date = value.date()
         elif isinstance(value, date):
             parsed_date = value
         else:
-            raise ValueError("Invalid date type")
+            raise ValueError(trans('bill_due_date_invalid_type', default="Invalid date type"))
         if parsed_date < date.today():
-            raise ValueError("Due date cannot be in the past")
+            raise ValueError(trans('bill_due_date_future_validation', default="Due date must be today or in the future"))
         return parsed_date
-    
+
     @staticmethod
     def process_bill_form_data(form_data):
         """Process and validate all bill form data."""
@@ -102,28 +105,28 @@ class BillFormProcessor:
         
         for field in required_fields:
             if field not in form_data or not form_data[field]:
-                errors.append(f"{field.replace('_', ' ').title()} is required")
+                errors.append(trans(f'bill_{field}_required', default=f"{field.replace('_', ' ').title()} is required"))
         
         if errors:
-            raise ValueError("Validation errors: " + "; ".join(errors))
+            raise ValueError("; ".join(errors))
         
         try:
             cleaned_data['bill_name'] = form_data['bill_name'].strip()
             if not cleaned_data['bill_name']:
-                errors.append("Bill name cannot be empty")
+                errors.append(trans('bill_bill_name_required', default="Bill name cannot be empty"))
             
             cleaned_data['amount'] = BillFormProcessor.clean_currency_input(form_data['amount'])
             if cleaned_data['amount'] is None:
-                errors.append("Valid amount is required")
+                errors.append(trans('bill_amount_required', default="Valid amount is required"))
             
             cleaned_data['due_date'] = BillFormProcessor.validate_date_input(form_data['due_date'])
             if cleaned_data['due_date'] is None:
-                errors.append("Valid due date is required")
+                errors.append(trans('bill_due_date_required', default="Valid due date is required"))
             
             valid_frequencies = ['one-time', 'weekly', 'monthly', 'quarterly']
             frequency = form_data['frequency'].strip().lower()
             if frequency not in valid_frequencies:
-                errors.append(f"Frequency must be one of: {', '.join(valid_frequencies)}")
+                errors.append(trans('bill_frequency_invalid', default=f"Frequency must be one of: {', '.join(valid_frequencies)}"))
             cleaned_data['frequency'] = frequency
             
             valid_categories = ['utilities', 'rent', 'data_internet', 'ajo_esusu_adashe', 'food', 'transport',
@@ -131,13 +134,13 @@ class BillFormProcessor:
                                'savings_investments', 'other']
             category = form_data['category'].strip().lower()
             if category not in valid_categories:
-                errors.append(f"Category must be one of: {', '.join(valid_categories)}")
+                errors.append(trans('bill_category_invalid', default=f"Category must be one of: {', '.join(valid_categories)}"))
             cleaned_data['category'] = category
             
             valid_statuses = ['unpaid', 'paid', 'pending', 'overdue']
             status = form_data['status'].strip().lower()
             if status not in valid_statuses:
-                errors.append(f"Status must be one of: {', '.join(valid_statuses)}")
+                errors.append(trans('bill_status_invalid', default=f"Status must be one of: {', '.join(valid_statuses)}"))
             cleaned_data['status'] = status
             
             cleaned_data['send_email'] = bool(form_data.get('send_email', False))
@@ -156,7 +159,7 @@ class BillFormProcessor:
             errors.append(str(e))
         
         if errors:
-            raise ValueError("Validation errors: " + "; ".join(errors))
+            raise ValueError("; ".join(errors))
         
         return cleaned_data
 
@@ -171,7 +174,7 @@ def format_currency(value):
         formatted = f"{numeric_value:,.2f}"
         current_app.logger.debug(f"Formatted value: input={value}, output={formatted}", extra={'session_id': session.get('sid', 'unknown')})
         return formatted
-    except (ValueError, TypeError) as e:
+    except (ValueError, TypeError, InvalidOperation) as e:
         current_app.logger.warning(f"Format Error: input={value}, error={str(e)}", extra={'session_id': session.get('sid', 'unknown')})
         return "0.00"
 
@@ -227,14 +230,18 @@ class BillForm(FlaskForm):
     )
     amount = DecimalField(
         trans('bill_amount', default='Amount'),
+        filters=[lambda x: BillFormProcessor.clean_currency_input(x) if x else None],
         validators=[
             DataRequired(message=trans('bill_amount_required', default='Valid amount is required')),
-            NumberRange(min=0, max=10000000000, message=trans('bill_amount_exceed', default='Amount must be between 0 and 10 billion'))
+            NumberRange(min=0, max=10000000000, message=trans('bill_amount_max', default='Input cannot exceed 10 billion'))
         ]
     )
     due_date = DateField(
         trans('bill_due_date', default='Due Date'),
-        validators=[DataRequired(message=trans('bill_due_date_required', default='Valid due date is required'))]
+        validators=[
+            DataRequired(message=trans('bill_due_date_required', default='Valid due date is required')),
+            lambda form, field: BillFormProcessor.validate_date_input(field.data) or None
+        ]
     )
     frequency = SelectField(
         trans('bill_frequency', default='Frequency'),
@@ -309,19 +316,20 @@ class BillForm(FlaskForm):
         if not super().validate(extra_validators):
             return False
         if self.send_email.data and not current_user.is_authenticated:
-            self.send_email.errors.append(trans('bill_email_required', session.get('lang', 'en')) or 'Email notifications require an authenticated user')
+            self.send_email.errors.append(trans('bill_email_required', lang=session.get('lang', 'en')) or 'Email notifications require an authenticated user')
             return False
         if self.due_date.data and self.due_date.data < date.today():
-            self.due_date.errors.append(trans('bill_due_date_future_validation', session.get('lang', 'en')) or 'Due date must be today or in the future')
+            self.due_date.errors.append(trans('bill_due_date_future_validation', lang=session.get('lang', 'en')) or 'Due date must be today or in the future')
             return False
         return True
 
 class EditBillForm(FlaskForm):
     amount = DecimalField(
         trans('bill_amount', default='Amount'),
+        filters=[lambda x: BillFormProcessor.clean_currency_input(x) if x else None],
         validators=[
             DataRequired(message=trans('bill_amount_required', default='Valid amount is required')),
-            NumberRange(min=0, max=10000000000, message=trans('bill_amount_exceed', default='Amount must be between 0 and 10 billion'))
+            NumberRange(min=0, max=10000000000, message=trans('bill_amount_max', default='Input cannot exceed 10 billion'))
         ]
     )
     frequency = SelectField(
@@ -395,7 +403,7 @@ class EditBillForm(FlaskForm):
         if not super().validate(extra_validators):
             return False
         if self.send_email.data and not current_user.is_authenticated:
-            self.send_email.errors.append(trans('bill_email_required', session.get('lang', 'en')) or 'Email notifications require an authenticated user')
+            self.send_email.errors.append(trans('bill_email_required', lang=session.get('lang', 'en')) or 'Email notifications require an authenticated user')
             return False
         return True
 
@@ -450,6 +458,7 @@ def main():
         trans('bill_tip_ajo_reminders', default='Set reminders for ajo contributions.'),
         trans('bill_tip_data_topup', default='Schedule data top-ups to avoid service interruptions.')
     ]
+    insights = []
 
     try:
         filter_kwargs = {} if is_admin() else {'user_id': current_user.id} if current_user.is_authenticated else {'session_id': session['sid']}
@@ -536,6 +545,8 @@ def main():
                             except Exception as e:
                                 current_app.logger.error(f"Failed to send email: {str(e)}", extra={'session_id': session.get('sid', 'unknown')})
                                 flash(trans('general_email_send_failed', default='Failed to send email.'), 'warning')
+                        if cleaned_data['amount'] > 100000:
+                            insights.append(trans('bill_insight_large_amount', default='Large bill amount detected. Consider reviewing for accuracy or splitting payments.'))
                         return redirect(url_for('personal.bill.main', tab='dashboard'))
                     else:
                         for field, errors in form.errors.items():
@@ -545,6 +556,10 @@ def main():
                 except ValueError as e:
                     current_app.logger.error(f"Form validation error: {str(e)}", extra={'session_id': session.get('sid', 'unknown')})
                     flash(str(e), 'danger')
+                    return redirect(url_for('personal.bill.main', tab='add-bill'))
+                except DuplicateKeyError:
+                    current_app.logger.error(f"Duplicate bill error for session {session['sid']}", extra={'session_id': session.get('sid', 'unknown')})
+                    flash(trans('bill_duplicate_error', default='A bill with this name already exists.'), 'danger')
                     return redirect(url_for('personal.bill.main', tab='add-bill'))
                 except Exception as e:
                     current_app.logger.error(f"Failed to save bill to MongoDB: {str(e)}", extra={'session_id': session.get('sid', 'unknown')})
@@ -594,6 +609,8 @@ def main():
                                     return redirect(url_for('personal.bill.main', tab='manage-bills'))
                             current_app.logger.info(f"Bill {bill_id} updated successfully", extra={'session_id': session.get('sid', 'unknown')})
                             flash(trans('bill_updated_success', default='Bill updated successfully!'), 'success')
+                            if cleaned_data['amount'] > 100000:
+                                insights.append(trans('bill_insight_large_amount', default='Large bill amount detected. Consider reviewing for accuracy or splitting payments.'))
                         else:
                             for field, errors in edit_form.errors.items():
                                 for error in errors:
@@ -609,6 +626,13 @@ def main():
                     return redirect(url_for('personal.bill.main', tab='manage-bills'))
                 elif action == 'delete_bill':
                     try:
+                        log_tool_usage(
+                            tool_name='bill',
+                            db=db,
+                            user_id=current_user.id if current_user.is_authenticated else None,
+                            session_id=session.get('sid', 'unknown'),
+                            action='delete_bill'
+                        )
                         bills_collection.delete_one({'_id': ObjectId(bill_id), **filter_kwargs})
                         if current_user.is_authenticated and not is_admin():
                             if not deduct_ficore_credits(db, current_user.id, 1, 'delete_bill', bill_id):
@@ -624,6 +648,13 @@ def main():
                 elif action == 'toggle_status':
                     new_status = 'paid' if bill['status'] == 'unpaid' else 'unpaid'
                     try:
+                        log_tool_usage(
+                            tool_name='bill',
+                            db=db,
+                            user_id=current_user.id if current_user.is_authenticated else None,
+                            session_id=session.get('sid', 'unknown'),
+                            action='toggle_bill_status'
+                        )
                         bills_collection.update_one({'_id': ObjectId(bill_id), **filter_kwargs}, {'$set': {'status': new_status, 'updated_at': datetime.utcnow()}})
                         if current_user.is_authenticated and not is_admin():
                             if not deduct_ficore_credits(db, current_user.id, 1, 'toggle_bill_status', bill_id):
@@ -660,7 +691,7 @@ def main():
                         flash(trans('bill_status_toggle_failed', default='Failed to toggle bill status.'), 'danger')
                     return redirect(url_for('personal.bill.main', tab='manage-bills'))
 
-        bills = bills_collection.find(filter_kwargs).sort('created_at', -1)
+        bills = bills_collection.find(filter_kwargs).sort('created_at', -1).limit(100)
         bills_data = []
         edit_forms = {}
         paid_count = unpaid_count = overdue_count = pending_count = 0
@@ -689,6 +720,7 @@ def main():
                 'amount': format_currency(float(bill.get('amount', 0.0))),
                 'amount_raw': float(bill.get('amount', 0.0)),
                 'due_date': due_date,
+                'due_date_formatted': due_date.strftime('%Y-%m-%d'),
                 'frequency': bill.get('frequency', 'one-time'),
                 'category': bill.get('category', 'other'),
                 'status': bill.get('status', 'unpaid'),
@@ -731,10 +763,17 @@ def main():
                     due_month.append((bill_id, bill_data, edit_form))
                 if today < bill_due_date:
                     upcoming_bills.append((bill_id, bill_data, edit_form))
+                # Add insights based on bill data
+                if bill_due_date <= today and bill_data['status'] not in ['paid', 'pending']:
+                    insights.append(trans('bill_insight_overdue', default=f"Bill '{bill_data['bill_name']}' is overdue. Consider paying it soon."))
+                elif bill_due_date <= (today + timedelta(days=7)) and bill_data['status'] == 'unpaid':
+                    insights.append(trans('bill_insight_due_soon', default=f"Bill '{bill_data['bill_name']}' is due soon. Plan your payment."))
             except (ValueError, TypeError) as e:
                 current_app.logger.warning(f"Invalid amount for bill {bill_id}: {bill.get('amount')}, error: {str(e)}", extra={'session_id': session.get('sid', 'unknown')})
                 continue
-        categories = {trans(f'bill_category_{k}', default=k): v for k, v in categories.items() if v > 0}
+        categories = {trans(f'bill_category_{k}', default=k.replace('_', ' ').title()): v for k, v in categories.items() if v > 0}
+        if total_overdue > total_bills * 0.3:
+            insights.append(trans('bill_insight_high_overdue', default='Overdue bills exceed 30% of total bills. Prioritize clearing overdue amounts.'))
         return render_template(
             'personal/BILL/bill_main.html',
             form=form,
@@ -754,6 +793,7 @@ def main():
             due_month=due_month,
             upcoming_bills=upcoming_bills,
             tips=tips,
+            insights=insights,
             activities=activities,
             tool_title=trans('bill_title', default='Bill Manager'),
             active_tab=active_tab
@@ -780,6 +820,7 @@ def main():
             due_month=[],
             upcoming_bills=[],
             tips=tips,
+            insights=[],
             activities=activities,
             tool_title=trans('bill_title', default='Bill Manager'),
             active_tab=active_tab
@@ -825,7 +866,7 @@ def unsubscribe():
     if 'sid' not in session:
         create_anonymous_session()
         session['is_anonymous'] = True
-        current_app.logger.debug(f"New anonymous session created with sid: {session['sid']}", extra={'session_id': session['sid']})
+        current_app.logger.debug(f"New anonymous session created with sid: {session['sid']}", extra={'session_id': session.get('sid', 'unknown')})
     session.permanent = True
     session.modified = True
     try:
