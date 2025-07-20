@@ -83,13 +83,13 @@ _PERSONAL_TOOLS = [
         "icon": "bi-receipt"
     },
     {
-        "endpoint": "credits.request_credits",
-        "label": "Request Credits",
-        "label_key": "request_credits_dashboard",
-        "description_key": "request_credits_dashboard_desc",
-        "tooltip_key": "request_credits_tooltip",
-        "icon": "bi-coin"
-    },  
+        "endpoint": "personal.grocery.index",
+        "label": "Grocery Planner",
+        "label_key": "grocery_management",
+        "description_key": "grocery_management_desc",
+        "tooltip_key": "grocery_tooltip",
+        "icon": "bi-cart"
+    },
     {
         "endpoint": "credits.history",
         "label": "Ficore Credits",
@@ -126,12 +126,12 @@ _PERSONAL_NAV = [
         "icon": "bi-receipt"
     },   
     {
-        "endpoint": "credits.request_credits",
-        "label": "Request Credits",
-        "label_key": "request_credits_dashboard",
-        "description_key": "request_credits_dashboard_desc",
-        "tooltip_key": "request_credits_tooltip",
-        "icon": "bi-coin"
+        "endpoint": "personal.grocery.index",
+        "label": "Grocery Planner",
+        "label_key": "grocery_management",
+        "description_key": "grocery_management_desc",
+        "tooltip_key": "grocery_tooltip",
+        "icon": "bi-cart"
     },
     {
         "endpoint": "settings.profile",
@@ -152,7 +152,6 @@ _PERSONAL_EXPLORE_FEATURES = [
         "tooltip_key": "budget_tooltip",
         "icon": "bi-wallet"
     },
-    
     {
         "endpoint": "personal.bill.main",
         "label": "Bills",
@@ -162,12 +161,12 @@ _PERSONAL_EXPLORE_FEATURES = [
         "icon": "bi-receipt"
     },
     {
-        "endpoint": "credits.history",
-        "label": "Ficore Credits",
-        "label_key": "credits_your_wallet",
-        "description_key": "credits_your_wallet_desc",
-        "tooltip_key": "credits_your_wallet_tooltip",
-        "icon": "bi-coin"
+        "endpoint": "personal.grocery.index",
+        "label": "Grocery Planner",
+        "label_key": "grocery_management",
+        "description_key": "grocery_management_desc",
+        "tooltip_key": "grocery_tooltip",
+        "icon": "bi-cart"
     },  
     {
         "endpoint": "credits.request_credits",
@@ -175,6 +174,14 @@ _PERSONAL_EXPLORE_FEATURES = [
         "label_key": "credits_dashboard",
         "description_key": "credits_dashboard_desc",
         "tooltip_key": "credits_tooltip",
+        "icon": "bi-coin"
+    },   
+    {
+        "endpoint": "credits.history",
+        "label": "Ficore Credits",
+        "label_key": "credits_your_wallet",
+        "description_key": "credits_your_wallet_desc",
+        "tooltip_key": "credits_your_wallet_tooltip",
         "icon": "bi-coin"
     },
     {
@@ -522,6 +529,15 @@ def get_explore_features():
                     "description_key": "budget_budget_desc",
                     "tooltip_key": "budget_tooltip",
                     "icon": "bi-wallet",
+                    "category": "Personal"
+                },
+                {
+                    "endpoint": "personal.grocery.index",
+                    "label": "Grocery Planner",
+                    "label_key": "grocery_management",
+                    "description_key": "grocery_management_desc",
+                    "tooltip_key": "grocery_tooltip",
+                    "icon": "bi-cart",
                     "category": "Personal"
                 },
                 {
@@ -1303,6 +1319,35 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None, session_id
                     'surplus_deficit': budget.get('surplus_deficit', 0)
                 },
                 'icon': 'bi-cash-coin'
+            })
+
+        # Fetch recent grocery lists
+        grocery_lists = db.grocery_lists.find(query).sort('created_at', -1).limit(5)
+        for list_item in grocery_lists:
+            activities.append({
+                'type': 'grocery_list',
+                'description': trans('recent_activity_grocery_list_created', default='Created grocery list: {name}', name=list_item.get('name', 'Unknown')),
+                'timestamp': list_item.get('created_at', datetime.utcnow()).isoformat(),
+                'details': {
+                    'budget': list_item.get('budget', 0),
+                    'total_spent': list_item.get('total_spent', 0)
+                },
+                'icon': 'bi-cart'
+            })
+
+        # Fetch recent grocery items
+        grocery_items = db.grocery_items.find(query).sort('created_at', -1).limit(5)
+        for item in grocery_items:
+            activities.append({
+                'type': 'grocery_item',
+                'description': trans('recent_activity_grocery_item_added', default='Added grocery item: {name}', name=item.get('name', 'Unknown')),
+                'timestamp': item.get('created_at', datetime.utcnow()).isoformat(),
+                'details': {
+                    'quantity': item.get('quantity', 0),
+                    'price': item.get('price', 0),
+                    'status': item.get('status', 'to_buy')
+                },
+                'icon': 'bi-check-circle'
             })
 
         activities.sort(key=lambda x: x['timestamp'], reverse=True)
