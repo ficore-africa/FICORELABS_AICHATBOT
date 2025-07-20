@@ -6,7 +6,7 @@ from translations import trans
 import logging
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicBasic(level=logging.DEBUG)
 
 personal_bp = Blueprint('personal', __name__, url_prefix='/personal', template_folder='templates/personal')
 
@@ -68,7 +68,7 @@ def index():
                 "description_key": "grocery_management_desc",
                 "tooltip_key": "grocery_tooltip",
                 "icon": "bi-cart",
-                "url": url_for("personal.grocery.index", _external=True)
+                "url": "#"  # Modal trigger, no server-side endpoint
             },
             {
                 "endpoint": "credits.history",
@@ -108,7 +108,7 @@ def index():
                 "description_key": "grocery_management_desc",
                 "tooltip_key": "grocery_tooltip",
                 "icon": "bi-cart",
-                "url": url_for("personal.grocery.index", _external=True)
+                "url": "#"  # Modal trigger, no server-side endpoint
             },
             {
                 "endpoint": "credits.request_credits",
@@ -138,7 +138,7 @@ def index():
                 "url": url_for("taxation_bp.calculate_tax", _external=True)
             },
             {
-                "endpoint": "reports.budget_performance",
+                "endpoint": "reports.index",
                 "label": "Reports",
                 "label_key": "personal_reports",
                 "description_key": "personal_reports_desc",
