@@ -8,7 +8,7 @@ FICORE_HEADER_BG = "#F2EFEA"
 FICORE_TEXT_COLOR = "#1e293b"
 FICORE_LOGO_PATH = "img/ficore_logo.png"  # relative to static folder
 
-FICORE_MARKETING = "Empowering Africa's businesses. Contact: info@ficorelabs.com | +234-xxx-xxxx"
+FICORE_MARKETING = "Empowering Africa's businesses. Contact: ficorelabs@gmail.com | +234-xxx-xxxx"
 FICORE_BRAND = "Ficore Labs"
 
 def draw_ficore_pdf_header(canvas, user, y_start=11.5):
