@@ -68,7 +68,7 @@
                             <td data-label="{{ t('general_payment_method', default='Payment Method') }}">{{ t(req.payment_method, default=req.payment_method|default('Unknown')) }}</td>
                             <td data-label="{{ t('credits_request_status', default='Request Status') }}">{{ t(req.status, default=req.status|default('Unknown')) }}</td>
                             <td data-label="{{ t('credits_receipt', default='Receipt') }}">
-                                {% if req.receipt_file_id and utils.is_admin() %}
+                                {% if req.receipt_file_id and is_admin %}
                                     <a href="{{ url_for('credits.view_receipt', file_id=req.receipt_file_id) }}" class="btn btn-sm btn-outline-primary" aria-label="{{ t('credits_view_receipt', default='View Receipt') }}">{{ t('credits_view_receipt', default='View Receipt') }}</a>
                                 {% else %}
                                     {{ t('credits_no_receipt', default='No Receipt') }}
