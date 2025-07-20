@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, current_app, session, request
 from flask_login import current_user, login_required
 from datetime import datetime, date
 from models import get_budgets, get_bills
-from utils import get_mongo_db, trans, requires_role, logger
+from utils import get_mongo_db, trans, requires_role, logger, is_admin
 from bson import ObjectId
 
 summaries_bp = Blueprint('summaries', __name__, url_prefix='/summaries')
