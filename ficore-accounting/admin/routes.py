@@ -311,6 +311,7 @@ def manage_users():
         users = list(db.users.find({} if utils.is_admin() else {'role': {'$ne': 'admin'}}).sort('created_at', -1))
         for user in users:
             user['_id'] = str(user['_id'])
+            user['username'] = user['_id']
         return render_template('admin/users.html', users=users, title=trans('admin_manage_users_title', default='Manage Users'))
     except Exception as e:
         logger.error(f"Error fetching users for admin: {str(e)}")
