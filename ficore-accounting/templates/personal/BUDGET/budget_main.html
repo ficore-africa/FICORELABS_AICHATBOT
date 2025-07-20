@@ -7,28 +7,6 @@
     {% set subtitle = t('budget_subtitle', default='Plan and manage your finances effectively') %}
     {% include 'personal/GENERAL/tool_header.html' %}
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ t(message, default=message) | e }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ t('general_close', default='Close') }}"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-
-    {% if form.errors and request.method == 'POST' %}
-        {% for field, errors in form.errors.items() %}
-            {% for error in errors %}
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    {{ t(error, default=error) | e }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ t('general_close', default='Close') }}"></button>
-                </div>
-            {% endfor %}
-        {% endfor %}
-    {% endif %}
-
     <ul class="nav nav-tabs mb-4" id="budgetTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link {{ 'active' if active_tab == 'create-budget' else '' }}" id="create-budget-tab" data-bs-toggle="tab" data-bs-target="#create-budget" type="button" role="tab" aria-controls="create-budget" aria-selected="{{ 'true' if active_tab == 'create-budget' else 'false' }}">
