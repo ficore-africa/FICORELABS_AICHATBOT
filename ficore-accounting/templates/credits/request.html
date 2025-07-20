@@ -10,10 +10,20 @@
         {{ form.hidden_tag() }}
         <div class="col-12">
             <label for="amount" class="form-label">{{ t('credits_amount', default='Ficore Credit Amount') }}</label>
-            {{ form.amount(class="form-select", **{'aria-label': t('credits_amount', default='Ficore Credit Amount')}) }}
+            {{ form.amount(class="form-select", **{'aria-label': t('credits_amount', default='Ficore Credit Amount'), 'onchange': 'updatePrice()'}) }}
             {% if form.amount.errors %}
                 <p class="text-danger mt-1">{{ form.amount.errors[0] }}</p>
             {% endif %}
+        </div>
+        <div class="col-12">
+            <p id="price-display" class="text-info">
+                {% if price %}
+                    {{ t('credits_price', default='Price: N{price} for {amount} FCs')|format(price=price, amount=form.amount.data or 10) }}
+                {% else %}
+                    {{ t('credits_price', default='Price: N500 for 10 FCs') }}
+                {% endif %}
+            </p>
+            <p class="text-muted">{{ t('credits_payment_instructions', default='Pay N{price} to this account and upload receipt')|format(price=price or 500) }}</p>
         </div>
         <div class="col-12">
             <label for="payment_method" class="form-label">{{ t('general_payment_method', default='Payment Method') }}</label>
@@ -23,8 +33,8 @@
             {% endif %}
         </div>
         <div class="col-12">
-            <label for="receipt" class="form-label">{{ t('credits_receipt', default='Receipt (Optional)') }}</label>
-            {{ form.receipt(class="form-control", **{'aria-label': t('credits_receipt', default='Receipt (Optional)')}) }}
+            <label for="receipt" class="form-label">{{ t('credits_receipt', default='Receipt') }}</label>
+            {{ form.receipt(class="form-control", **{'aria-label': t('credits_receipt', default='Receipt')}) }}
             {% if form.receipt.errors %}
                 <p class="text-danger mt-1">{{ form.receipt.errors[0] }}</p>
             {% endif %}
@@ -37,4 +47,15 @@
         <a href="{{ url_for('credits.history') }}" class="btn btn-primary" aria-label="{{ t('credits_your_wallet', default='Your Wallet') }}">{{ t('credits_your_wallet', default='Your Wallet') }}</a>
     </div>
 </div>
+<script>
+function updatePrice() {
+    const amountSelect = document.getElementById('amount');
+    const priceDisplay = document.getElementById('price-display');
+    const paymentInstructions = document.querySelector('.text-muted');
+    const amount = parseInt(amountSelect.value) || 10;
+    const price = amount * 50;
+    priceDisplay.textContent = `{{ t('credits_price', default='Price: N{price} for {amount} FCs') }}`.replace('{price}', price).replace('{amount}', amount);
+    paymentInstructions.textContent = `{{ t('credits_payment_instructions', default='Pay N{price} to this account and upload receipt') }}`.replace('{price}', price);
+}
+</script>
 {% endblock %}
