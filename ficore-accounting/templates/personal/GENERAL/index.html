@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-container">
     {% if current_user.is_authenticated %}
-        <!-- Financial Summary -->
+        <!-- Financial Snapshots -->
         <div class="section-card financial-snapshots">
             <h3 class="section-title">{{ t('general_snapshots', default='Financial Snapshots') | e }}</h3>
             <div class="summary-cards">
@@ -13,19 +13,42 @@
                         <i class="bi bi-pie-chart card-icon text-primary"></i>
                         <span class="fw-bold">{{ t('budget_budget_status', default='Budget Status') | e }}</span>
                     </div>
-                    <div class="card-amount text-primary mt-3" id="budgetStatus">
+                    <div class="card-amount mt-3" id="budgetStatus">
                         <span class="currency-symbol">₦</span>
-                        <span class="amount-value" data-amount="0">0</span>
+                        <span class="amount-value" data-amount="0">0.00</span>
                     </div>
+                    <div class="status-label" id="budgetStatusLabel"></div>
                 </div>
                 <div class="summary-card bills-card">
                     <div class="card-header d-flex align-items-center gap-3">
                         <i class="bi bi-receipt card-icon text-warning"></i>
                         <span class="fw-bold">{{ t('bill_upcoming_bills', default='Upcoming Bills') | e }}</span>
                     </div>
-                    <div class="card-amount text-warning mt-3" id="upcomingBills">
+                    <div class="card-amount mt-3" id="upcomingBills">
                         <span class="currency-symbol">₦</span>
-                        <span class="amount-value" data-amount="0">0</span>
+                        <span class="amount-value" data-amount="0">0.00</span>
+                    </div>
+                    <div class="status-label" id="billsStatusLabel"></div>
+                </div>
+                <div class="summary-card grocery-card">
+                    <div class="card-header d-flex align-items-center gap-3">
+                        <i class="bi bi-cart card-icon text-info"></i>
+                        <span class="fw-bold">{{ t('grocery_shopping_budget', default='Shopping Budget') | e }}</span>
+                    </div>
+                    <div class="card-amount mt-3" id="groceryBudget">
+                        <span class="currency-symbol">₦</span>
+                        <span class="amount-value" data-amount="0">0.00</span>
+                    </div>
+                    <div class="status-label" id="groceryStatusLabel"></div>
+                </div>
+                <div class="summary-card wallet-balance">
+                    <div class="card-header d-flex align-items-center gap-3">
+                        <i class="bi bi-wallet2 card-icon text-success"></i>
+                        <span class="fw-bold">{{ t('general_ficore_credits', default='Ficore Credits') | e }}</span>
+                    </div>
+                    <div class="card-amount text-success mt-3" id="walletBalance">
+                        <span class="currency-symbol">₦</span>
+                        <span class="amount-value" data-amount="0">0.00</span>
                     </div>
                 </div>
             </div>
@@ -63,7 +86,7 @@
         <div class="section-card notifications">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h3 class="section-title mb-0">{{ t('general_notifications', default='Notifications') | e }}</h3>
-            <span class="badge bg-primary rounded-pill" id="notificationCount">0</span>
+                <span class="badge bg-primary rounded-pill" id="notificationCount">0</span>
             </div>
             <div id="notificationList">
                 <div class="notification-card">
@@ -93,6 +116,10 @@
                     <div class="action-label">{{ t(tool.get('label_key', ''), default=tool.get('label', 'Tool')) | e }}</div>
                 </a>
                 {% endfor %}
+                <a href="#" class="quick-action-card text-decoration-none" data-bs-toggle="modal" data-bs-target="#groceryModal" aria-label="{{ t('grocery_add_list', default='Add Grocery List') | e }}">
+                    <i class="bi bi-cart action-icon"></i>
+                    <div class="action-label">{{ t('grocery_add_list', default='Add Grocery List') | e }}</div>
+                </a>
             </div>
         </section>
 
@@ -111,6 +138,112 @@
             </a>
             {% endfor %}
         </div>
+
+        <!-- Grocery Planner Modal -->
+        <div class="modal fade" id="groceryModal" tabindex="-1" aria-labelledby="groceryModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="groceryModalLabel">{{ t('grocery_shopping_planner', default='Smart Grocery Planner') | e }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <ul class="nav nav-tabs mb-3" id="groceryTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="lists-tab" data-bs-toggle="tab" data-bs-target="#lists" type="button" role="tab">{{ t('grocery_lists', default='Lists') | e }}</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="meal-plans-tab" data-bs-toggle="tab" data-bs-target="#meal-plans" type="button" role="tab">{{ t('grocery_meal_plans', default='Meal Plans') | e }}</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="suggestions-tab" data-bs-toggle="tab" data-bs-target="#suggestions" type="button" role="tab">{{ t('grocery_suggestions', default='Suggestions') | e }}</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="groceryTabContent">
+                            <!-- Lists Tab -->
+                            <div class="tab-pane fade show active" id="lists" role="tabpanel" aria-labelledby="lists-tab">
+                                <div class="mb-3">
+                                    <h6>{{ t('grocery_create_list', default='Create New List') | e }}</h6>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="newListName" placeholder="{{ t('grocery_list_name', default='List Name') | e }}">
+                                        <input type="number" class="form-control" id="newListBudget" placeholder="{{ t('grocery_budget', default='Budget') | e }}" min="0" step="0.01">
+                                        <button class="btn btn-primary" onclick="createGroceryList()">{{ t('grocery_create', default='Create') | e }}</button>
+                                    </div>
+                                </div>
+                                <div id="groceryLists"></div>
+                                <div id="groceryItems" class="mt-3"></div>
+                                <div class="mt-3">
+                                    <h6>{{ t('grocery_add_item', default='Add Item to List') | e }}</h6>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="newItemName" placeholder="{{ t('grocery_item_name', default='Item Name') | e }}">
+                                        <input type="number" class="form-control" id="newItemQuantity" placeholder="{{ t('grocery_quantity', default='Quantity') | e }}" min="1">
+                                        <input type="number" class="form-control" id="newItemPrice" placeholder="{{ t('grocery_price', default='Price') | e }}" min="0arlos, step="0.01">
+                                        <select class="form-select" id="newItemStatus">
+                                            <option value="to_buy">{{ t('grocery_to_buy', default='To Buy') | e }}</option>
+                                            <option value="in_pantry">{{ t('grocery_in_pantry', default='In Pantry') | e }}</option>
+                                            <option value="bought">{{ t('grocery_bought', default='Bought') | e }}</option>
+                                        </select>
+                                        <input type="text" class="form-control" id="newItemStore" placeholder="{{ t('grocery_store', default='Store') | e }}">
+                                        <button class="btn btn-primary" onclick="addGroceryItem()">{{ t('grocery_add', default='Add') | e }}</button>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <h6>{{ t('grocery_share_list', default='Share List') | e }}</h6>
+                                    <div class="input-group">
+                                        <input type="email" class="form-control" id="shareListEmail" placeholder="{{ t('grocery_collaborator_email', default='Collaborator Email') | e }}">
+                                        <button class="btn btn-primary" onclick="shareGroceryList()">{{ t('grocery_share', default='Share') | e }}</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Meal Plans Tab -->
+                            <div class="tab-pane fade" id="meal-plans" role="tabpanel" aria-labelledby="meal-plans-tab">
+                                <div class="mb-3">
+                                    <h6>{{ t('grocery_create_meal_plan', default='Create Meal Plan') | e }}</h6>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="newMealPlanName" placeholder="{{ t('grocery_meal_name', default='Meal Name') | e }}">
+                                        <input type="number" class="form-control" id="newMealPlanBudget" placeholder="{{ t('grocery_budget', default='Budget') | e }}" min="0" step="0.01">
+                                        <button class="btn btn-primary" onclick="createMealPlan()">{{ t('grocery_create', default='Create') | e }}</button>
+                                    </div>
+                                </div>
+                                <div id="mealPlans"></div>
+                                <div class="mt-3">
+                                    <h6>{{ t('grocery_add_ingredient', default='Add Ingredient') | e }}</h6>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="newIngredientName" placeholder="{{ t('grocery_ingredient_name', default='Ingredient Name') | e }}">
+                                        <input type="number" class="form-control" id="newIngredientQuantity" placeholder="{{ t('grocery_quantity', default='Quantity') | e }}" min="1">
+                                        <input type="number" class="form-control" id="newIngredientPrice" placeholder="{{ t('grocery_price', default='Price') | e }}" min="0" step="0.01">
+                                        <button class="btn btn-primary" onclick="addIngredient()">{{ t('grocery_add', default='Add') | e }}</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Suggestions Tab -->
+                            <div class="tab-pane fade" id="suggestions" role="tabpanel" aria-labelledby="suggestions-tab">
+                                <div class="mb-3">
+                                    <h6>{{ t('grocery_suggested_items', default='Suggested Items') | e }}</h6>
+                                    <div id="predictiveSuggestions"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <h6>{{ t('grocery_collaborator_suggestions', default='Collaborator Suggestions') | e }}</h6>
+                                    <div id="collaboratorSuggestions"></div>
+                                </div>
+                                <div class="mt-3">
+                                    <h6>{{ t('grocery_suggest_item', default='Suggest Item') | e }}</h6>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="suggestItemName" placeholder="{{ t('grocery_item_name', default='Item Name') | e }}">
+                                        <input type="number" class="form-control" id="suggestItemQuantity" placeholder="{{ t('grocery_quantity', default='Quantity') | e }}" min="1">
+                                        <input type="number" class="form-control" id="suggestItemPrice" placeholder="{{ t('grocery_price', default='Price') | e }}" min="0" step="0.01">
+                                        <button class="btn btn-primary" onclick="suggestItem()">{{ t('grocery_suggest', default='Suggest') | e }}</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('general_close', default='Close') | e }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     {% endif %}
 </div>
 
@@ -118,27 +251,55 @@
 .spacer {
     margin: 1.5rem 0;
 }
-.notification-card {
+.notification-card, .recent-activity-card {
     border-bottom: 1px solid #e9ecef;
     padding: 0.75rem 0;
 }
-.notification-item {
+.notification-item, .activity-item {
     display: flex;
     align-items: center;
     gap: 0.75rem;
 }
-.notification-icon {
+.notification-icon, .activity-icon {
     font-size: 1.25rem;
 }
-.notification-content {
+.notification-content, .activity-content {
     flex-grow: 1;
 }
-.notification-description {
+.notification-description, .activity-description {
     font-size: 0.9rem;
     font-weight: 500;
 }
-.notification-time {
+.notification-time, .activity-time {
     font-size: 0.8rem;
+}
+.summary-card {
+    padding: 0.75rem;
+    border: 1px solid #e9ecef;
+    border-radius: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+.card-header {
+    font-size: 1rem;
+}
+.card-amount {
+    font-size: 1.25rem;
+    font-weight: 500;
+}
+.status-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-top: 0.25rem;
+}
+.grocery-item, .meal-plan-item, .suggestion-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+.grocery-item select, .grocery-item input, .meal-plan-item input, .suggestion-item input {
+    max-width: 100px;
 }
 </style>
 {% endblock %}
@@ -171,10 +332,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     {% if current_user.is_authenticated %}
-    // Load financial data, notifications, and recent activity
+    // Load financial data, notifications, recent activity, and grocery data
     loadFinancialSummary();
     loadRecentActivity();
     loadNotifications();
+    loadGroceryLists();
+    loadPredictiveSuggestions();
+
+    // Check for Friday reminder
+    const today = new Date();
+    if (today.getDay() === 5) { // Friday
+        setTimeout(() => {
+            showToast(translations.friday_reminder, 'info');
+        }, 2000);
+    }
+
+    // Offline support: Load cached data
+    loadOfflineData();
     {% endif %}
 });
 
@@ -182,6 +356,9 @@ document.addEventListener('DOMContentLoaded', function() {
 let amountsVisible = true;
 let allActivities = [];
 let isShowingAllActivities = false;
+let currentListId = null;
+let currentMealPlanId = null;
+let offlineData = { lists: [], items: {}, mealPlans: [], suggestions: {} };
 
 // Translation strings
 const translations = {
@@ -194,19 +371,106 @@ const translations = {
     no_notifications: '{{ t("general_no_notifications", default="No notifications") | e }}',
     check_back_later: '{{ t("general_check_back_later", default="Check back later") | e }}',
     view_all: '{{ t("general_view_all", default="View All") | e }}',
-    view_less: '{{ t("general_view_less", default="View Less") | e }}'
+    view_less: '{{ t("general_view_less", default="View Less") | e }}',
+    surplus_budget: '{{ t("budget_surplus", default="Surplus Budget") | e }}',
+    deficit_budget: '{{ t("budget_deficit", default="Deficit Budget") | e }}',
+    overdue_bills: '{{ t("bill_overdue", default="Overdue Bills") | e }}',
+    pending_bills: '{{ t("bill_pending", default="Pending Bills") | e }}',
+    unpaid_bills: '{{ t("bill_unpaid", default="Unpaid Bills") | e }}',
+    grocery_within_budget: '{{ t("grocery_within_budget", default="Within Budget") | e }}',
+    grocery_over_budget: '{{ t("grocery_over_budget", default="Over Budget") | e }}',
+    grocery_no_active_lists: '{{ t("grocery_no_active_lists", default="No Active Lists") | e }}',
+    grocery_list_created: '{{ t("grocery_list_created", default="Grocery list created") | e }}',
+    grocery_item_added: '{{ t("grocery_item_added", default="Item added to list") | e }}',
+    grocery_item_updated: '{{ t("grocery_item_updated", default="Item updated") | e }}',
+    grocery_list_shared: '{{ t("grocery_list_shared", default="List shared successfully") | e }}',
+    grocery_suggestion_added: '{{ t("grocery_suggestion_added", default="Suggestion added") | e }}',
+    grocery_suggestion_approved: '{{ t("grocery_suggestion_approved", default="Suggestion approved") | e }}',
+    grocery_meal_plan_created: '{{ t("grocery_meal_plan_created", default="Meal plan created") | e }}',
+    friday_reminder: '{{ t("grocery_friday_reminder", default="It's Friday! Time to prep your weekend grocery list.") | e }}',
+    no_lists: '{{ t("grocery_no_lists", default="No grocery lists found") | e }}',
+    no_items: '{{ t("grocery_no_items", default="No items in this list") | e }}',
+    no_meal_plans: '{{ t("grocery_no_meal_plans", default="No meal plans found") | e }}',
+    no_suggestions: '{{ t("grocery_no_suggestions", default="No suggestions available") | e }}'
 };
 
 // Load financial data
 function loadFinancialSummary() {
     Promise.all([
         fetch('{{ url_for("personal.summaries.budget_summary") | e }}').then(r => r.json()).catch(() => ({totalBudget: 0})),
-        fetch('{{ url_for("personal.summaries.bill_summary") | e }}').then(r => r.json()).catch(() => ({totalUpcomingBills: 0}))
-    ]).then(([budgetData, billsData]) => {
-        updateFinancialSummary(budgetData, billsData);
+        fetch('{{ url_for("personal.summaries.bill_summary") | e }}').then(r => r.json()).catch(() => ({overdue_amount: 0, pending_amount: 0, unpaid_amount: 0})),
+        fetch('{{ url_for("personal.summaries.grocery_summary") | e }}').then(r => r.json()).catch(() => ({total_grocery_budget: 0, total_grocery_spent: 0})),
+        fetch('{{ url_for("personal.summaries.ficore_balance") | e }}').then(r => r.json()).catch(() => ({balance: 0}))
+    ]).then(([budgetData, billsData, groceryData, walletData]) => {
+        updateFinancialSummary(budgetData, billsData, groceryData, walletData);
     }).catch(error => {
         console.error('Error loading financial data:', error);
+        updateFinancialSummary({totalBudget: 0}, {overdue_amount: 0, pending_amount: 0, unpaid_amount: 0}, {total_grocery_budget: 0, total_grocery_spent: 0}, {balance: 0});
     });
+}
+
+// Update financial summary
+function updateFinancialSummary(budgetData, billsData, groceryData, walletData) {
+    // Budget Status
+    const budgetStatusEl = document.querySelector('#budgetStatus .amount-value');
+    const budgetStatusLabelEl = document.getElementById('budgetStatusLabel');
+    const totalBudget = parseFloat(budgetData.totalBudget || 0);
+    budgetStatusEl.textContent = format_currency(Math.abs(totalBudget));
+    budgetStatusEl.dataset.amount = totalBudget;
+    budgetStatusEl.parentElement.className = `card-amount text-${totalBudget >= 0 ? 'success' : 'danger'} mt-3`;
+    budgetStatusLabelEl.textContent = totalBudget >= 0 ? translations.surplus_budget : translations.deficit_budget;
+    budgetStatusLabelEl.className = `status-label text-${totalBudget >= 0 ? 'success' : 'danger'}`;
+
+    // Bills Status
+    const upcomingBillsEl = document.querySelector('#upcomingBills .amount-value');
+    const billsStatusLabelEl = document.getElementById('billsStatusLabel');
+    const overdueAmount = parseFloat(billsData.overdue_amount || 0);
+    const pendingAmount = parseFloat(billsData.pending_amount || 0);
+    const unpaidAmount = parseFloat(billsData.unpaid_amount || 0);
+    
+    if (overdueAmount > 0) {
+        upcomingBillsEl.textContent = format_currency(overdueAmount);
+        upcomingBillsEl.dataset.amount = overdueAmount;
+        upcomingBillsEl.parentElement.className = 'card-amount text-danger mt-3';
+        billsStatusLabelEl.textContent = translations.overdue_bills;
+        billsStatusLabelEl.className = 'status-label text-danger';
+    } else if (pendingAmount > 0) {
+        upcomingBillsEl.textContent = format_currency(pendingAmount);
+        upcomingBillsEl.dataset.amount = pendingAmount;
+        upcomingBillsEl.parentElement.className = 'card-amount text-warning mt-3';
+        billsStatusLabelEl.textContent = translations.pending_bills;
+        billsStatusLabelEl.className = 'status-label text-warning';
+    } else {
+        upcomingBillsEl.textContent = format_currency(unpaidAmount);
+        upcomingBillsEl.dataset.amount = unpaidAmount;
+        upcomingBillsEl.parentElement.className = 'card-amount text-muted mt-3';
+        billsStatusLabelEl.textContent = translations.unpaid_bills;
+        billsStatusLabelEl.className = 'status-label text-muted';
+    }
+
+    // Grocery Budget
+    const groceryBudgetEl = document.querySelector('#groceryBudget .amount-value');
+    const groceryStatusLabelEl = document.getElementById('groceryStatusLabel');
+    const totalGroceryBudget = parseFloat(groceryData.total_grocery_budget || 0);
+    const totalGrocerySpent = parseFloat(groceryData.total_grocery_spent || 0);
+    groceryBudgetEl.textContent = format_currency(totalGrocerySpent);
+    groceryBudgetEl.dataset.amount = totalGrocerySpent;
+    if (totalGroceryBudget === 0) {
+        groceryBudgetEl.parentElement.className = 'card-amount text-muted mt-3';
+        groceryStatusLabelEl.textContent = translations.grocery_no_active_lists;
+        groceryStatusLabelEl.className = 'status-label text-muted';
+    } else {
+        groceryBudgetEl.parentElement.className = `card-amount text-${totalGrocerySpent <= totalGroceryBudget ? 'success' : 'danger'} mt-3`;
+        groceryStatusLabelEl.textContent = totalGrocerySpent <= totalGroceryBudget ? translations.grocery_within_budget : translations.grocery_over_budget;
+        groceryStatusLabelEl.className = `status-label text-${totalGrocerySpent <= totalGroceryBudget ? 'success' : 'danger'}`;
+    }
+
+    // Ficore Credits
+    const walletBalanceEl = document.querySelector('#walletBalance .amount-value');
+    const balance = parseFloat(walletData.balance || 0);
+    walletBalanceEl.textContent = format_currency(balance);
+    walletBalanceEl.dataset.amount = balance;
+    walletBalanceEl.dataset.originalText = format_currency(balance);
 }
 
 // Load recent activity
@@ -214,7 +478,7 @@ function loadRecentActivity() {
     fetch('{{ url_for("personal.summaries.recent_activity") | e }}')
         .then(response => response.json())
         .then(activities => {
-            allActivities = activities; // Store all activities
+            allActivities = activities;
             renderRecentActivities(isShowingAllActivities ? activities : activities.slice(0, 2));
             updateViewAllLink();
         }).catch(error => {
@@ -237,7 +501,8 @@ function renderRecentActivities(activities) {
                         <div class="activity-description fw-semibold">${activity.description}</div>
                         <div class="activity-time text-muted">${formatTimeAgo(activity.timestamp)}</div>
                     </div>
-                    ${activity.details && activity.details.amount ? `<div class="activity-amount text-nowrap ms-2 fw-bold">${format_currency(activity.details.amount)}</div>` : ''}
+                    ${activity.details && activity.details.amount ? `<div class="activity-amount text-nowrap ms-2 fw-bold">${format_currency(activity.details.amount)}</div>` : 
+                      activity.details && activity.details.price ? `<div class="activity-amount text-nowrap ms-2 fw-bold">${format_currency(activity.details.price)}</div>` : ''}
                 </div>
             </div>
         `).join('');
@@ -273,7 +538,6 @@ function updateViewAllLink() {
 
 // Load notifications
 function loadNotifications() {
-    // Update notification count
     fetch('{{ url_for("personal.summaries.notification_count") | e }}')
         .then(response => response.json())
         .then(data => {
@@ -285,7 +549,6 @@ function loadNotifications() {
             console.error('Error loading notification count:', error);
         });
 
-    // Fetch and display notifications
     fetch('{{ url_for("personal.summaries.notifications") | e }}')
         .then(response => response.json())
         .then(data => {
@@ -295,7 +558,7 @@ function loadNotifications() {
                     <div class="notification-card">
                         <div class="notification-item">
                             <div class="notification-icon">
-                                <i class="bi ${getNotificationIcon(notification.type)} ${notification.read ? 'text-muted' : 'text-primary'}"></i>
+                                <i class="bi ${notification.icon || getNotificationIcon(notification.type)} ${notification.read ? 'text-muted' : 'text-primary'}"></i>
                             </div>
                             <div class="notification-content">
                                 <div class="notification-description fw-semibold">${notification.message}</div>
@@ -319,7 +582,8 @@ function loadNotifications() {
                     </div>
                 `;
             }
-        }).catch(error => {
+        })
+        .catch(error => {
             console.error('Error loading notifications:', error);
             const notificationList = document.getElementById('notificationList');
             notificationList.innerHTML = `
@@ -337,21 +601,580 @@ function loadNotifications() {
             });
 }
 
-function updateFinancialSummary(budgetData, billsData) {
-    const budgetStatusEl = document.querySelector('#budgetStatus .amount-value');
-    budgetStatusEl.textContent = format_currency(budgetData.totalBudget || 0);
-    budgetStatusEl.dataset.amount = budgetData.totalBudget || 0;
+// Grocery Planner Functions
+function loadGroceryLists() {
+    fetch('{{ url_for("personal.grocery.manage_lists") | e }}')
+        .then(response => response.json())
+        .then(lists => {
+            offlineData.lists = lists;
+            localStorage.setItem('groceryLists', JSON.stringify(lists));
+            renderGroceryLists(lists);
+        })
+        .catch(error => {
+            console.error('Error loading grocery lists:', error);
+            renderGroceryLists([]);
+        });
+}
 
-    const upcomingBillsEl = document.querySelector('#upcomingBills .amount-value');
-    upcomingBillsEl.textContent = format_currency(billsData.totalUpcomingBills || 0);
-    upcomingBillsEl.dataset.amount = billsData.totalUpcomingBills || 0;
+function renderGroceryLists(lists) {
+    const groceryListsEl = document.getElementById('groceryLists');
+    if (lists && lists.length > 0) {
+        groceryListsEl.innerHTML = lists.map(list => `
+            <div class="grocery-item">
+                <span class="fw-semibold">${list.name}</span>
+                <div>
+                    <span class="text-muted">Budget: ${format_currency(list.budget)}</span>
+                    <span class="ms-2">Spent: ${format_currency(list.total_spent)}</span>
+                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadGroceryItems('${list.id}')">${translations.view_all}</button>
+                </div>
+            </div>
+        `).join('');
+        if (!currentListId && lists[0]) {
+            loadGroceryItems(lists[0].id);
+        }
+    } else {
+        groceryListsEl.innerHTML = `<div class="text-muted">${translations.no_lists}</div>`;
+    }
+}
+
+function loadGroceryItems(listId) {
+    currentListId = listId;
+    fetch('{{ url_for("personal.grocery.manage_items", list_id="") | e }}' + listId)
+        .then(response => response.json())
+        .then(items => {
+            offlineData.items[listId] = items;
+            localStorage.setItem('groceryItems', JSON.stringify(offlineData.items));
+            renderGroceryItems(items);
+            loadCollaboratorSuggestions(listId);
+        })
+        .catch(error => {
+            console.error('Error loading grocery items:', error);
+            renderGroceryItems([]);
+        });
+}
+
+function renderGroceryItems(items) {
+    const groceryItemsEl = document.getElementById('groceryItems');
+    if (items && items.length > 0) {
+        groceryItemsEl.innerHTML = items.map(item => `
+            <div class="grocery-item">
+                <span class="fw-semibold">${item.name} (${item.category})</span>
+                <div class="d-flex align-items-center gap-2">
+                    <input type="number" class="form-control" value="${item.quantity}" min="1" onchange="updateGroceryItem('${item.id}', 'quantity', this.value)">
+                    <input type="number" class="form-control" value="${item.price}" min="0" step="0.01" onchange="updateGroceryItem('${item.id}', 'price', this.value)">
+                    <select class="form-select" onchange="updateGroceryItem('${item.id}', 'status', this.value)">
+                        <option value="to_buy" ${item.status === 'to_buy' ? 'selected' : ''}>${translations.grocery_to_buy}</option>
+                        <option value="in_pantry" ${item.status === 'in_pantry' ? 'selected' : ''}>${translations.grocery_in_pantry}</option>
+                        <option value="bought" ${item.status === 'bought' ? 'selected' : ''}>${translations.grocery_bought}</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-info" onclick="showPriceHistory('${item.name}')">${translations.grocery_price_history}</button>
+                </div>
+            </div>
+        `).join('');
+    } else {
+        groceryItemsEl.innerHTML = `<div class="text-muted">${translations.no_items}</div>`;
+    }
+}
+
+function createGroceryList() {
+    const name = document.getElementById('newListName').value;
+    const budget = document.getElementById('newListBudget').value;
+    if (!name || !budget) {
+        showToast('Please provide list name and budget', 'warning');
+        return;
+    }
+    fetch('{{ url_for("personal.grocery.manage_lists") | e }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, budget })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast(translations.grocery_list_created, 'success');
+                document.getElementById('newListName').value = '';
+                document.getElementById('newListBudget').value = '';
+                loadGroceryLists();
+                loadFinancialSummary();
+            }
+        })
+        .catch(error => {
+            console.error('Error creating grocery list:', error);
+            showToast(translations.grocery_list_error, 'danger');
+        });
+}
+
+function addGroceryItem() {
+    if (!currentListId) {
+        showToast('Please select a list first', 'warning');
+        return;
+    }
+    const name = document.getElementById('newItemName').value;
+    const quantity = document.getElementById('newItemQuantity').value;
+    const price = document.getElementById('newItemPrice').value;
+    const status = document.getElementById('newItemStatus').value;
+    const store = document.getElementById('newItemStore').value;
+    if (!name || !quantity || !price) {
+        showToast('Please provide item name, quantity, and price', 'warning');
+        return;
+    }
+    fetch('{{ url_for("personal.grocery.manage_items", list_id="") | e }}' + currentListId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, quantity, price, status, store })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast(translations.grocery_item_added, 'success');
+                document.getElementById('newItemName').value = '';
+                document.getElementById('newItemQuantity').value = '';
+                document.getElementById('newItemPrice').value = '';
+                document.getElementById('newItemStore').value = '';
+                loadGroceryItems(currentListId);
+                loadFinancialSummary();
+            }
+        })
+        .catch(error => {
+            console.error('Error adding grocery item:', error);
+            showToast(translations.grocery_item_error, 'danger');
+        });
+}
+
+function updateGroceryItem(itemId, field, value) {
+    fetch('{{ url_for("personal.grocery.manage_items", list_id="") | e }}' + currentListId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_id: itemId, [field]: value })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast(translations.grocery_item_updated, 'success');
+                loadGroceryItems(currentListId);
+                loadFinancialSummary();
+            }
+        })
+        .catch(error => {
+            console.error('Error updating grocery item:', error);
+            showToast(translations.grocery_item_error, 'danger');
+        });
+}
+
+function shareGroceryList() {
+    if (!currentListId) {
+        showToast('Please select a list first', 'warning');
+        return;
+    }
+    const email = document.getElementById('shareListEmail').value;
+    if (!email) {
+        showToast('Please provide a collaborator email', 'warning');
+        return;
+    }
+    fetch('{{ url_for("personal.grocery.share_list", list_id="") | e }}' + currentListId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast(translations.grocery_list_shared, 'success');
+                document.getElementById('shareListEmail').value = '';
+                loadGroceryLists();
+            }
+        })
+        .catch(error => {
+            console.error('Error sharing grocery list:', error);
+            showToast(translations.grocery_share_error, 'danger');
+        });
+}
+
+function loadMealPlans() {
+    fetch('{{ url_for("personal.grocery.manage_meal_plans") | e }}')
+        .then(response => response.json())
+        .then(mealPlans => {
+            offlineData.mealPlans = mealPlans;
+            localStorage.setItem('mealPlans', JSON.stringify(mealPlans));
+            renderMealPlans(mealPlans);
+        })
+        .catch(error => {
+            console.error('Error loading meal plans:', error);
+            renderMealPlans([]);
+        });
+}
+
+function renderMealPlans(mealPlans) {
+    const mealPlansEl = document.getElementById('mealPlans');
+    if (mealPlans && mealPlans.length > 0) {
+        mealPlansEl.innerHTML = mealPlans.map(plan => `
+            <div class="meal-plan-item">
+                <span class="fw-semibold">${plan.name}</span>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadMealPlanIngredients('${plan.id}')">${translations.view_all}</button>
+                    <button class="btn btn-sm btn-outline-success" onclick="generateGroceryListFromMealPlan('${plan.id}')">Generate List</button>
+                </div>
+            </div>
+        `).join('');
+        if (!currentMealPlanId && mealPlans[0]) {
+            loadMealPlanIngredients(mealPlans[0].id);
+        }
+    } else {
+        mealPlansEl.innerHTML = `<div class="text-muted">${translations.no_meal_plans}</div>`;
+    }
+}
+
+function loadMealPlanIngredients(mealPlanId) {
+    currentMealPlanId = mealPlanId;
+    fetch('{{ url_for("personal.grocery.manage_meal_plans") | e }}')
+        .then(response => response.json())
+        .then(mealPlans => {
+            const plan = mealPlans.find(p => p.id === mealPlanId);
+            renderMealPlanIngredients(plan ? plan.ingredients : []);
+        })
+        .catch(error => {
+            console.error('Error loading meal plan ingredients:', error);
+            renderMealPlanIngredients([]);
+        });
+}
+
+function renderMealPlanIngredients(ingredients) {
+    const mealPlansEl = document.getElementById('mealPlans');
+    if (ingredients && ingredients.length > 0) {
+        mealPlansEl.innerHTML += ingredients.map(ingredient => `
+            <div class="grocery-item">
+                <span class="fw-semibold">${ingredient.name} (${ingredient.category})</span>
+                <div>
+                    <span>Qty: ${ingredient.quantity}</span>
+                    <span class="ms-2">Price: ${format_currency(ingredient.price)}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+}
+
+function createMealPlan() {
+    const name = document.getElementById('newMealPlanName').value;
+    const budget = document.getElementById('newMealPlanBudget').value;
+    if (!name) {
+        showToast('Please provide meal plan name', 'warning');
+        return;
+    }
+    fetch('{{ url_for("personal.grocery.manage_meal_plans") | e }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, budget, auto_generate_list: !!budget, ingredients: [] })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast(translations.grocery_meal_plan_created, 'success');
+                document.getElementById('newMealPlanName').value = '';
+                document.getElementById('newMealPlanBudget').value = '';
+                loadMealPlans();
+                loadFinancialSummary();
+            }
+        })
+        .catch(error => {
+            console.error('Error creating meal plan:', error);
+            showToast(translations.grocery_meal_plan_error, 'danger');
+        });
+}
+
+function addIngredient() {
+    if (!currentMealPlanId) {
+        showToast('Please select a meal plan first', 'warning');
+        return;
+    }
+    const name = document.getElementById('newIngredientName').value;
+    const quantity = document.getElementById('newIngredientQuantity').value;
+    const price = document.getElementById('newIngredientPrice').value;
+    if (!name || !quantity || !price) {
+        showToast('Please provide ingredient name, quantity, and price', 'warning');
+        return;
+    }
+    fetch('{{ url_for("personal.grocery.manage_meal_plans") | e }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            name: `Update for ${currentMealPlanId}`, 
+            ingredients: [{ name, quantity, price }], 
+            auto_generate_list: false 
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast(translations.grocery_item_added, 'success');
+                document.getElementById('newIngredientName').value = '';
+                document.getElementById('newIngredientQuantity').value = '';
+                document.getElementById('newIngredientPrice').value = '';
+                loadMealPlans();
+            }
+        })
+        .catch(error => {
+            console.error('Error adding ingredient:', error);
+            showToast(translations.grocery_item_error, 'danger');
+        });
+}
+
+function generateGroceryListFromMealPlan(mealPlanId) {
+    fetch('{{ url_for("personal.grocery.manage_meal_plans") | e }}')
+        .then(response => response.json())
+        .then(mealPlans => {
+            const plan = mealPlans.find(p => p.id === mealPlanId);
+            if (plan) {
+                fetch('{{ url_for("personal.grocery.manage_lists") | e }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: `${plan.name} Grocery List`,
+                        budget: plan.ingredients.reduce((sum, i) => sum + i.price * i.quantity, 0),
+                        auto_generate_list: true
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            showToast(data.error, 'danger');
+                        } else {
+                            showToast(translations.grocery_list_created, 'success');
+                            loadGroceryLists();
+                            loadFinancialSummary();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error generating grocery list:', error);
+                        showToast(translations.grocery_list_error, 'danger');
+                    });
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching meal plan:', error);
+            showToast(translations.grocery_meal_plan_error, 'danger');
+        });
+}
+
+function loadPredictiveSuggestions() {
+    fetch('{{ url_for("personal.grocery.predictive_suggestions") | e }}')
+        .then(response => response.json())
+        .then(suggestions => {
+            offlineData.suggestions.predictive = suggestions;
+            localStorage.setItem('predictiveSuggestions', JSON.stringify(suggestions));
+            renderPredictiveSuggestions(suggestions);
+        })
+        .catch(error => {
+            console.error('Error loading predictive suggestions:', error);
+            renderPredictiveSuggestions([]);
+        });
+}
+
+function renderPredictiveSuggestions(suggestions) {
+    const suggestionsEl = document.getElementById('predictiveSuggestions');
+    if (suggestions && suggestions.length > 0) {
+        suggestionsEl.innerHTML = suggestions.map(s => `
+            <div class="suggestion-item">
+                <span class="fw-semibold">${s.name} (${s.category})</span>
+                <div>
+                    <span>Qty: ${s.suggested_quantity}</span>
+                    <span class="ms-2">Price: ${format_currency(s.estimated_price)}</span>
+                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="addSuggestedItem('${s.name}', ${s.suggested_quantity}, ${s.estimated_price})">Add</button>
+                </div>
+            </div>
+        `).join('');
+    } else {
+        suggestionsEl.innerHTML = `<div class="text-muted">${translations.no_suggestions}</div>`;
+    }
+}
+
+function addSuggestedItem(name, quantity, price) {
+    if (!currentListId) {
+        showToast('Please select a list first', 'warning');
+        return;
+    }
+    fetch('{{ url_for("personal.grocery.manage_items", list_id="") | e }}' + currentListId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, quantity, price, status: 'to_buy' })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast(translations.grocery_item_added, 'success');
+                loadGroceryItems(currentListId);
+                loadFinancialSummary();
+            }
+        })
+        .catch(error => {
+            console.error('Error adding suggested item:', error);
+            showToast(translations.grocery_item_error, 'danger');
+        });
+}
+
+function loadCollaboratorSuggestions(listId) {
+    fetch('{{ url_for("personal.grocery.manage_suggestions", list_id="") | e }}' + listId)
+        .then(response => response.json())
+        .then(suggestions => {
+            offlineData.suggestions[listId] = suggestions;
+            localStorage.setItem('collaboratorSuggestions', JSON.stringify(offlineData.suggestions));
+            renderCollaboratorSuggestions(suggestions);
+        })
+        .catch(error => {
+            console.error('Error loading collaborator suggestions:', error);
+            renderCollaboratorSuggestions([]);
+        });
+}
+
+function renderCollaboratorSuggestions(suggestions) {
+    const suggestionsEl = document.getElementById('collaboratorSuggestions');
+    if (suggestions && suggestions.length > 0) {
+        suggestionsEl.innerHTML = suggestions.map(s => `
+            <div class="suggestion-item">
+                <span class="fw-semibold">${s.name} (${s.category})</span>
+                <div>
+                    <span>Qty: ${s.quantity}</span>
+                    <span class="ms-2">Price: ${format_currency(s.price)}</span>
+                    ${s.status === 'pending' ? `<button class="btn btn-sm btn-outline-success ms-2" onclick="approveSuggestion('${s.id}')">${translations.grocery_suggestion_approved}</button>` : ''}
+                </div>
+            </div>
+        `).join('');
+    } else {
+        suggestionsEl.innerHTML = `<div class="text-muted">${translations.no_suggestions}</div>`;
+    }
+}
+
+function suggestItem() {
+    if (!currentListId) {
+        showToast('Please select a list first', 'warning');
+        return;
+    }
+    const name = document.getElementById('suggestItemName').value;
+    const quantity = document.getElementById('suggestItemQuantity').value;
+    const price = document.getElementById('suggestItemPrice').value;
+    if (!name || !quantity || !price) {
+        showToast('Please provide item name, quantity, and price', 'warning');
+        return;
+    }
+    fetch('{{ url_for("personal.grocery.manage_suggestions", list_id="") | e }}' + currentListId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, quantity, price })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast(translations.grocery_suggestion_added, 'success');
+                document.getElementById('suggestItemName').value = '';
+                document.getElementById('suggestItemQuantity').value = '';
+                document.getElementById('suggestItemPrice').value = '';
+                loadCollaboratorSuggestions(currentListId);
+            }
+        })
+        .catch(error => {
+            console.error('Error suggesting item:', error);
+            showToast(translations.grocery_suggestion_error, 'danger');
+        });
+}
+
+function approveSuggestion(suggestionId) {
+    fetch('{{ url_for("personal.grocery.approve_suggestion", list_id="") | e }}' + currentListId + '/suggestions/' + suggestionId + '/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast(translations.grocery_suggestion_approved, 'success');
+                loadGroceryItems(currentListId);
+                loadCollaboratorSuggestions(currentListId);
+                loadFinancialSummary();
+            }
+        })
+        .catch(error => {
+            console.error('Error approving suggestion:', error);
+            showToast(translations.grocery_suggestion_error, 'danger');
+        });
+}
+
+function showPriceHistory(itemName) {
+    fetch('{{ url_for("personal.grocery.price_history", item_name="") | e }}' + encodeURIComponent(itemName))
+        .then(response => response.json())
+        .then(data => {
+            const history = data.prices || [];
+            const avgPrice = data.average_price || 0;
+            const modalBody = document.querySelector('#groceryModal .modal-body');
+            const historyHtml = history.length > 0 ? history.map(h => `
+                <div class="grocery-item">
+                    <span>${h.store}: ${format_currency(h.price)}</span>
+                    <span class="text-muted">${formatTimeAgo(h.date)}</span>
+                </div>
+            `).join('') : `<div class="text-muted">${translations.no_price_history}</div>`;
+            modalBody.innerHTML += `
+                <div class="mt-3">
+                    <h6>Price History for ${itemName} (Avg: ${format_currency(avgPrice)})</h6>
+                    ${historyHtml}
+                </div>
+            `;
+        })
+        .catch(error => {
+            console.error('Error loading price history:', error);
+            showToast(translations.grocery_price_history_error, 'danger');
+        });
+}
+
+// Offline Support
+function loadOfflineData() {
+    const cachedLists = localStorage.getItem('groceryLists');
+    const cachedItems = localStorage.getItem('groceryItems');
+    const cachedMealPlans = localStorage.getItem('mealPlans');
+    const cachedSuggestions = localStorage.getItem('predictiveSuggestions');
+    if (cachedLists) {
+        offlineData.lists = JSON.parse(cachedLists);
+        renderGroceryLists(offlineData.lists);
+    }
+    if (cachedItems) {
+        offlineData.items = JSON.parse(cachedItems);
+        if (currentListId && offlineData.items[currentListId]) {
+            renderGroceryItems(offlineData.items[currentListId]);
+        }
+    }
+    if (cachedMealPlans) {
+        offlineData.mealPlans = JSON.parse(cachedMealPlans);
+        renderMealPlans(offlineData.mealPlans);
+    }
+    if (cachedSuggestions) {
+        offlineData.suggestions.predictive = JSON.parse(cachedSuggestions);
+        renderPredictiveSuggestions(offlineData.suggestions.predictive);
+    }
 }
 
 function getActivityIcon(type) {
     const icons = {
         'budget': 'bi-pie-chart',
         'bill': 'bi-receipt',
-        'bill_paid': 'bi-check-circle'
+        'bill_paid': 'bi-check-circle',
+        'ficore_credit': 'bi-wallet2',
+        'learning_hub': 'bi-book',
+        'grocery_list': 'bi-cart',
+        'grocery_item': 'bi-check-circle'
     };
     return icons[type] || 'bi-circle';
 }
@@ -360,7 +1183,11 @@ function getActivityColor(type) {
     const colors = {
         'budget': 'text-primary',
         'bill': 'text-warning',
-        'bill_paid': 'text-success'
+        'bill_paid': 'text-success',
+        'ficore_credit': 'text-success',
+        'learning_hub': 'text-info',
+        'grocery_list': 'text-info',
+        'grocery_item': 'text-success'
     };
     return colors[type] || 'text-muted';
 }
@@ -385,16 +1212,14 @@ function formatTimeAgo(timestamp) {
     return Math.floor(diffInSeconds / 86400) + ' ' + translations.days_ago;
 }
 
-window.toggleAmountVisibility = function() {
+function toggleAmountVisibility() {
     amountsVisible = !amountsVisible;
     const icon = document.getElementById('visibilityIcon');
     const amounts = document.querySelectorAll('.amount-value');
 
     amounts.forEach(el => {
         if (amountsVisible) {
-            if (el.classList.contains('amount-value')) {
-                el.textContent = format_currency(el.dataset.amount);
-            }
+            el.textContent = format_currency(el.dataset.amount);
         } else {
             if (!el.dataset.originalText) {
                 el.dataset.originalText = el.textContent;
@@ -404,13 +1229,29 @@ window.toggleAmountVisibility = function() {
     });
 
     icon.className = 'bi ' + (amountsVisible ? 'bi-eye' : 'bi-eye-slash');
-};
+}
 
 function format_currency(value) {
-    if (!value && value !== 0) return '';
-    value = typeof value === "string" ? parseFloat(value) : value;
-    if (isNaN(value)) return '0';
-    return value.toLocaleString('en-NG', {maximumFractionDigits: 0});
+    if (!value && value !== 0) return '0.00';
+    value = parseFloat(value);
+    if (isNaN(value)) return '0.00';
+    return value.toLocaleString('en-NG', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function showToast(message, type) {
+    const toastContainer = document.createElement('div');
+    toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+    toastContainer.innerHTML = `
+        <div class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(toastContainer);
+    const toast = new bootstrap.Toast(toastContainer.querySelector('.toast'));
+    toast.show();
 }
 {% endif %}
 </script>
