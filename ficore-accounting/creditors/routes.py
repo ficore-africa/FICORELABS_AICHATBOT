@@ -155,7 +155,7 @@ def share(id):
         if not utils.is_admin():
             user_query = utils.get_user_query(str(current_user.id))
             db.users.update_one(user_query, {'$inc': {'ficore_credit_balance': -1}})
-            db.credit_transactions.insert_one({
+            db.ficore_credit_transactions.insert_one({
                 'user_id': str(current_user.id),
                 'amount': -1,
                 'type': 'spend',
@@ -216,7 +216,7 @@ def send_reminder():
             if not utils.is_admin():
                 user_query = utils.get_user_query(str(current_user.id))
                 db.users.update_one(user_query, {'$inc': {'ficore_credit_balance': -credit_cost}})
-                db.credit_transactions.insert_one({
+                db.ficore_credit_transactions.insert_one({
                     'user_id': str(current_user.id),
                     'amount': -credit_cost,
                     'type': 'spend',
@@ -296,7 +296,7 @@ def generate_iou(id):
         if not utils.is_admin():
             user_query = utils.get_user_query(str(current_user.id))
             db.users.update_one(user_query, {'$inc': {'ficore_credit_balance': -1}})
-            db.credit_transactions.insert_one({
+            db.ficore_credit_transactions.insert_one({
                 'user_id': str(current_user.id),
                 'amount': -1,
                 'type': 'spend',
@@ -347,7 +347,7 @@ def add():
                     user_query,
                     {'$inc': {'ficore_credit_balance': -1}}
                 )
-                db.credit_transactions.insert_one({
+                db.ficore_credit_transactions.insert_one({
                     'user_id': str(current_user.id),
                     'amount': -1,
                     'type': 'spend',
@@ -430,7 +430,7 @@ def delete(id):
             return redirect(url_for('creditors.index'))
         result = db.records.delete_one(query)
         if result.deleted_count:
-            db.credit_transactions.insert_one({
+            db.ficore_credit_transactions.insert_one({
                 'user_id': str(current_user.id),
                 'creditor_id': str(creditor['_id']),
                 'creditor_name': creditor['name'],
