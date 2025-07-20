@@ -532,6 +532,14 @@ def get_explore_features():
                     "category": "Personal"
                 },
                 {
+                    "endpoint": "personal.bill.main",
+                    "label": "Bills",
+                    "label_key": "bill_bill_planner",
+                    "description_key": "bill_bill_desc",
+                    "tooltip_key": "bill_tooltip",
+                    "icon": "bi-receipt"
+                },
+                {
                     "endpoint": "personal.grocery.index",
                     "label": "Grocery Planner",
                     "label_key": "grocery_management",
@@ -557,6 +565,22 @@ def get_explore_features():
                     "tooltip_key": "debtors_tooltip",
                     "icon": "bi-person-plus",
                     "category": "Business"
+                },
+                {
+                    "endpoint": "receipts.index",
+                    "label": "MoneyIn",
+                    "label_key": "receipts_dashboard",
+                    "description_key": "receipts_dashboard",
+                    "tooltip_key": "receipts_tooltip",
+                    "icon": "bi-cash-coin"
+                }, 
+                {
+                    "endpoint": "payments.index",
+                    "label": "MoneyOut",
+                    "label_key": "payments_dashboard",
+                    "description_key": "payments_dashboard",
+                    "tooltip_key": "payments_tooltip",
+                    "icon": "bi-calculator"
                 },
                 {
                     "endpoint": "agents_bp.agent_portal",
