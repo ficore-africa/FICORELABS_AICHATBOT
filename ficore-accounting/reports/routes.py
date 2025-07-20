@@ -1035,7 +1035,7 @@ def generate_grocery_report_pdf(grocery_data):
         x_positions = [1 * inch, 2 * inch, 3 * inch, 3.5 * inch, 4 * inch, 4.8 * inch, 5.5 * inch]
         for header, x in zip(headers, x_positions):
             p.drawString(x, y * inch, header)
-        return y - row_height x_positions
+        return y - row_height, x_positions
 
     def draw_suggestion_headers(y):
         p.setFont("Helvetica", 10)
