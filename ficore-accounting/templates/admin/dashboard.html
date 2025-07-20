@@ -107,7 +107,6 @@
         <a href="{{ url_for('admin.admin_bills') }}" class="btn btn-primary">{{ t('admin_manage_bills', default='Manage Bills') | escape }}</a>
         <a href="{{ url_for('admin.view_feedbacks') }}" class="btn btn-primary">{{ t('admin_view_feedbacks', default='View Feedbacks') | escape }}</a>
         <a href="{{ url_for('admin.generate_agent_ids') }}" class="btn btn-primary">{{ t('admin_generate_agent_ids', default='Generate Agent IDs') | escape }}</a>
-        <a href="{{ url_for('admin.view_credit_requests') }}" class="btn btn-primary">{{ t('admin_approve_credit_requests', default='Approve Credit Requests') | escape }}</a>
     </div>
     <h2 class="mb-3">{{ t('admin_recent_users', default='Recent Users') | escape }}</h2>
     {% if recent_users %}
