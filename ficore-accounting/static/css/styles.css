@@ -3038,3 +3038,9 @@ a.text-decoration-none:hover .btn-outline-primary {
     color: white;
     border-color: #4e73df;
 }
+.collapse {
+    transition: height 0.3s ease;
+}
+.collapsing {
+    transition: height 0.3s ease;
+}
