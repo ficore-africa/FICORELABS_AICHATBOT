@@ -9,7 +9,7 @@ FICORE_TEXT_COLOR = "#1e293b"
 FICORE_LOGO_PATH = "img/ficore_logo.png"  # relative to static folder
 TOP_MARGIN = 10.5  # in inches, adjusted to match y_start
 FICORE_MARKETING = "Empowering Africa's businesses. Contact: ficoreafrica@gmail.com | +234-xxx-xxxx"
-FICORE_BRAND = "Ficore Labs"
+FICORE_BRAND = "Ficore Africa"
 
 def draw_ficore_pdf_header(canvas, user, y_start=10.5):
     """
