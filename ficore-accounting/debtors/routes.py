@@ -258,7 +258,7 @@ def generate_iou(id):
         
         buffer = io.BytesIO()
         p = canvas.Canvas(buffer, pagesize=letter)
-        draw_ficore_pdf_header(p, current_user, y_start=9.0)
+        draw_ficore_pdf_header(p, current_user, y_start=10)
         
         p.setFont("Helvetica-Bold", 24)
         p.drawString(inch, 10.5 * inch, trans('debtors_iou_title', default='FiCore Records - IOU'))
