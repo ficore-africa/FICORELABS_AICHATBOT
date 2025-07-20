@@ -218,22 +218,30 @@ def history():
         user = get_user(db, str(current_user.id))
         query = {} if utils.is_admin() else {'user_id': str(current_user.id)}
 
-        # Query both ficore_credit_transactions and legacy credit_transactions
+        # Query ficore_credit_transactions
         ficore_transactions = get_ficore_credit_transactions(db, query)
+
+        # Query legacy credit_transactions safely
         try:
-            legacy_transactions = list(db.credit_transactions.find(query).sort('date', -1))
+            legacy_transactions = list(db.credit_transactions.find(query))
+            valid_legacy_transactions = [
+                tx for tx in legacy_transactions
+                if 'date' in tx and isinstance(tx['date'], datetime)
+            ]
+            if len(valid_legacy_transactions) < len(legacy_transactions):
+                logger.warning(f"Filtered out {len(legacy_transactions) - len(valid_legacy_transactions)} invalid credit_transactions for user {current_user.id}")
         except errors.PyMongoError as e:
             logger.warning(f"Failed to query legacy credit_transactions for user {current_user.id}: {str(e)}")
-            legacy_transactions = []
-        
+            valid_legacy_transactions = []
+
         # Combine and sort transactions by date in descending order
-        all_transactions = ficore_transactions + legacy_transactions
-        all_transactions.sort(key=lambda x: x['date'], reverse=True)
-        
+        all_transactions = ficore_transactions + valid_legacy_transactions
+        all_transactions.sort(key=lambda x: x.get('date', datetime.min), reverse=True)
+
         requests = get_credit_requests(db, query)
         formatted_transactions = [to_dict_ficore_credit_transaction(tx) for tx in all_transactions]
         formatted_requests = [to_dict_credit_request(req) for req in requests]
-        logger.info(f"Fetched {len(ficore_transactions)} ficore_credit_transactions, {len(legacy_transactions)} credit_transactions, and {len(requests)} requests for user {current_user.id}", extra={'session_id': session.get('sid', 'unknown')})
+        logger.info(f"Fetched {len(ficore_transactions)} ficore_credit_transactions, {len(valid_legacy_transactions)} credit_transactions, and {len(requests)} requests for user {current_user.id}", extra={'session_id': session.get('sid', 'unknown')})
         return render_template(
             'credits/history.html',
             transactions=formatted_transactions,
