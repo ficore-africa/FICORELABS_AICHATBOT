@@ -6,7 +6,7 @@ from translations import trans
 import logging
 
 # Configure logging
-logging.basicBasic(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 personal_bp = Blueprint('personal', __name__, url_prefix='/personal', template_folder='templates/personal')
 
