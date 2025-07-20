@@ -145,7 +145,7 @@ def share(id):
         if not utils.is_admin():
             user_query = utils.get_user_query(str(current_user.id))
             db.users.update_one(user_query, {'$inc': {'ficore_credit_balance': -1}})
-            db.credit_transactions.insert_one({
+            db.ficore_credit_transactions.insert_one({
                 'user_id': str(current_user.id),
                 'amount': -1,
                 'type': 'spend',
@@ -204,7 +204,7 @@ def send_reminder():
             if not utils.is_admin():
                 user_query = utils.get_user_query(str(current_user.id))
                 db.users.update_one(user_query, {'$inc': {'ficore_credit_balance': -credit_cost}})
-                db.credit_transactions.insert_one({
+                db.ficore_credit_transactions.insert_one({
                     'user_id': str(current_user.id),
                     'amount': -credit_cost,
                     'type': 'spend',
@@ -282,7 +282,7 @@ def generate_iou(id):
         if not utils.is_admin():
             user_query = utils.get_user_query(str(current_user.id))
             db.users.update_one(user_query, {'$inc': {'ficore_credit_balance': -1}})
-            db.credit_transactions.insert_one({
+            db.ficore_credit_transactions.insert_one({
                 'user_id': str(current_user.id),
                 'amount': -1,
                 'type': 'spend',
@@ -332,7 +332,7 @@ def add():
             if not utils.is_admin():
                 user_query = utils.get_user_query(str(current_user.id))
                 db.users.update_one(user_query, {'$inc': {'ficore_credit_balance': -1}})
-                db.credit_transactions.insert_one({
+                db.ficore_credit_transactions.insert_one({
                     'user_id': str(current_user.id),
                     'amount': -1,
                     'type': 'spend',
