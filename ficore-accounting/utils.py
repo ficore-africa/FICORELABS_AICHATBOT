@@ -178,11 +178,11 @@ _PERSONAL_EXPLORE_FEATURES = [
         "icon": "bi-coin"
     },
     {
-        "endpoint": "reports.index",
+        "endpoint": "reports.budget_performance",
         "label": "Reports",
-        "label_key": "business_reports",
-        "description_key": "business_reports_desc",
-        "tooltip_key": "business_reports_tooltip",
+        "label_key": "personal_reports",
+        "description_key": "personal_reports_desc",
+        "tooltip_key": "personal_reports_tooltip",
         "icon": "bi-journal-minus"
     },
     {
