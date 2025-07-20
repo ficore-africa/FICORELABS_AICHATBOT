@@ -436,18 +436,6 @@ def customer_reports():
                     'as': 'bill_status_counts'
                 }},
                 {'$lookup': {
-                    'from': 'learning_materials',
-                    'let': {'user_id': '$_id'},
-                    'pipeline': [
-                        {'$match': {'$expr': {'$eq': ['$user_id', '$$user_id']}}},
-                        {'$group': {
-                            '_id': None,
-                            'total_lessons_completed': {'$sum': {'$size': '$lessons_completed'}}
-                        }}
-                    ],
-                    'as': 'learning_progress'
-                }},
-                {'$lookup': {
                     'from': 'tax_reminders',
                     'let': {'user_id': '$_id'},
                     'pipeline': [
@@ -463,7 +451,6 @@ def customer_reports():
             for user in users:
                 budget = to_dict_budget(user['latest_budget'][0] if user['latest_budget'] else None)
                 bill_counts = {status['_id']: status['count'] for status in user['bill_status_counts']} if user['bill_status_counts'] else {'pending': 0, 'paid': 0, 'overdue': 0}
-                learning_progress = user['learning_progress'][0]['total_lessons_completed'] if user['learning_progress'] else 0
                 tax_reminder = to_dict_tax_reminder(user['next_tax_reminder'][0] if user['next_tax_reminder'] else None)
                 data = {
                     'username': user['_id'],
@@ -478,7 +465,6 @@ def customer_reports():
                     'pending_bills': bill_counts.get('pending', 0),
                     'paid_bills': bill_counts.get('paid', 0),
                     'overdue_bills': bill_counts.get('overdue', 0),
-                    'lessons_completed': learning_progress,
                     'next_tax_due_date': utils.format_date(tax_reminder['due_date']) if tax_reminder['due_date'] else '-',
                     'next_tax_amount': tax_reminder['amount'] if tax_reminder['amount'] is not None else '-'
                 }
