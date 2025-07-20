@@ -209,7 +209,7 @@ def profit_loss():
                     user_query,
                     {'$inc': {'ficore_credit_balance': -1}}
                 )
-                db.ficore_credit_transactions.insert_one({
+                db.ficore_ficore_credit_transactions.insert_one({
                     'user_id': str(current_user.id),
                     'amount': -1,
                     'type': 'spend',
@@ -261,7 +261,7 @@ def debtors_creditors():
                     user_query,
                     {'$inc': {'ficore_credit_balance': -1}}
                 )
-                db.ficore_credit_transactions.insert_one({
+                db.ficore_ficore_credit_transactions.insert_one({
                     'user_id': str(current_user.id),
                     'amount': -1,
                     'type': 'spend',
@@ -313,7 +313,7 @@ def tax_obligations():
                     user_query,
                     {'$inc': {'ficore_credit_balance': -1}}
                 )
-                db.ficore_credit_transactions.insert_one({
+                db.ficore_ficore_credit_transactions.insert_one({
                     'user_id': str(current_user.id),
                     'amount': -1,
                     'type': 'spend',
@@ -377,7 +377,7 @@ def budget_performance():
                     user_query,
                     {'$inc': {'ficore_credit_balance': -1}}
                 )
-                db.ficore_credit_transactions.insert_one({
+                db.ficore_ficore_credit_transactions.insert_one({
                     'user_id': str(current_user.id),
                     'amount': -1,
                     'type': 'spend',
@@ -427,7 +427,7 @@ def credit_usage():
                 query['date'] = query.get('date', {}) | {'$lte': form.end_date.data}
             if form.transaction_type.data:
                 query['type'] = form.transaction_type.data
-            transactions = list(db.ficore_credit_transactions.find(query).sort('date', -1))
+            transactions = list(db.ficore_ficore_credit_transactions.find(query).sort('date', -1))
             output_format = request.form.get('format', 'html')
             if output_format == 'pdf':
                 return generate_credit_usage_pdf(transactions)
@@ -439,7 +439,7 @@ def credit_usage():
                     user_query,
                     {'$inc': {'ficore_credit_balance': -1}}
                 )
-                db.ficore_credit_transactions.insert_one({
+                db.ficore_ficore_credit_transactions.insert_one({
                     'user_id': str(current_user.id),
                     'amount': -1,
                     'type': 'spend',
@@ -451,7 +451,7 @@ def credit_usage():
             flash(trans('reports_generation_error', default='An error occurred'), 'danger')
     else:
         db = utils.get_mongo_db()
-        transactions = list(db.ficore_credit_transactions.find(query).sort('date', -1))
+        transactions = list(db.ficore_ficore_credit_transactions.find(query).sort('date', -1))
     return render_template(
         'reports/credit_usage.html',
         form=form,
