@@ -40,11 +40,119 @@ def index():
     """Render the personal finance dashboard."""
     try:
         current_app.logger.info(f"Accessing personal.index - User: {current_user.id}, Authenticated: {current_user.is_authenticated}, Session: {dict(session)}")
+        
+        # Hardcoded PERSONAL_TOOLS
+        hardcoded_tools = [
+            {
+                "endpoint": "personal.budget.main",
+                "label": "Budget",
+                "label_key": "budget_budget_planner",
+                "description_key": "budget_budget_desc",
+                "tooltip_key": "budget_tooltip",
+                "icon": "bi-wallet",
+                "url": url_for("personal.budget.main", _external=True)
+            },
+            {
+                "endpoint": "personal.bill.main",
+                "label": "Bills",
+                "label_key": "bill_bill_planner",
+                "description_key": "bill_bill_desc",
+                "tooltip_key": "bill_tooltip",
+                "icon": "bi-receipt",
+                "url": url_for("personal.bill.main", _external=True)
+            },
+            {
+                "endpoint": "personal.grocery.index",
+                "label": "Grocery Planner",
+                "label_key": "grocery_management",
+                "description_key": "grocery_management_desc",
+                "tooltip_key": "grocery_tooltip",
+                "icon": "bi-cart",
+                "url": url_for("personal.grocery.index", _external=True)
+            },
+            {
+                "endpoint": "credits.history",
+                "label": "Ficore Credits",
+                "label_key": "credits_your_wallet",
+                "description_key": "credits_your_wallet_desc",
+                "tooltip_key": "credits_your_wallet_tooltip",
+                "icon": "bi-coin",
+                "url": url_for("credits.history", _external=True)
+            },
+        ]
+
+        # Hardcoded PERSONAL_EXPLORE_FEATURES
+        hardcoded_features = [
+            {
+                "endpoint": "personal.budget.main",
+                "label": "Budget",
+                "label_key": "budget_budget_planner",
+                "description_key": "budget_budget_desc",
+                "tooltip_key": "budget_tooltip",
+                "icon": "bi-wallet",
+                "url": url_for("personal.budget.main", _external=True)
+            },
+            {
+                "endpoint": "personal.bill.main",
+                "label": "Bills",
+                "label_key": "bill_bill_planner",
+                "description_key": "bill_bill_desc",
+                "tooltip_key": "bill_tooltip",
+                "icon": "bi-receipt",
+                "url": url_for("personal.bill.main", _external=True)
+            },
+            {
+                "endpoint": "personal.grocery.index",
+                "label": "Grocery Planner",
+                "label_key": "grocery_management",
+                "description_key": "grocery_management_desc",
+                "tooltip_key": "grocery_tooltip",
+                "icon": "bi-cart",
+                "url": url_for("personal.grocery.index", _external=True)
+            },
+            {
+                "endpoint": "credits.request_credits",
+                "label": "Ficore Credits",
+                "label_key": "credits_dashboard",
+                "description_key": "credits_dashboard_desc",
+                "tooltip_key": "credits_tooltip",
+                "icon": "bi-coin",
+                "url": url_for("credits.request_credits", _external=True)
+            },
+            {
+                "endpoint": "credits.history",
+                "label": "Ficore Credits",
+                "label_key": "credits_your_wallet",
+                "description_key": "credits_your_wallet_desc",
+                "tooltip_key": "credits_your_wallet_tooltip",
+                "icon": "bi-coin",
+                "url": url_for("credits.history", _external=True)
+            },
+            {
+                "endpoint": "taxation_bp.calculate_tax",
+                "label": "Taxation",
+                "label_key": "taxation_calculator",
+                "description_key": "taxation_calculator_desc",
+                "tooltip_key": "taxation_tooltip",
+                "icon": "bi-calculator",
+                "url": url_for("taxation_bp.calculate_tax", _external=True)
+            },
+            {
+                "endpoint": "reports.budget_performance",
+                "label": "Reports",
+                "label_key": "personal_reports",
+                "description_key": "personal_reports_desc",
+                "tooltip_key": "personal_reports_tooltip",
+                "icon": "bi-journal-minus",
+                "url": url_for("reports.budget_performance", _external=True)
+            },
+        ]
+
         response = make_response(render_template(
             'personal/GENERAL/index.html',
             title=trans('general_welcome', lang=session.get('lang', 'en'), default='Welcome'),
-            tools_for_template=PERSONAL_TOOLS,
-            explore_features_for_template=PERSONAL_EXPLORE_FEATURES,
+            tools_for_template=hardcoded_tools,
+            explore_features_for_template=hardcoded_features,
             is_admin=is_admin(),
             is_anonymous=False,
             is_public=False
