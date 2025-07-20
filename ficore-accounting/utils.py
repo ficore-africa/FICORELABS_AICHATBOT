@@ -3,7 +3,7 @@ import logging
 import uuid
 import os
 import certifi
-from datetime import datetime
+from datetime import datetime, date
 from flask import session, has_request_context, current_app, url_for, request
 from flask_mail import Mail
 from flask_limiter import Limiter
@@ -131,7 +131,7 @@ _PERSONAL_NAV = [
         "label_key": "request_credits_dashboard",
         "description_key": "request_credits_dashboard_desc",
         "tooltip_key": "request_credits_tooltip",
-        "icon": "bi-coin"
+        " icon": "bi-coin"
     },
     {
         "endpoint": "settings.profile",
@@ -152,7 +152,6 @@ _PERSONAL_EXPLORE_FEATURES = [
         "tooltip_key": "budget_tooltip",
         "icon": "bi-wallet"
     },
-    
     {
         "endpoint": "personal.bill.main",
         "label": "Bills",
@@ -334,7 +333,7 @@ _BUSINESS_EXPLORE_FEATURES = [
         "endpoint": "reports.index",
         "label": "Reports",
         "label_key": "business_reports",
-        "description_key": "business_reports_desc",
+        "description_k ey": "business_reports_desc",
         "tooltip_key": "business_reports_tooltip",
         "icon": "bi-journal-minus"
     },
@@ -810,7 +809,7 @@ def clean_currency(value):
             extra={'session_id': session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'}
         )
         return 0.0
-        
+
 def trans_function(key, lang=None, **kwargs):
     """
     Translation function wrapper for backward compatibility.
@@ -1038,7 +1037,7 @@ def format_date(date_obj, lang=None, format_type='short'):
     Format date according to language preference.
     
     Args:
-        date_obj: Date object to format
+        date_obj: Date or datetime object to format
         lang: Language code
         format_type: 'short', 'long', or 'iso'
     
@@ -1051,6 +1050,7 @@ def format_date(date_obj, lang=None, format_type='short'):
                 lang = session.get('lang', 'en') if has_request_context() else 'en'
             if not date_obj:
                 return ''
+            # Handle string inputs
             if isinstance(date_obj, str):
                 try:
                     date_obj = datetime.strptime(date_obj, '%Y-%m-%d')
@@ -1058,7 +1058,15 @@ def format_date(date_obj, lang=None, format_type='short'):
                     try:
                         date_obj = datetime.fromisoformat(date_obj.replace('Z', '+00:00'))
                     except ValueError:
+                        logger.warning(f"Invalid date string: {date_obj}", extra={'session_id': session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'})
                         return date_obj
+            # Convert datetime.date to datetime.datetime
+            if isinstance(date_obj, date) and not isinstance(date_obj, datetime):
+                date_obj = datetime.combine(date_obj, datetime.min.time())
+            # Now date_obj should be datetime.datetime or invalid
+            if not isinstance(date_obj, datetime):
+                logger.warning(f"Invalid date object: {date_obj}", extra={'session_id': session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'})
+                return str(date_obj) if date_obj else ''
             if format_type == 'iso':
                 return date_obj.strftime('%Y-%m-%d')
             elif format_type == 'long':
@@ -1072,7 +1080,7 @@ def format_date(date_obj, lang=None, format_type='short'):
                 else:
                     return date_obj.strftime('%m/%d/%Y')
     except Exception as e:
-        logger.warning(f"{trans('general_date_format_error', default='Error formatting date')} {date_obj}: {str(e)}")
+        logger.warning(f"{trans('general_date_format_error', default='Error formatting date')} {date_obj}: {str(e)}", extra={'session_id': session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'})
         return str(date_obj) if date_obj else ''
 
 def sanitize_input(input_string, max_length=None):
