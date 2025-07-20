@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from translations import trans
 import utils
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, date
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
@@ -47,7 +47,6 @@ class BudgetPerformanceReportForm(FlaskForm):
     end_date = DateField(trans('reports_end_date', default='End Date'), validators=[Optional()])
     submit = SubmitField(trans('reports_generate_report', default='Generate Report'))
 
-
 def to_dict_budget(record):
     if not record:
         return {'surplus_deficit': None, 'savings_goal': None}
@@ -84,7 +83,6 @@ def to_dict_bill(record):
         'first_name': record.get('first_name', '')
     }
 
-
 def to_dict_tax_reminder(record):
     if not record:
         return {'tax_type': None, 'amount': None}
@@ -120,6 +118,10 @@ def to_dict_record(record):
 def to_dict_cashflow(record):
     if not record:
         return {'party_name': None, 'amount': None}
+    created_at = record.get('created_at')
+    # Convert datetime.date or datetime.datetime to string
+    if isinstance(created_at, (date, datetime)):
+        created_at = created_at.isoformat()
     return {
         'id': str(record.get('_id', '')),
         'user_id': record.get('user_id', ''),
@@ -128,10 +130,9 @@ def to_dict_cashflow(record):
         'amount': record.get('amount', 0),
         'method': record.get('method', ''),
         'category': record.get('category', ''),
-        'created_at': record.get('created_at'),
+        'created_at': created_at,
         'updated_at': record.get('updated_at')
     }
-
 
 @reports_bp.route('/')
 @login_required
@@ -144,7 +145,7 @@ def index():
             title=utils.trans('reports_index', default='Reports', lang=session.get('lang', 'en'))
         )
     except Exception as e:
-        logger.error(f"Error loading reports index for user {current_user.id}: {str(e)}")
+        logger.error(f"Error loading reports index for user {current_user.id}: {str(e)}", exc_info=True)
         flash(trans('reports_load_error', default='An error occurred'), 'danger')
         return redirect(url_for('dashboard.index'))
 
@@ -168,7 +169,7 @@ def profit_loss():
                 query['created_at'] = query.get('created_at', {}) | {'$lte': form.end_date.data}
             if form.category.data:
                 query['category'] = form.category.data
-            cashflows = list(db.cashflows.find(query).sort('created_at', -1))
+            cashflows = [to_dict_cashflow(cf) for cf in db.cashflows.find(query).sort('created_at', -1)]
             output_format = request.form.get('format', 'html')
             if output_format == 'pdf':
                 return generate_profit_loss_pdf(cashflows)
@@ -188,11 +189,15 @@ def profit_loss():
                     'ref': 'Profit/Loss report generation (Ficore Credits)'
                 })
         except Exception as e:
-            logger.error(f"Error generating profit/loss report for user {current_user.id}: {str(e)}")
+            logger.error(f"Error generating profit/loss report for user {current_user.id}: {str(e)}", exc_info=True)
             flash(trans('reports_generation_error', default='An error occurred'), 'danger')
     else:
-        db = utils.get_mongo_db()
-        cashflows = list(db.cashflows.find(query).sort('created_at', -1))
+        try:
+            db = utils.get_mongo_db()
+            cashflows = [to_dict_cashflow(cf) for cf in db.cashflows.find(query).sort('created_at', -1)]
+        except Exception as e:
+            logger.error(f"Error fetching cashflows for user {current_user.id}: {str(e)}", exc_info=True)
+            flash(trans('reports_generation_error', default='An error occurred'), 'danger')
     return render_template(
         'reports/profit_loss.html',
         form=form,
@@ -240,7 +245,7 @@ def debtors_creditors():
                     'ref': 'Debtors/Creditors report generation (Ficore Credits)'
                 })
         except Exception as e:
-            logger.error(f"Error generating debtors/creditors report for user {current_user.id}: {str(e)}")
+            logger.error(f"Error generating debtors/creditors report for user {current_user.id}: {str(e)}", exc_info=True)
             flash(trans('reports_generation_error', default='An error occurred'), 'danger')
     else:
         db = utils.get_mongo_db()
@@ -292,7 +297,7 @@ def tax_obligations():
                     'ref': 'Tax Obligations report generation (Ficore Credits)'
                 })
         except Exception as e:
-            logger.error(f"Error generating tax obligations report for user {current_user.id}: {str(e)}")
+            logger.error(f"Error generating tax obligations report for user {current_user.id}: {str(e)}", exc_info=True)
             flash(trans('reports_generation_error', default='An error occurred'), 'danger')
     else:
         db = utils.get_mongo_db()
@@ -309,6 +314,7 @@ def tax_obligations():
 @utils.requires_role('personal')
 def budget_performance():
     """Generate budget performance report with filters."""
+   Wind
     form = BudgetPerformanceReportForm()
     if not utils.is_admin() and not utils.check_ficore_credit_balance(1):
         flash(trans('debtors_insufficient_credits', default='Insufficient credits to generate a report. Request more credits.'), 'danger')
@@ -356,7 +362,7 @@ def budget_performance():
                     'ref': 'Budget Performance report generation (Ficore Credits)'
                 })
         except Exception as e:
-            logger.error(f"Error generating budget performance report for user {current_user.id}: {str(e)}")
+            logger.error(f"Error generating budget performance report for user {current_user.id}: {str(e)}", exc_info=True)
             flash(trans('reports_generation_error', default='An error occurred'), 'danger')
     else:
         db = utils.get_mongo_db()
@@ -377,7 +383,6 @@ def budget_performance():
         budget_data=budget_data,
         title=utils.trans('reports_budget_performance', default='Budget Performance Report', lang=session.get('lang', 'en'))
     )
-
 
 @reports_bp.route('/admin/customer-reports', methods=['GET', 'POST'])
 @login_required
@@ -471,7 +476,7 @@ def customer_reports():
             elif report_format == 'csv':
                 return generate_customer_report_csv(report_data)
         except Exception as e:
-            logger.error(f"Error generating customer report: {str(e)}")
+            logger.error(f"Error generating customer report: {str(e)}", exc_info=True)
             flash('An error occurred while generating the report', 'danger')
     return render_template('reports/customer_reports_form.html', form=form, title='Generate Customer Report')
 
