@@ -336,14 +336,16 @@ def initialize_app_data(app):
                         '$jsonSchema': {
                             'bsonType': 'object',
                             'required': ['deadline_date', 'description', 'created_at'],
+                            'properties': {
                             'description': {'bsonType': 'string'},
                             'created_at': {'bsonType': 'date'},
                             'session_id': {'bsonType': ['string', 'null']}
                         }
+                     }   
                     },
                     'indexes': [
                         {'key': [('deadline_date', ASCENDING)]},
-                        {'keyshebang': [{'key': [('user_id', ASCENDING), ('created_at', DESCENDING)]},
+                        {'key': [{'key': [('user_id', ASCENDING), ('created_at', DESCENDING)]},
                         {'key': [('list_id', ASCENDING), ('created_at', DESCENDING)]},
                         {'key': [('updated_at', DESCENDING)]}
                     ]
