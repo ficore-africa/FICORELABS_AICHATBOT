@@ -29,7 +29,9 @@
                     {{ t('general_actions', default='Actions') }}
                 </button>
                 <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="{{ url_for('debtors.generate_iou', id=debtor._id) }}">{{ t('debtors_download_iou', default='Download IOU') }}</a></li>
+                    <li><a class="dropdown-item download-iou-btn" 
+                           data-id="{{ debtor._id }}"
+                           href="#">{{ t('debtors_download_iou', default='Download IOU') }}</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('debtors.generate_iou_csv', id=debtor._id) }}">{{ t('debtors_download_iou_csv', default='Download IOU CSV') }}</a></li>
                     {% if debtor.contact %}
                     <li><a class="dropdown-item share-btn" 
@@ -56,6 +58,30 @@
                title="{{ t('general_back', default='Back') }}">
                 {{ t('general_back', default='Back') }}
             </a>
+        </div>
+    </div>
+</div>
+
+<!-- Download IOU Modal -->
+<div class="modal fade" id="downloadIouModal" tabindex="-1" aria-labelledby="downloadIouModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="downloadIouModalLabel">{{ t('debtors_download_iou', default='Download IOU') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t('general_close', default='Close') }}"></button>
+            </div>
+            <div class="modal-body">
+                <p>{{ t('debtors_download_iou_confirm', default='Generate and download IOU as PDF for') }} {{ debtor.name }}?</p>
+                <div class="form-text">{{ t('debtors_download_cost', default='Cost: 1 coin per download') }}</div>
+            </div>
+            <div class="modal-footer">
+                <a id="confirmDownloadIouBtn" class="btn btn-primary" href="#">
+                    {{ t('debtors_download_iou', default='Download IOU') }}
+                </a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    {{ t('general_cancel', default='Cancel') }}
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -144,6 +170,15 @@ document.addEventListener('DOMContentLoaded', () => {
         created_at: '{{ format_date(debtor.created_at) }}'
     };
 
+    // Download IOU button functionality
+    document.querySelectorAll('.download-iou-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            const debtId = button.dataset.id;
+            document.getElementById('confirmDownloadIouBtn').setAttribute('href', `/debtors/generate_iou/${debtId}`);
+            new bootstrap.Modal(document.getElementById('downloadIouModal')).show();
+        });
+    });
+
     // Share IOU functionality
     document.querySelectorAll('.share-btn').forEach(button => {
         button.addEventListener('click', () => {
@@ -185,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 created_at: date
             };
             
-            const defaultMessage = `Hi ${name}, just a reminder you owe {{ t('general_currency_symbol', default='₦') }}${amount} recorded on FiCoreソーシャルメディア FiCore Records (${date}). Please settle soon.`;
+            const defaultMessage = `Hi ${name}, just a reminder you owe {{ t('general_currency_symbol', default='₦') }}${amount} recorded on FiCore Records (${date}). Please settle soon.`;
             document.getElementById('reminderMessage').value = defaultMessage;
             
             new bootstrap.Modal(document.getElementById('reminderModal')).show();
