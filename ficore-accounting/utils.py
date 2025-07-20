@@ -162,6 +162,14 @@ _PERSONAL_EXPLORE_FEATURES = [
         "icon": "bi-receipt"
     },
     {
+        "endpoint": "credits.history",
+        "label": "Ficore Credits",
+        "label_key": "credits_your_wallet",
+        "description_key": "credits_your_wallet_desc",
+        "tooltip_key": "credits_your_wallet_tooltip",
+        "icon": "bi-coin"
+    },  
+    {
         "endpoint": "credits.request_credits",
         "label": "Ficore Credits",
         "label_key": "credits_dashboard",
@@ -170,12 +178,12 @@ _PERSONAL_EXPLORE_FEATURES = [
         "icon": "bi-coin"
     },
     {
-        "endpoint": "credits.history",
-        "label": "Ficore Credits",
-        "label_key": "credits_your_wallet",
-        "description_key": "credits_your_wallet_desc",
-        "tooltip_key": "credits_your_wallet_tooltip",
-        "icon": "bi-coin"
+        "endpoint": "taxation_bp.calculate_tax",
+        "label": "Taxation",
+        "label_key": "taxation_calculator",
+        "description_key": "taxation_calculator_desc",
+        "tooltip_key": "taxation_tooltip",
+        "icon": "bi-calculator"
     },
     {
         "endpoint": "reports.budget_performance",
@@ -184,14 +192,6 @@ _PERSONAL_EXPLORE_FEATURES = [
         "description_key": "personal_reports_desc",
         "tooltip_key": "personal_reports_tooltip",
         "icon": "bi-journal-minus"
-    },
-    {
-        "endpoint": "taxation_bp.calculate_tax",
-        "label": "Taxation",
-        "label_key": "taxation_calculator",
-        "description_key": "taxation_calculator_desc",
-        "tooltip_key": "taxation_tooltip",
-        "icon": "bi-calculator"
     },
 ]
 
