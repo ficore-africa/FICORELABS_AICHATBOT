@@ -631,4 +631,162 @@ def generate_tax_obligations_pdf(tax_reminders):
     total_amount = 0
     for tr in tax_reminders:
         p.drawString(1 * inch, y, utils.format_date(tr['due_date']))
-        p.drawString(2.5 * inch, y, tr['
+        p.drawString(2.5 * inch, y, tr['tax_type'])
+        p.drawString(4 * inch, y, utils.format_currency(tr['amount']))
+        p.drawString(5 * inch, y, trans(tr['status'], default=tr['status']))
+        total_amount += tr['amount']
+        y -= 0.3 * inch
+        if y < 1 * inch:
+            p.showPage()
+            y = 10.5 * inch
+    y -= 0.3 * inch
+    p.drawString(1 * inch, y, f"{trans('reports_total_tax_amount', default='Total Tax Amount')}: {utils.format_currency(total_amount)}")
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return Response(buffer, mimetype='application/pdf', headers={'Content-Disposition': 'attachment;filename=tax_obligations.pdf'})
+
+def generate_tax_obligations_csv(tax_reminders):
+    output = []
+    output.append([trans('general_due_date', default='Due Date'), trans('general_tax_type', default='Tax Type'), trans('general_amount', default='Amount'), trans('general_status', default='Status')])
+    total_amount = 0
+    for tr in tax_reminders:
+        output.append([utils.format_date(tr['due_date']), tr['tax_type'], utils.format_currency(tr['amount']), trans(tr['status'], default=tr['status'])])
+        total_amount += tr['amount']
+    output.append(['', '', f"{trans('reports_total_tax_amount', default='Total Tax Amount')}: {utils.format_currency(total_amount)}", ''])
+    buffer = BytesIO()
+    writer = csv.writer(buffer, lineterminator='\n')
+    writer.writerows(output)
+    buffer.seek(0)
+    return Response(buffer, mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=tax_obligations.csv'})
+
+def generate_budget_performance_pdf(budget_data):
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=A4)
+    p.setFont("Helvetica", 10)
+    p.drawString(1 * inch, 10.5 * inch, trans('reports_budget_performance_report', default='Budget Performance Report'))
+    p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
+    y = 9.5 * inch
+    p.setFillColor(colors.black)
+    headers = [
+        trans('general_date', default='Date'),
+        trans('general_income', default='Income'),
+        trans('general_actual_income', default='Actual Income'),
+        trans('general_income_variance', default='Income Variance'),
+        trans('general_fixed_expenses', default='Fixed Expenses'),
+        trans('general_variable_expenses', default='Variable Expenses'),
+        trans('general_actual_expenses', default='Actual Expenses'),
+        trans('general_expense_variance', default='Expense Variance')
+    ]
+    x_positions = [1 * inch + i * 0.9 * inch for i in range(len(headers))]
+    for header, x in zip(headers, x_positions):
+        p.drawString(x, y, header)
+    y -= 0.3 * inch
+    for bd in budget_data:
+        values = [
+            utils.format_date(bd['created_at']),
+            utils.format_currency(bd['income']),
+            utils.format_currency(bd['actual_income']),
+            utils.format_currency(bd['income_variance']),
+            utils.format_currency(bd['fixed_expenses']),
+            utils.format_currency(bd['variable_expenses']),
+            utils.format_currency(bd['actual_expenses']),
+            utils.format_currency(bd['expense_variance'])
+        ]
+        for value, x in zip(values, x_positions):
+            p.drawString(x, y, value)
+        y -= 0.3 * inch
+        if y < 1 * inch:
+            p.showPage()
+            y = 10.5 * inch
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return Response(buffer, mimetype='application/pdf', headers={'Content-Disposition': 'attachment;filename=budget_performance.pdf'})
+
+def generate_budget_performance_csv(budget_data):
+    output = []
+    output.append([
+        trans('general_date', default='Date'),
+        trans('general_income', default='Income'),
+        trans('general_actual_income', default='Actual Income'),
+        trans('general_income_variance', default='Income Variance'),
+        trans('general_fixed_expenses', default='Fixed Expenses'),
+        trans('general_variable_expenses', default='Variable Expenses'),
+        trans('general_actual_expenses', default='Actual Expenses'),
+        trans('general_expense_variance', default='Expense Variance')
+    ])
+    for bd in budget_data:
+        output.append([
+            utils.format_date(bd['created_at']),
+            utils.format_currency(bd['income']),
+            utils.format_currency(bd['actual_income']),
+            utils.format_currency(bd['income_variance']),
+            utils.format_currency(bd['fixed_expenses']),
+            utils.format_currency(bd['variable_expenses']),
+            utils.format_currency(bd['actual_expenses']),
+            utils.format_currency(bd['expense_variance'])
+        ])
+    buffer = BytesIO()
+    writer = csv.writer(buffer, lineterminator='\n')
+    writer.writerows(output)
+    buffer.seek(0)
+    return Response(buffer, mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=budget_performance.csv'})
+
+def generate_customer_report_pdf(report_data):
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=A4)
+    p.setFont("Helvetica", 8)
+    p.drawString(0.5 * inch, 10.5 * inch, trans('reports_customer_report', default='Customer Report'))
+    p.drawString(0.5 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
+    y = 9.5 * inch
+    headers = [
+        'Username', 'Email', 'Role', 'Credits', 'Lang',
+        'Income', 'Fixed Exp', 'Var Exp', 'Surplus',
+        'Pending Bills', 'Paid Bills', 'Overdue Bills',
+        'Lessons', 'Tax Due', 'Tax Amt'
+    ]
+    x_positions = [0.5 * inch + i * 0.3 * inch for i in range(len(headers))]
+    for header, x in zip(headers, x_positions):
+        p.drawString(x, y, header)
+    y -= 0.2 * inch
+    for data in report_data:
+        values = [
+            data['username'], data['email'], data['role'], str(data['ficore_credit_balance']), data['language'],
+            str(data['budget_income']), str(data['budget_fixed_expenses']), str(data['budget_variable_expenses']), str(data['budget_surplus_deficit']),
+            str(data['pending_bills']), str(data['paid_bills']), str(data['overdue_bills']),
+            str(data['lessons_completed']), data['next_tax_due_date'], str(data['next_tax_amount'])
+        ]
+        for value, x in zip(values, x_positions):
+            p.drawString(x, y, str(value)[:15])  # Truncate long values
+        y -= 0.2 * inch
+        if y < 0.5 * inch:
+            p.showPage()
+            y = 10.5 * inch
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return Response(buffer, mimetype='application/pdf', headers={'Content-Disposition': 'attachment;filename=customer_report.pdf'})
+
+def generate_customer_report_csv(report_data):
+    output = []
+    headers = [
+        'Username', 'Email', 'Role', 'Ficore Credit Balance', 'Language',
+        'Budget Income', 'Budget Fixed Expenses', 'Budget Variable Expenses', 'Budget Surplus/Deficit',
+        'Pending Bills', 'Paid Bills', 'Overdue Bills',
+        'Lessons Completed', 'Next Tax Due Date', 'Next Tax Amount'
+    ]
+    output.append(headers)
+    for data in report_data:
+        row = [
+            data['username'], data['email'], data['role'], data['ficore_credit_balance'], data['language'],
+            data['budget_income'], data['budget_fixed_expenses'], data['budget_variable_expenses'], data['budget_surplus_deficit'],
+            data['pending_bills'], data['paid_bills'], data['overdue_bills'],
+            data['lessons_completed'], data['next_tax_due_date'], data['next_tax_amount']
+        ]
+        output.append(row)
+    buffer = BytesIO()
+    writer = csv.writer(buffer, lineterminator='\n')
+    writer.writerows(output)
+    buffer.seek(0)
+    return Response(buffer, mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=customer_report.csv'})
