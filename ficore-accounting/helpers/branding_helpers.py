@@ -29,9 +29,18 @@ def draw_ficore_pdf_header(canvas, user, y_start=10.5):
     y_separator = y_start - header_height + 0.05  # separator stays nicely at bottom
 
     # Background rectangle for header
+# Assuming y_start is top (e.g., 11 for Letter), y_separator is the Y position of the red line
     canvas.setFillColor(FICORE_HEADER_BG)
-    canvas.rect(0, y_separator * inch, 8.5 * inch, header_height * inch, fill=1, stroke=0)
+    canvas.rect(
+        0,      # X (start at left)
+        y_separator * inch,      # Y (bottom of header, at red line)
+        8.5 * inch,              # Width of page
+        (y_start - y_separator) * inch,  # Height from top to red line
+        fill=1,
+        stroke=0
+    )
     canvas.setFillColor(colors.black)  # Reset fill color
+
 
     # Draw logo
     try:
