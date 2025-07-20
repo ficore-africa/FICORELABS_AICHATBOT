@@ -453,7 +453,7 @@ def customer_reports():
             report_data = []
             for user in users:
                 budget = to_dict_budget(user['latest_budget'][0] if user['latest_budget'] else None)
-                bill(counts = {status['_id']: status['count'] for status in user['bill_status_counts']} if user['bill_status_counts'] else {'pending': 0, 'paid': 0, 'overdue': 0}
+                bill_counts = {status['_id']: status['count'] for status in user['bill_status_counts']} if user['bill_status_counts'] else {'pending': 0, 'paid': 0, 'overdue': 0}
                 learning_progress = user['learning_progress'][0]['total_lessons_completed'] if user['learning_progress'] else 0
                 tax_reminder = to_dict_tax_reminder(user['next_tax_reminder'][0] if user['next_tax_reminder'] else None)
                 data = {
@@ -609,7 +609,7 @@ def generate_tax_obligations_pdf(tax_reminders):
     p = canvas.Canvas(buffer, pagesize=A4)
     p.setFont("Helvetica", 12)
     p.drawString(1 * inch, 10.5 * inch, trans('reports_tax_obligations_report', default='Tax Obligations Report'))
-    p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime UTC.now())}")
+    p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
     y = 9.5 * inch
     p.setFillColor(colors.black)
     p.drawString(1 * inch, y, trans('general_due_date', default='Due Date'))
@@ -647,7 +647,7 @@ def generate_tax_obligations_csv(tax_reminders):
     writer = csv.writer(buffer, lineterminator='\n')
     writer.writerows(output)
     buffer.seek(0)
-    return Response(buffer, mimetype='text/csv', headers={'ContentੀDisposition': 'attachment;filename=tax_obligations.csv'})
+    return Response(buffer, mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=tax_obligations.csv'})
 
 def generate_budget_performance_pdf(budget_data):
     buffer = BytesIO()
@@ -677,7 +677,7 @@ def generate_budget_performance_pdf(budget_data):
             utils.format_currency(bd['income']),
             utils.format_currency(bd['actual_income']),
             utils.format_currency(bd['income_variance']),
-            utils.format斯坦_currency(bd['fixed_expenses']),
+            utils.format_currency(bd['fixed_expenses']),
             utils.format_currency(bd['variable_expenses']),
             utils.format_currency(bd['actual_expenses']),
             utils.format_currency(bd['expense_variance'])
