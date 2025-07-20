@@ -228,7 +228,7 @@ def profit_loss():
                 end_datetime = datetime.combine(form.end_date.data, datetime.max.time())
                 query['created_at'] = query.get('created_at', {}) | {'$lte': end_datetime}
             cashflows = [to_dict_cashflow(cf) for cf in db.cashflows.find(query).sort('created_at', -1)]
-            output_format = request.form.get('format', 'html')
+            output_format = request.form.get('format', ' Loy')
             if output_format == 'pdf':
                 return generate_profit_loss_pdf(cashflows)
             elif output_format == 'csv':
@@ -626,17 +626,17 @@ def generate_profit_loss_pdf(cashflows):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
     # Page setup
-    header_height = 0.7  # From draw_ficore_pdf_header
-    extra_space = 0.2
-    row_height = 0.3
+    header_height = 0.7
+    extra_space = 0.1
+    row_height = 0.25
     bottom_margin = 0.5
     max_y = 10.5
     title_y = max_y - header_height - extra_space
-    page_height = (max_y - bottom_margin) * inch
-    rows_per_page = int((page_height - (title_y - 0.6) * inch) / (row_height * inch))
+    rows_per_page = int((max_y - bottom_margin - (title_y - 0.4)) * inch / (row_height * inch))
 
     def draw_table_headers(y):
         p.setFillColor(colors.black)
+        p.setFont("Helvetica", 10)
         p.drawString(1 * inch, y * inch, trans('general_date', default='Date'))
         p.drawString(2.5 * inch, y * inch, trans('general_party_name', default='Party Name'))
         p.drawString(4 * inch, y * inch, trans('general_type', default='Type'))
@@ -648,23 +648,26 @@ def generate_profit_loss_pdf(cashflows):
     p.setFont("Helvetica", 12)
     p.drawString(1 * inch, title_y * inch, trans('reports_profit_loss_report', default='Profit/Loss Report'))
     p.drawString(1 * inch, (title_y - 0.3) * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
-    y = title_y - 0.6
+    y = title_y - 0.4
     y = draw_table_headers(y)
 
     total_income = 0
     total_expense = 0
     row_count = 0
 
+    logger.info(f"Generating PDF with {len(cashflows)} cashflow records, rows_per_page={rows_per_page}")
+
     for t in cashflows:
         if row_count >= rows_per_page:
             p.showPage()
             draw_ficore_pdf_header(p, current_user, y_start=max_y)
-            y = title_y - 0.6
+            y = title_y - 0.4
             y = draw_table_headers(y)
             row_count = 0
 
+        p.setFont("Helvetica", 10)
         p.drawString(1 * inch, y * inch, utils.format_date(t['created_at']))
-        p.drawString(2.5 * inch, y * inch, t['party_name'])
+        p.drawString(2.5 * inch, y * inch, t['party_name'][:20])
         p.drawString(4 * inch, y * inch, trans(t['type'], default=t['type']))
         p.drawString(5 * inch, y * inch, utils.format_currency(t['amount']))
         if t['type'] == 'receipt':
@@ -674,9 +677,10 @@ def generate_profit_loss_pdf(cashflows):
         y -= row_height
         row_count += 1
 
-    # Draw totals on the same page if there's space
-    if row_count + 3 <= rows_per_page:
+    total_lines = 3
+    if row_count + total_lines <= rows_per_page:
         y -= row_height
+        p.setFont("Helvetica", 10)
         p.drawString(1 * inch, y * inch, f"{trans('reports_total_income', default='Total Income')}: {utils.format_currency(total_income)}")
         y -= row_height
         p.drawString(1 * inch, y * inch, f"{trans('reports_total_expense', default='Total Expense')}: {utils.format_currency(total_expense)}")
@@ -685,7 +689,8 @@ def generate_profit_loss_pdf(cashflows):
     else:
         p.showPage()
         draw_ficore_pdf_header(p, current_user, y_start=max_y)
-        y = title_y - 0.6
+        y = title_y - 0.4
+        p.setFont("Helvetica", 10)
         p.drawString(1 * inch, y * inch, f"{trans('reports_total_income', default='Total Income')}: {utils.format_currency(total_income)}")
         y -= row_height
         p.drawString(1 * inch, y * inch, f"{trans('reports_total_expense', default='Total Expense')}: {utils.format_currency(total_expense)}")
@@ -722,16 +727,16 @@ def generate_debtors_creditors_pdf(records):
     p = canvas.Canvas(buffer, pagesize=A4)
     # Page setup
     header_height = 0.7
-    extra_space = 0.2
-    row_height = 0.3
+    extra_space = 0.1
+    row_height = 0.25
     bottom_margin = 0.5
     max_y = 10.5
     title_y = max_y - header_height - extra_space
-    page_height = (max_y - bottom_margin) * inch
-    rows_per_page = int((page_height - (title_y - 0.6) * inch) / (row_height * inch))
+    rows_per_page = int((max_y - bottom_margin - (title_y - 0.4)) * inch / (row_height * inch))
 
     def draw_table_headers(y):
         p.setFillColor(colors.black)
+        p.setFont("Helvetica", 10)
         p.drawString(1 * inch, y * inch, trans('general_date', default='Date'))
         p.drawString(2.5 * inch, y * inch, trans('general_name', default='Name'))
         p.drawString(4 * inch, y * inch, trans('general_type', default='Type'))
@@ -744,7 +749,7 @@ def generate_debtors_creditors_pdf(records):
     p.setFont("Helvetica", 12)
     p.drawString(1 * inch, title_y * inch, trans('reports_debtors_creditors_report', default='Debtors/Creditors Report'))
     p.drawString(1 * inch, (title_y - 0.3) * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
-    y = title_y - 0.6
+    y = title_y - 0.4
     y = draw_table_headers(y)
 
     total_debtors = 0
@@ -755,12 +760,13 @@ def generate_debtors_creditors_pdf(records):
         if row_count >= rows_per_page:
             p.showPage()
             draw_ficore_pdf_header(p, current_user, y_start=max_y)
-            y = title_y - 0.6
+            y = title_y - 0.4
             y = draw_table_headers(y)
             row_count = 0
 
+        p.setFont("Helvetica", 10)
         p.drawString(1 * inch, y * inch, utils.format_date(r['created_at']))
-        p.drawString(2.5 * inch, y * inch, r['name'])
+        p.drawString(2.5 * inch, y * inch, r['name'][:20])
         p.drawString(4 * inch, y * inch, trans(r['type'], default=r['type']))
         p.drawString(5 * inch, y * inch, utils.format_currency(r['amount_owed']))
         p.drawString(6.5 * inch, y * inch, r.get('description', '')[:20])
@@ -771,15 +777,18 @@ def generate_debtors_creditors_pdf(records):
         y -= row_height
         row_count += 1
 
-    if row_count + 2 <= rows_per_page:
+    total_lines = 2
+    if row_count + total_lines <= rows_per_page:
         y -= row_height
+        p.setFont("Helvetica", 10)
         p.drawString(1 * inch, y * inch, f"{trans('reports_total_debtors', default='Total Debtors')}: {utils.format_currency(total_debtors)}")
         y -= row_height
         p.drawString(1 * inch, y * inch, f"{trans('reports_total_creditors', default='Total Creditors')}: {utils.format_currency(total_creditors)}")
     else:
         p.showPage()
         draw_ficore_pdf_header(p, current_user, y_start=max_y)
-        y = title_y - 0.6
+        y = title_y - 0.4
+        p.setFont("Helvetica", 10)
         p.drawString(1 * inch, y * inch, f"{trans('reports_total_debtors', default='Total Debtors')}: {utils.format_currency(total_debtors)}")
         y -= row_height
         p.drawString(1 * inch, y * inch, f"{trans('reports_total_creditors', default='Total Creditors')}: {utils.format_currency(total_creditors)}")
@@ -813,16 +822,16 @@ def generate_tax_obligations_pdf(tax_reminders):
     p = canvas.Canvas(buffer, pagesize=A4)
     # Page setup
     header_height = 0.7
-    extra_space = 0.2
-    row_height = 0.3
+    extra_space = 0.1
+    row_height = 0.25
     bottom_margin = 0.5
     max_y = 10.5
     title_y = max_y - header_height - extra_space
-    page_height = (max_y - bottom_margin) * inch
-    rows_per_page = int((page_height - (title_y - 0.6) * inch) / (row_height * inch))
+    rows_per_page = int((max_y - bottom_margin - (title_y - 0.4)) * inch / (row_height * inch))
 
     def draw_table_headers(y):
         p.setFillColor(colors.black)
+        p.setFont("Helvetica", 10)
         p.drawString(1 * inch, y * inch, trans('general_due_date', default='Due Date'))
         p.drawString(2.5 * inch, y * inch, trans('general_tax_type', default='Tax Type'))
         p.drawString(4 * inch, y * inch, trans('general_amount', default='Amount'))
@@ -834,7 +843,7 @@ def generate_tax_obligations_pdf(tax_reminders):
     p.setFont("Helvetica", 12)
     p.drawString(1 * inch, title_y * inch, trans('reports_tax_obligations_report', default='Tax Obligations Report'))
     p.drawString(1 * inch, (title_y - 0.3) * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
-    y = title_y - 0.6
+    y = title_y - 0.4
     y = draw_table_headers(y)
 
     total_amount = 0
@@ -844,25 +853,29 @@ def generate_tax_obligations_pdf(tax_reminders):
         if row_count >= rows_per_page:
             p.showPage()
             draw_ficore_pdf_header(p, current_user, y_start=max_y)
-            y = title_y - 0.6
+            y = title_y - 0.4
             y = draw_table_headers(y)
             row_count = 0
 
+        p.setFont("Helvetica", 10)
         p.drawString(1 * inch, y * inch, utils.format_date(tr['due_date']))
-        p.drawString(2.5 * inch, y * inch, tr['tax_type'])
+        p.drawString(2.5 * inch, y * inch, tr['tax_type'][:20])
         p.drawString(4 * inch, y * inch, utils.format_currency(tr['amount']))
         p.drawString(5 * inch, y * inch, trans(tr['status'], default=tr['status']))
         total_amount += tr['amount']
         y -= row_height
         row_count += 1
 
-    if row_count + 1 <= rows_per_page:
+    total_lines = 1
+    if row_count + total_lines <= rows_per_page:
         y -= row_height
+        p.setFont("Helvetica", 10)
         p.drawString(1 * inch, y * inch, f"{trans('reports_total_tax_amount', default='Total Tax Amount')}: {utils.format_currency(total_amount)}")
     else:
         p.showPage()
         draw_ficore_pdf_header(p, current_user, y_start=max_y)
-        y = title_y - 0.6
+        y = title_y - 0.4
+        p.setFont("Helvetica", 10)
         p.drawString(1 * inch, y * inch, f"{trans('reports_total_tax_amount', default='Total Tax Amount')}: {utils.format_currency(total_amount)}")
 
     p.save()
@@ -889,16 +902,16 @@ def generate_budget_performance_pdf(budget_data):
     p = canvas.Canvas(buffer, pagesize=A4)
     # Page setup
     header_height = 0.7
-    extra_space = 0.2
-    row_height = 0.3
+    extra_space = 0.1
+    row_height = 0.25
     bottom_margin = 0.5
     max_y = 10.5
     title_y = max_y - header_height - extra_space
-    page_height = (max_y - bottom_margin) * inch
-    rows_per_page = int((page_height - (title_y - 0.6) * inch) / (row_height * inch))
+    rows_per_page = int((max_y - bottom_margin - (title_y - 0.4)) * inch / (row_height * inch))
 
     def draw_table_headers(y):
         p.setFillColor(colors.black)
+        p.setFont("Helvetica", 10)
         headers = [
             trans('general_date', default='Date'),
             trans('general_income', default='Income'),
@@ -916,10 +929,10 @@ def generate_budget_performance_pdf(budget_data):
 
     # Initialize first page
     draw_ficore_pdf_header(p, current_user, y_start=max_y)
-    p.setFont("Helvetica", 10)
+    p.setFont("Helvetica", 12)
     p.drawString(1 * inch, title_y * inch, trans('reports_budget_performance_report', default='Budget Performance Report'))
     p.drawString(1 * inch, (title_y - 0.3) * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
-    y = title_y - 0.6
+    y = title_y - 0.4
     y, x_positions = draw_table_headers(y)
 
     row_count = 0
@@ -927,10 +940,11 @@ def generate_budget_performance_pdf(budget_data):
         if row_count >= rows_per_page:
             p.showPage()
             draw_ficore_pdf_header(p, current_user, y_start=max_y)
-            y = title_y - 0.6
+            y = title_y - 0.4
             y, x_positions = draw_table_headers(y)
             row_count = 0
 
+        p.setFont("Helvetica", 10)
         values = [
             utils.format_date(bd['created_at']),
             utils.format_currency(bd['income']),
@@ -942,7 +956,7 @@ def generate_budget_performance_pdf(budget_data):
             utils.format_currency(bd['expense_variance'])
         ]
         for value, x in zip(values, x_positions):
-            p.drawString(x, y * inch, value)
+            p.drawString(x, y * inch, value[:20])
         y -= row_height
         row_count += 1
 
@@ -985,14 +999,13 @@ def generate_grocery_report_pdf(grocery_data):
     p = canvas.Canvas(buffer, pagesize=A4)
     # Page setup
     header_height = 0.7
-    extra_space = 0.2
-    row_height = 0.3
+    extra_space = 0.1
+    row_height = 0.25
     section_space = 0.5
     bottom_margin = 0.5
     max_y = 10.5
     title_y = max_y - header_height - extra_space
-    page_height = (max_y - bottom_margin) * inch
-    rows_per_page = int((page_height - (title_y - 0.6) * inch) / (row_height * inch))
+    rows_per_page = int((max_y - bottom_margin - (title_y - 0.4)) * inch / (row_height * inch))
 
     def draw_list_headers(y):
         p.setFont("Helvetica", 10)
@@ -1022,7 +1035,7 @@ def generate_grocery_report_pdf(grocery_data):
         x_positions = [1 * inch, 2 * inch, 3 * inch, 3.5 * inch, 4 * inch, 4.8 * inch, 5.5 * inch]
         for header, x in zip(headers, x_positions):
             p.drawString(x, y * inch, header)
-        return y - row_height, x_positions
+        return y - row_height x_positions
 
     def draw_suggestion_headers(y):
         p.setFont("Helvetica", 10)
@@ -1044,7 +1057,7 @@ def generate_grocery_report_pdf(grocery_data):
     p.setFont("Helvetica", 12)
     p.drawString(1 * inch, title_y * inch, trans('reports_grocery_report', default='Grocery Report'))
     p.drawString(1 * inch, (title_y - 0.3) * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
-    y = title_y - 0.6
+    y = title_y - 0.4
 
     # Grocery Lists Section
     p.setFont("Helvetica-Bold", 12)
@@ -1053,19 +1066,20 @@ def generate_grocery_report_pdf(grocery_data):
     y, x_positions = draw_list_headers(y)
     total_budget = 0
     total_spent = 0
-    row_count = 0
+    row_count = 2  # Account for section title and headers
 
     for lst in grocery_data['lists']:
         if row_count >= rows_per_page:
             p.showPage()
             draw_ficore_pdf_header(p, current_user, y_start=max_y)
-            y = title_y - 0.6
+            y = title_y - 0.4
             p.setFont("Helvetica-Bold", 12)
             p.drawString(1 * inch, y * inch, trans('grocery_lists', default='Grocery Lists'))
             y -= row_height
             y, x_positions = draw_list_headers(y)
-            row_count = 0
+            row_count = 2
 
+        p.setFont("Helvetica", 10)
         p.drawString(x_positions[0], y * inch, utils.format_date(lst['created_at']))
         p.drawString(x_positions[1], y * inch, lst['name'][:20])
         p.drawString(x_positions[2], y * inch, utils.format_currency(lst['budget']))
@@ -1076,25 +1090,29 @@ def generate_grocery_report_pdf(grocery_data):
         y -= row_height
         row_count += 1
 
-    if row_count + 2 <= rows_per_page:
+    total_lines = 2
+    if row_count + total_lines <= rows_per_page:
         y -= row_height
+        p.setFont("Helvetica", 10)
         p.drawString(x_positions[0], y * inch, f"{trans('grocery_total_budget', default='Total Budget')}: {utils.format_currency(total_budget)}")
         y -= row_height
         p.drawString(x_positions[0], y * inch, f"{trans('grocery_total_spent', default='Total Spent')}: {utils.format_currency(total_spent)}")
     else:
         p.showPage()
         draw_ficore_pdf_header(p, current_user, y_start=max_y)
-        y = title_y - 0.6
+        y = title_y - 0.4
+        p.setFont("Helvetica", 10)
         p.drawString(x_positions[0], y * inch, f"{trans('grocery_total_budget', default='Total Budget')}: {utils.format_currency(total_budget)}")
         y -= row_height
         p.drawString(x_positions[0], y * inch, f"{trans('grocery_total_spent', default='Total Spent')}: {utils.format_currency(total_spent)}")
     y -= section_space
+    row_count += total_lines
 
     # Grocery Items Section
     if row_count + 3 >= rows_per_page:
         p.showPage()
         draw_ficore_pdf_header(p, current_user, y_start=max_y)
-        y = title_y - 0.6
+        y = title_y - 0.4
         row_count = 0
     p.setFont("Helvetica-Bold", 12)
     p.drawString(1 * inch, y * inch, trans('grocery_items', default='Grocery Items'))
@@ -1107,13 +1125,14 @@ def generate_grocery_report_pdf(grocery_data):
         if row_count >= rows_per_page:
             p.showPage()
             draw_ficore_pdf_header(p, current_user, y_start=max_y)
-            y = title_y - 0.6
+            y = title_y - 0.4
             p.setFont("Helvetica-Bold", 12)
             p.drawString(1 * inch, y * inch, trans('grocery_items', default='Grocery Items'))
             y -= row_height
             y, x_positions = draw_item_headers(y)
-            row_count = 0
+            row_count = 2
 
+        p.setFont("Helvetica", 10)
         p.drawString(x_positions[0], y * inch, utils.format_date(item['created_at']))
         p.drawString(x_positions[1], y * inch, item['name'][:20])
         p.drawString(x_positions[2], y * inch, str(item['quantity']))
@@ -1125,21 +1144,25 @@ def generate_grocery_report_pdf(grocery_data):
         y -= row_height
         row_count += 1
 
-    if row_count + 1 <= rows_per_page:
+    total_lines = 1
+    if row_count + total_lines <= rows_per_page:
         y -= row_height
+        p.setFont("Helvetica", 10)
         p.drawString(x_positions[0], y * inch, f"{trans('grocery_total_price', default='Total Price')}: {utils.format_currency(total_price)}")
     else:
         p.showPage()
         draw_ficore_pdf_header(p, current_user, y_start=max_y)
-        y = title_y - 0.6
+        y = title_y - 0.4
+        p.setFont("Helvetica", 10)
         p.drawString(x_positions[0], y * inch, f"{trans('grocery_total_price', default='Total Price')}: {utils.format_currency(total_price)}")
     y -= section_space
+    row_count += total_lines
 
     # Suggestions Section
     if row_count + 3 >= rows_per_page:
         p.showPage()
         draw_ficore_pdf_header(p, current_user, y_start=max_y)
-        y = title_y - 0.6
+        y = title_y - 0.4
         row_count = 0
     p.setFont("Helvetica-Bold", 12)
     p.drawString(1 * inch, y * inch, trans('grocery_suggestions', default='Suggestions'))
@@ -1152,13 +1175,14 @@ def generate_grocery_report_pdf(grocery_data):
         if row_count >= rows_per_page:
             p.showPage()
             draw_ficore_pdf_header(p, current_user, y_start=max_y)
-            y = title_y - 0.6
+            y = title_y - 0.4
             p.setFont("Helvetica-Bold", 12)
             p.drawString(1 * inch, y * inch, trans('grocery_suggestions', default='Suggestions'))
             y -= row_height
             y, x_positions = draw_suggestion_headers(y)
-            row_count = 0
+            row_count = 2
 
+        p.setFont("Helvetica", 10)
         p.drawString(x_positions[0], y * inch, utils.format_date(sug['created_at']))
         p.drawString(x_positions[1], y * inch, sug['name'][:20])
         p.drawString(x_positions[2], y * inch, str(sug['quantity']))
@@ -1169,13 +1193,16 @@ def generate_grocery_report_pdf(grocery_data):
         y -= row_height
         row_count += 1
 
-    if row_count + 1 <= rows_per_page:
+    total_lines = 1
+    if row_count + total_lines <= rows_per_page:
         y -= row_height
+        p.setFont("Helvetica", 10)
         p.drawString(x_positions[0], y * inch, f"{trans('grocery_total_suggestion_price', default='Total Suggestion Price')}: {utils.format_currency(total_suggestion_price)}")
     else:
         p.showPage()
         draw_ficore_pdf_header(p, current_user, y_start=max_y)
-        y = title_y - 0.6
+        y = title_y - 0.4
+        p.setFont("Helvetica", 10)
         p.drawString(x_positions[0], y * inch, f"{trans('grocery_total_suggestion_price', default='Total Suggestion Price')}: {utils.format_currency(total_suggestion_price)}")
 
     p.save()
@@ -1270,16 +1297,16 @@ def generate_customer_report_pdf(report_data):
     p = canvas.Canvas(buffer, pagesize=A4)
     # Page setup
     header_height = 0.7
-    extra_space = 0.2
+    extra_space = 0.1
     row_height = 0.2
     bottom_margin = 0.5
     max_y = 10.5
     title_y = max_y - header_height - extra_space
-    page_height = (max_y - bottom_margin) * inch
-    rows_per_page = int((page_height - (title_y - 0.6) * inch) / (row_height * inch))
+    rows_per_page = int((max_y - bottom_margin - (title_y - 0.4)) * inch / (row_height * inch))
 
     def draw_table_headers(y):
         p.setFillColor(colors.black)
+        p.setFont("Helvetica", 8)
         headers = [
             'Username', 'Email', 'Role', 'Credits', 'Lang',
             'Income', 'Fixed Exp', 'Var Exp', 'Surplus',
@@ -1293,10 +1320,10 @@ def generate_customer_report_pdf(report_data):
 
     # Initialize first page
     draw_ficore_pdf_header(p, current_user, y_start=max_y)
-    p.setFont("Helvetica", 8)
+    p.setFont("Helvetica", 10)
     p.drawString(0.5 * inch, title_y * inch, trans('reports_customer_report', default='Customer Report'))
     p.drawString(0.5 * inch, (title_y - 0.3) * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
-    y = title_y - 0.6
+    y = title_y - 0.4
     y, x_positions = draw_table_headers(y)
 
     row_count = 0
@@ -1304,10 +1331,11 @@ def generate_customer_report_pdf(report_data):
         if row_count >= rows_per_page:
             p.showPage()
             draw_ficore_pdf_header(p, current_user, y_start=max_y)
-            y = title_y - 0.6
+            y = title_y - 0.4
             y, x_positions = draw_table_headers(y)
             row_count = 0
 
+        p.setFont("Helvetica", 8)
         values = [
             data['username'], data['email'], data['role'], str(data['ficore_credit_balance']), data['language'],
             str(data['budget_income']), str(data['budget_fixed_expenses']), str(data['budget_variable_expenses']), str(data['budget_surplus_deficit']),
