@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, current_app, redirect, url_for, flash, render_template, request, session, make_response
 from flask_login import current_user, login_required
-from utils import requires_role, is_admin, get_mongo_db, limiter
+from utils import requires_role, is_admin, get_mongo_db, limiter, PERSONAL_TOOLS, PERSONAL_EXPLORE_FEATURES
 import utils
 from translations import trans
 import logging
@@ -14,15 +14,17 @@ personal_bp = Blueprint('personal', __name__, url_prefix='/personal', template_f
 from personal.bill import bill_bp
 from personal.budget import budget_bp
 from personal.summaries import summaries_bp
+from personal.grocery import grocery_bp
 
 personal_bp.register_blueprint(bill_bp)
 personal_bp.register_blueprint(budget_bp)
 personal_bp.register_blueprint(summaries_bp)
+personal_bp.register_blueprint(grocery_bp)
 
 def init_app(app):
     """Initialize all personal finance sub-blueprints."""
     try:
-        for blueprint in [bill_bp, budget_bp, summaries_bp]:
+        for blueprint in [bill_bp, budget_bp, summaries_bp, grocery_bp]:
             if hasattr(blueprint, 'init_app'):
                 blueprint.init_app(app)
                 current_app.logger.info(f"Initialized {blueprint.name} blueprint", extra={'session_id': 'no-request-context'})
@@ -41,8 +43,8 @@ def index():
         response = make_response(render_template(
             'personal/GENERAL/index.html',
             title=trans('general_welcome', lang=session.get('lang', 'en'), default='Welcome'),
-            tools_for_template=utils.PERSONAL_TOOLS,
-            explore_features_for_template=utils.PERSONAL_EXPLORE_FEATURES,
+            tools_for_template=PERSONAL_TOOLS,
+            explore_features_for_template=PERSONAL_EXPLORE_FEATURES,
             is_admin=is_admin(),
             is_anonymous=False,
             is_public=False
