@@ -22,7 +22,6 @@ reports_bp = Blueprint('reports', __name__, url_prefix='/reports')
 class ReportForm(FlaskForm):
     start_date = DateField(trans('reports_start_date', default='Start Date'), validators=[Optional()])
     end_date = DateField(trans('reports_end_date', default='End Date'), validators=[Optional()])
-    category = StringField(trans('general_category', default='Category'), validators=[Optional()])
     submit = SubmitField(trans('reports_generate_report', default='Generate Report'))
 
 class CustomerReportForm(FlaskForm):
@@ -118,17 +117,21 @@ def to_dict_record(record):
 def to_dict_cashflow(record):
     if not record:
         return {'party_name': None, 'amount': None}
-    return {
+    result = {
         'id': str(record.get('_id', '')),
         'user_id': record.get('user_id', ''),
         'type': record.get('type', ''),
         'party_name': record.get('party_name', ''),
         'amount': record.get('amount', 0),
         'method': record.get('method', ''),
-        'category': record.get('category', ''),
         'created_at': utils.format_date(record.get('created_at'), format_type='iso'),
         'updated_at': utils.format_date(record.get('updated_at'), format_type='iso') if record.get('updated_at') else None
     }
+    # Convert datetime.date to datetime.datetime for BSON compatibility
+    for key, value in result.items():
+        if isinstance(value, date) and not isinstance(value, datetime):
+            result[key] = datetime.combine(value, datetime.min.time())
+    return result
 
 @reports_bp.route('/')
 @login_required
@@ -163,8 +166,6 @@ def profit_loss():
                 query['created_at'] = {'$gte': form.start_date.data}
             if form.end_date.data:
                 query['created_at'] = query.get('created_at', {}) | {'$lte': form.end_date.data}
-            if form.category.data:
-                query['category'] = form.category.data
             cashflows = [to_dict_cashflow(cf) for cf in db.cashflows.find(query).sort('created_at', -1)]
             output_format = request.form.get('format', 'html')
             if output_format == 'pdf':
@@ -497,7 +498,6 @@ def generate_profit_loss_pdf(cashflows):
     p.drawString(2.5 * inch, y, trans('general_party_name', default='Party Name'))
     p.drawString(4 * inch, y, trans('general_type', default='Type'))
     p.drawString(5 * inch, y, trans('general_amount', default='Amount'))
-    p.drawString(6.5 * inch, y, trans('general_category', default='Category'))
     y -= 0.3 * inch
     total_income = 0
     total_expense = 0
@@ -506,7 +506,6 @@ def generate_profit_loss_pdf(cashflows):
         p.drawString(2.5 * inch, y, t['party_name'])
         p.drawString(4 * inch, y, trans(t['type'], default=t['type']))
         p.drawString(5 * inch, y, utils.format_currency(t['amount']))
-        p.drawString(6.5 * inch, y, trans(t.get('category', ''), default=t.get('category', '')))
         if t['type'] == 'receipt':
             total_income += t['amount']
         else:
@@ -528,18 +527,18 @@ def generate_profit_loss_pdf(cashflows):
 
 def generate_profit_loss_csv(cashflows):
     output = []
-    output.append([trans('general_date', default='Date'), trans('general_party_name', default='Party Name'), trans('general_type', default='Type'), trans('general_amount', default='Amount'), trans('general_category', default='Category')])
+    output.append([trans('general_date', default='Date'), trans('general_party_name', default='Party Name'), trans('general_type', default='Type'), trans('general_amount', default='Amount')])
     total_income = 0
     total_expense = 0
     for t in cashflows:
-        output.append([utils.format_date(t['created_at']), t['party_name'], trans(t['type'], default=t['type']), utils.format_currency(t['amount']), trans(t.get('category', ''), default=t.get('category', ''))])
+        output.append([utils.format_date(t['created_at']), t['party_name'], trans(t['type'], default=t['type']), utils.format_currency(t['amount'])])
         if t['type'] == 'receipt':
             total_income += t['amount']
         else:
             total_expense += t['amount']
-    output.append(['', '', '', f"{trans('reports_total_income', default='Total Income')}: {utils.format_currency(total_income)}", ''])
-    output.append(['', '', '', f"{trans('reports_total_expense', default='Total Expense')}: {utils.format_currency(total_expense)}", ''])
-    output.append(['', '', '', f"{trans('reports_net_profit', default='Net Profit')}: {utils.format_currency(total_income - total_expense)}", ''])
+    output.append(['', '', '', f"{trans('reports_total_income', default='Total Income')}: {utils.format_currency(total_income)}"])
+    output.append(['', '', '', f"{trans('reports_total_expense', default='Total Expense')}: {utils.format_currency(total_expense)}"])
+    output.append(['', '', '', f"{trans('reports_net_profit', default='Net Profit')}: {utils.format_currency(total_income - total_expense)}"])
     buffer = BytesIO()
     writer = csv.writer(buffer, lineterminator='\n')
     writer.writerows(output)
