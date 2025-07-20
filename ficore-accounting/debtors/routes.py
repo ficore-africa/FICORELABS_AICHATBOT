@@ -13,6 +13,11 @@ import re
 import urllib.parse
 import utils
 from translations import trans
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import inch
+from helpers.branding_helpers import draw_ficore_pdf_header, ficore_csv_header
+import csv
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +53,8 @@ def index():
         
         return render_template(
             'debtors/index.html',
-            debtors=debtors
+            debtors=debtors,
+            title=trans('debtors_index', default='Debtors', lang=session.get('lang', 'en'))
         )
     except Exception as e:
         logger.error(f"Error fetching debtors for user {current_user.id}: {str(e)}")
@@ -67,7 +73,8 @@ def manage():
         
         return render_template(
             'debtors/manage_debtors.html',
-            debtors=debtors
+            debtors=debtors,
+            title=trans('debtors_manage', default='Manage Debtors', lang=session.get('lang', 'en'))
         )
     except Exception as e:
         logger.error(f"Error fetching debtors for manage page for user {current_user.id}: {str(e)}")
@@ -110,7 +117,8 @@ def view_page(id):
         
         return render_template(
             'debtors/view.html',
-            debtor=debtor
+            debtor=debtor,
+            title=trans('debtors_debt_details', default='Debt Details', lang=session.get('lang', 'en'))
         )
     except Exception as e:
         logger.error(f"Error rendering debtor view page {id} for user {current_user.id}: {str(e)}")
@@ -236,10 +244,6 @@ def send_reminder():
 def generate_iou(id):
     """Generate PDF IOU for a debtor."""
     try:
-        from reportlab.lib.pagesizes import letter
-        from reportlab.pdfgen import canvas
-        from reportlab.lib.units import inch
-        
         db = utils.get_mongo_db()
         query = {'_id': ObjectId(id), 'type': 'debtor'} if utils.is_admin() else {'_id': ObjectId(id), 'user_id': str(current_user.id), 'type': 'debtor'}
         debtor = db.records.find_one(query)
@@ -254,27 +258,27 @@ def generate_iou(id):
         
         buffer = io.BytesIO()
         p = canvas.Canvas(buffer, pagesize=letter)
-        width, height = letter
+        draw_ficore_pdf_header(p, current_user, y_start=11.2)
         
         p.setFont("Helvetica-Bold", 24)
-        p.drawString(inch, height - inch, "FiCore Records - IOU")
+        p.drawString(inch, 10.5 * inch, trans('debtors_iou_title', default='FiCore Records - IOU'))
         
         p.setFont("Helvetica", 12)
-        y_position = height - inch - 0.5 * inch
-        p.drawString(inch, y_position, f"Debtor: {debtor['name']}")
+        y_position = 10 * inch
+        p.drawString(inch, y_position, f"{trans('general_name', default='Debtor')}: {debtor['name']}")
         y_position -= 0.3 * inch
-        p.drawString(inch, y_position, f"Amount Owed: {utils.format_currency(debtor['amount_owed'])}")
+        p.drawString(inch, y_position, f"{trans('debtors_amount_owed', default='Amount Owed')}: {utils.format_currency(debtor['amount_owed'])}")
         y_position -= 0.3 * inch
-        p.drawString(inch, y_position, f"Contact: {debtor.get('contact', 'N/A')}")
+        p.drawString(inch, y_position, f"{trans('general_contact', default='Contact')}: {debtor.get('contact', 'N/A')}")
         y_position -= 0.3 * inch
-        p.drawString(inch, y_position, f"Description: {debtor.get('description', 'No description provided')}")
+        p.drawString(inch, y_position, f"{trans('general_description', default='Description')}: {debtor.get('description', 'No description provided')}")
         y_position -= 0.3 * inch
-        p.drawString(inch, y_position, f"Date Recorded: {utils.format_date(debtor['created_at'])}")
+        p.drawString(inch, y_position, f"{trans('debtors_date_recorded', default='Date Recorded')}: {utils.format_date(debtor['created_at'])}")
         y_position -= 0.3 * inch
-        p.drawString(inch, y_position, f"Reminders Sent: {debtor.get('reminder_count', 0)}")
+        p.drawString(inch, y_position, f"{trans('debtors_reminders_sent', default='Reminders Sent')}: {debtor.get('reminder_count', 0)}")
         
         p.setFont("Helvetica-Oblique", 10)
-        p.drawString(inch, inch, "This document serves as an IOU recorded on FiCore Records.")
+        p.drawString(inch, inch, trans('debtors_iou_footer', default='This document serves as an IOU recorded on FiCore Records.'))
         
         p.showPage()
         p.save()
@@ -301,6 +305,66 @@ def generate_iou(id):
         
     except Exception as e:
         logger.error(f"Error generating IOU for debtor {id}: {str(e)}")
+        flash(trans('debtors_iou_generation_error', default='An error occurred'), 'danger')
+        return redirect(url_for('debtors.index'))
+
+@debtors_bp.route('/generate_iou_csv/<id>')
+@login_required
+@utils.requires_role('trader')
+def generate_iou_csv(id):
+    """Generate CSV IOU for a debtor."""
+    try:
+        db = utils.get_mongo_db()
+        query = {'_id': ObjectId(id), 'type': 'debtor'} if utils.is_admin() else {'_id': ObjectId(id), 'user_id': str(current_user.id), 'type': 'debtor'}
+        debtor = db.records.find_one(query)
+        
+        if not debtor:
+            flash(trans('debtors_record_not_found', default='Record not found'), 'danger')
+            return redirect(url_for('debtors.index'))
+        
+        if not utils.is_admin() and not utils.check_ficore_credit_balance(1):
+            flash(trans('debtors_insufficient_credits', default='Insufficient Ficore Credits to generate IOU'), 'danger')
+            return redirect(url_for('agents_bp.manage_credits'))
+        
+        output = []
+        output.extend(ficore_csv_header(current_user))
+        output.append([trans('debtors_iou_title', default='FiCore Records - IOU')])
+        output.append([''])
+        output.append([trans('general_name', default='Debtor'), debtor['name']])
+        output.append([trans('debtors_amount_owed', default='Amount Owed'), utils.format_currency(debtor['amount_owed'])])
+        output.append([trans('general_contact', default='Contact'), debtor.get('contact', 'N/A')])
+        output.append([trans('general_description', default='Description'), debtor.get('description', 'No description provided')])
+        output.append([trans('debtors_date_recorded', default='Date Recorded'), utils.format_date(debtor['created_at'])])
+        output.append([trans('debtors_reminders_sent', default='Reminders Sent'), debtor.get('reminder_count', 0)])
+        output.append([''])
+        output.append([trans('debtors_iou_footer', default='This document serves as an IOU recorded on FiCore Records.')])
+        
+        if not utils.is_admin():
+            user_query = utils.get_user_query(str(current_user.id))
+            db.users.update_one(user_query, {'$inc': {'ficore_credit_balance': -1}})
+            db.ficore_credit_transactions.insert_one({
+                'user_id': str(current_user.id),
+                'amount': -1,
+                'type': 'spend',
+                'date': datetime.utcnow(),
+                'ref': f"IOU CSV generated for {debtor['name']}"
+            })
+        
+        buffer = io.BytesIO()
+        writer = csv.writer(buffer, lineterminator='\n')
+        writer.writerows(output)
+        buffer.seek(0)
+        
+        return Response(
+            buffer,
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': f'attachment; filename=FiCore_IOU_{debtor["name"]}.csv'
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Error generating IOU CSV for debtor {id}: {str(e)}")
         flash(trans('debtors_iou_generation_error', default='An error occurred'), 'danger')
         return redirect(url_for('debtors.index'))
 
@@ -348,7 +412,8 @@ def add():
 
     return render_template(
         'debtors/add.html',
-        form=form
+        form=form,
+        title=trans('debtors_add_debtor', default='Add Debtor', lang=session.get('lang', 'en'))
     )
 
 @debtors_bp.route('/edit/<id>', methods=['GET', 'POST'])
@@ -394,7 +459,8 @@ def edit(id):
         return render_template(
             'debtors/edit.html',
             form=form,
-            debtor=debtor
+            debtor=debtor,
+            title=trans('debtors_edit_debtor', default='Edit Debtor', lang=session.get('lang', 'en'))
         )
     except Exception as e:
         logger.error(f"Error fetching debtor {id} for user {current_user.id}: {str(e)}")
