@@ -239,7 +239,8 @@ def history():
             transactions=formatted_transactions,
             requests=formatted_requests,
             ficore_credit_balance=user.ficore_credit_balance if user else 0,
-            title=trans('credits_history_title', default='Ficore Credit Transaction History', lang=session.get('lang', 'en'))
+            title=trans('credits_history_title', default='Ficore Credit Transaction History', lang=session.get('lang', 'en')),
+            is_admin=utils.is_admin()
         )
     except AttributeError as e:
         logger.error(f"AttributeError in history route for user {current_user.id}: {str(e)}", extra={'session_id': session.get('sid', 'unknown')})
@@ -249,7 +250,8 @@ def history():
             transactions=[],
             requests=[],
             ficore_credit_balance=0,
-            title=trans('general_error', default='Error', lang=session.get('lang', 'en'))
+            title=trans('general_error', default='Error', lang=session.get('lang', 'en')),
+            is_admin=False
         )
     except Exception as e:
         logger.error(f"Unexpected error fetching history for user {current_user.id}: {str(e)}", extra={'session_id': session.get('sid', 'unknown')})
@@ -259,7 +261,8 @@ def history():
             transactions=[],
             requests=[],
             ficore_credit_balance=0,
-            title=trans('general_error', default='Error', lang=session.get('lang', 'en'))
+            title=trans('general_error', default='Error', lang=session.get('lang', 'en')),
+            is_admin=False
         )
 
 @credits_bp.route('/requests', methods=['GET'])
