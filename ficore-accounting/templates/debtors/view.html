@@ -1,7 +1,9 @@
 {% extends "base.html" %}
+{% from "_ficore_report_header.html" import ficore_report_header %}
 {% block title %}{{ t('debtors_debt_details', default='Debt Details') }} - FiCore{% endblock %}
 {% block content %}
 <div class="container mt-4">
+    {{ ficore_report_header(current_user) }}
     <div class="page-title">
         <h1>{{ t('debtors_debt_details', default='Debt Details') }}</h1>
         <small class="text-muted">{{ debtor.name }}</small>
@@ -28,6 +30,7 @@
                 </button>
                 <ul class="dropdown-menu">
                     <li><a class="dropdown-item" href="{{ url_for('debtors.generate_iou', id=debtor._id) }}">{{ t('debtors_download_iou', default='Download IOU') }}</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('debtors.generate_iou_csv', id=debtor._id) }}">{{ t('debtors_download_iou_csv', default='Download IOU CSV') }}</a></li>
                     {% if debtor.contact %}
                     <li><a class="dropdown-item share-btn" 
                            data-id="{{ debtor._id }}" 
@@ -182,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 created_at: date
             };
             
-            const defaultMessage = `Hi ${name}, just a reminder you owe {{ t('general_currency_symbol', default='₦') }}${amount} recorded on FiCore Records (${date}). Please settle soon.`;
+            const defaultMessage = `Hi ${name}, just a reminder you owe {{ t('general_currency_symbol', default='₦') }}${amount} recorded on FiCoreソーシャルメディア FiCore Records (${date}). Please settle soon.`;
             document.getElementById('reminderMessage').value = defaultMessage;
             
             new bootstrap.Modal(document.getElementById('reminderModal')).show();
