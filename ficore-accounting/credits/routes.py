@@ -109,70 +109,6 @@ def credit_ficore_credits(user_id: str, amount: int, ref: str, type: str = 'add'
         raise
     except errors.PyMongoError as e:
         logger.error(f"MongoDB error during Ficore Credit transaction for user {user_id}, ref {ref}: {str(e)}")
-        mongo LOWED(['jpg', 'png', 'pdf'], trans('credits_invalid_file_type', default='Only JPG, PNG, or PDF files are allowed'))
-        ],
-        render_kw={'class': 'form-control'}
-    )
-    submit = SubmitField(trans('credits_request', default='Request Ficore Credits'), render_kw={'class': 'btn btn-primary w-100'})
-
-class ApproveCreditRequestForm(FlaskForm):
-    status = SelectField(
-        trans('credits_request_status', default='Request Status'),
-        choices=[('approved', 'Approve'), ('denied', 'Deny')],
-        validators=[validators.DataRequired(message=trans('credits_status_required', default='Status is required'))],
-        render_kw={'class': 'form-select'}
-    )
-    submit = SubmitField(trans('credits_update_status', default='Update Request Status'), render_kw={'class': 'btn btn-primary w-100'})
-
-class ReceiptUploadForm(FlaskForm):
-    receipt = FileField(
-        trans('credits_receipt', default='Receipt'),
-        validators=[
-            FileAllowed(['jpg', 'png', 'pdf'], trans('credits_invalid_file_type', default='Only JPG, PNG, or PDF files are allowed')),
-            validators.DataRequired(message=trans('credits_receipt_required', default='Receipt file is required'))
-        ],
-        render_kw={'class': 'form-control'}
-    )
-    submit = SubmitField(trans('credits_upload_receipt', default='Upload Receipt'), render_kw={'class': 'btn btn-primary w-100'})
-
-def credit_ficore_credits(user_id: str, amount: int, ref: str, type: str = 'add', admin_id: str = None) -> None:
-    """Credit or log Ficore Credits with MongoDB transaction."""
-    try:
-        db = utils.get_mongo_db()
-        client = db.client
-        user_query = utils.get_user_query(user_id)
-        with client.start_session() as mongo_session:
-            with mongo_session.start_transaction():
-                if type == 'add':
-                    result = db.users.update_one(
-                        user_query,
-                        {'$inc': {'ficore_credit_balance': amount}},
-                        session=mongo_session
-                    )
-                    if result.matched_count == 0:
-                        logger.error(f"No user found for ID {user_id} to credit Ficore Credits, ref: {ref}")
-                        raise ValueError(f"No user found for ID {user_id}")
-                db.ficore_credit_transactions.insert_one({
-                    'user_id': user_id,
-                    'amount': amount,
-                    'type': type,
-                    'ref': ref,
-                    'payment_method': 'approved_request' if type == 'add' else None,
-                    'facilitated_by_agent': admin_id or 'system',
-                    'date': datetime.utcnow()
-                }, session=mongo_session)
-                db.audit_logs.insert_one({
-                    'admin_id': admin_id or 'system',
-                    'action': f'credit_ficore_credits_{type}',
-                    'details': {'user_id': user_id, 'amount': amount, 'ref': ref},
-                    'timestamp': datetime.utcnow()
-                }, session=mongo_session)
-    except ValueError as e:
-        logger.error(f"Transaction aborted for ref {ref}: {str(e)}")
-        mongo_session.abort_transaction()
-        raise
-    except errors.PyMongoError as e:
-        logger.error(f"MongoDB error during Ficore Credit transaction for user {user_id}, ref {ref}: {str(e)}")
         mongo_session.abort_transaction()
         raise
     except AttributeError as e:
@@ -246,7 +182,7 @@ def request_credits():
                         fs.delete(receipt_file_id)
                         logger.info(f"Deleted orphaned GridFS file {receipt_file_id} for user {current_user.id}, ref {ref}")
                     except Exception as delete_err:
-                        logger.error(f"Failed to delete orphaned GridFS file {receipt_ile_id}: {str(delete_err)}")
+                        logger.error(f"Failed to delete orphaned GridFS file {receipt_file_id}: {str(delete_err)}")
                 flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
                 return redirect(url_for('credits.request_credits'))
 
@@ -258,7 +194,7 @@ def request_credits():
             if receipt_file_id:
                 try:
                     fs.delete(receipt_file_id)
-                    logger.info(f"Deleted orphaned GridFS file {receipt_file_id} for user {current_user.id}, ref {ref}")
+                    logger.info(f"Deleted orphaned GridFS file {receipt_file_id} for user {current_user.id},Struct ref {ref}")
                 except Exception as delete_err:
                     logger.error(f"Failed to delete orphaned GridFS file {receipt_file_id}: {str(delete_err)}")
             flash(trans('general_something_went_wrong', default='An error occurred'), 'danger')
@@ -302,7 +238,7 @@ def history():
         all_transactions = ficore_transactions + valid_legacy_transactions
         all_transactions.sort(key=lambda x: x.get('date', datetime.min), reverse=True)
 
-        # Format dates for transactions
+        # Format dates in Python before passing to template
         formatted_transactions = []
         for tx in all_transactions:
             tx_dict = to_dict_ficore_credit_transaction(tx)
@@ -312,17 +248,8 @@ def history():
                 tx_dict['date_str'] = None
             formatted_transactions.append(tx_dict)
 
-        # Query and format credit requests
         requests = get_credit_requests(db, query)
-        formatted_requests = []
-        for req in requests:
-            req_dict = to_dict_credit_request(req)
-            if 'created_at' in req and isinstance(req['created_at'], datetime):
-                req_dict['created_at_str'] = req['created_at'].strftime('%Y-%m-%d %H:%M:%S')
-            else:
-                req_dict['created_at_str'] = None
-            formatted_requests.append(req_dict)
-
+        formatted_requests = [to_dict_credit_request(req) for req in requests]
         logger.info(f"Fetched {len(ficore_transactions)} ficore_credit_transactions, {len(valid_legacy_transactions)} credit_transactions, and {len(requests)} requests for user {current_user.id}", extra={'session_id': session.get('sid', 'unknown')})
         return render_template(
             'credits/history.html',
