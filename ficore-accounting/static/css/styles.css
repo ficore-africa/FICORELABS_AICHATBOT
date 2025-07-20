@@ -2995,3 +2995,46 @@ df-messenger {
 .welcome-section-card {
     z-index: 900; /* Below navbar-collapse.show */
 }
+
+/*REPORTS INDEX PAGE*/
+.report-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e3e6f0;
+    border-radius: 0.35rem;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+}
+
+.report-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.3);
+    border-color: #4e73df;
+}
+
+.report-icon {
+    font-size: 2.5rem;
+}
+
+.card-title {
+    color: #5a5c69;
+    font-weight: 600;
+}
+
+.page-title h1 {
+    color: #5a5c69;
+    font-weight: 700;
+}
+
+.subtext {
+    color: #858796;
+    font-style: italic;
+}
+
+a.text-decoration-none:hover .card-title {
+    color: #4e73df;
+}
+
+a.text-decoration-none:hover .btn-outline-primary {
+    background-color: #4e73df;
+    color: white;
+    border-color: #4e73df;
+}
