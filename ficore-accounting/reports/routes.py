@@ -8,7 +8,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from reportlab.lib.units import inch
-from io import BytesIO
+from io import BytesIO, StringIO
 from flask_wtf import FlaskForm
 from wtforms import DateField, StringField, SubmitField, SelectField
 from wtforms.validators import Optional
@@ -163,7 +163,7 @@ def profit_loss():
         try:
             db = utils.get_mongo_db()
             if form.start_date.data:
-                start_datetime = datetime.combine(form.start_date.data, datetime.min.time())
+                start_datetime = datetime fratello_0:
                 query['created_at'] = {'$gte': start_datetime}
             if form.end_date.data:
                 end_datetime = datetime.combine(form.end_date.data, datetime.max.time())
@@ -436,6 +436,18 @@ def customer_reports():
                     'as': 'bill_status_counts'
                 }},
                 {'$lookup': {
+                    'from': 'learning_materials',
+                    'let': {'user_id': '$_id'},
+                    'pipeline': [
+                        {'$match': {'$expr': {'$eq': ['$user_id', '$$user_id']}}},
+                        {'$group': {
+                            '_id': None,
+                            'total_lessons_completed': {'$sum': {'$size': '$lessons_completed'}}
+                        }}
+                    ],
+                    'as': 'learning_progress'
+                }},
+                {'$lookup': {
                     'from': 'tax_reminders',
                     'let': {'user_id': '$_id'},
                     'pipeline': [
@@ -451,6 +463,7 @@ def customer_reports():
             for user in users:
                 budget = to_dict_budget(user['latest_budget'][0] if user['latest_budget'] else None)
                 bill_counts = {status['_id']: status['count'] for status in user['bill_status_counts']} if user['bill_status_counts'] else {'pending': 0, 'paid': 0, 'overdue': 0}
+                learning_progress = user['learning_progress'][0]['total_lessons_completed'] if user['learning_progress'] else 0
                 tax_reminder = to_dict_tax_reminder(user['next_tax_reminder'][0] if user['next_tax_reminder'] else None)
                 data = {
                     'username': user['_id'],
@@ -465,6 +478,7 @@ def customer_reports():
                     'pending_bills': bill_counts.get('pending', 0),
                     'paid_bills': bill_counts.get('paid', 0),
                     'overdue_bills': bill_counts.get('overdue', 0),
+                    'lessons_completed': learning_progress,
                     'next_tax_due_date': utils.format_date(tax_reminder['due_date']) if tax_reminder['due_date'] else '-',
                     'next_tax_amount': tax_reminder['amount'] if tax_reminder['amount'] is not None else '-'
                 }
@@ -484,16 +498,16 @@ def generate_profit_loss_pdf(cashflows):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
     draw_ficore_pdf_header(p, current_user, y_start=10.5)
-    p.setFont("Helvetica", 11)
-    p.drawString(1 * inch, 9.8 * inch, trans('reports_profit_loss_report', default='Profit/Loss Report'))
-    p.drawString(1 * inch, 9.5 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
-    y = 9.3 * inch
+    p.setFont("Helvetica", 12)
+    p.drawString(1 * inch, 10.5 * inch, trans('reports_profit_loss_report', default='Profit/Loss Report'))
+    p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
+    y = 9.5 * inch
     p.setFillColor(colors.black)
     p.drawString(1 * inch, y, trans('general_date', default='Date'))
     p.drawString(2.5 * inch, y, trans('general_party_name', default='Party Name'))
     p.drawString(4 * inch, y, trans('general_type', default='Type'))
     p.drawString(5 * inch, y, trans('general_amount', default='Amount'))
-    y -= 0.25 * inch
+    y -= 0.3 * inch
     total_income = 0
     total_expense = 0
     for t in cashflows:
@@ -505,16 +519,16 @@ def generate_profit_loss_pdf(cashflows):
             total_income += t['amount']
         else:
             total_expense += t['amount']
-        y -= 0.25 * inch
+        y -= 0.3 * inch
         if y < 1 * inch:
             p.showPage()
             draw_ficore_pdf_header(p, current_user, y_start=10.5)
-            y = 9.3 * inch
-    y -= 0.25 * inch
+            y = 10.5 * inch
+    y -= 0.3 * inch
     p.drawString(1 * inch, y, f"{trans('reports_total_income', default='Total Income')}: {utils.format_currency(total_income)}")
-    y -= 0.25 * inch
+    y -= 0.3 * inch
     p.drawString(1 * inch, y, f"{trans('reports_total_expense', default='Total Expense')}: {utils.format_currency(total_expense)}")
-    y -= 0.25 * inch
+    y -= 0.3 * inch
     p.drawString(1 * inch, y, f"{trans('reports_net_profit', default='Net Profit')}: {utils.format_currency(total_income - total_expense)}")
     p.showPage()
     p.save()
@@ -536,27 +550,27 @@ def generate_profit_loss_csv(cashflows):
     output.append(['', '', '', f"{trans('reports_total_income', default='Total Income')}: {utils.format_currency(total_income)}"])
     output.append(['', '', '', f"{trans('reports_total_expense', default='Total Expense')}: {utils.format_currency(total_expense)}"])
     output.append(['', '', '', f"{trans('reports_net_profit', default='Net Profit')}: {utils.format_currency(total_income - total_expense)}"])
-    buffer = BytesIO()
+    buffer = StringIO()
     writer = csv.writer(buffer, lineterminator='\n')
     writer.writerows(output)
     buffer.seek(0)
-    return Response(buffer, mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=profit_loss.csv'})
+    return Response(buffer.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=profit_loss.csv'})
 
 def generate_debtors_creditors_pdf(records):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
     draw_ficore_pdf_header(p, current_user, y_start=10.5)
-    p.setFont("Helvetica", 11)
-    p.drawString(1 * inch, 9.8 * inch, trans('reports_debtors_creditors_report', default='Debtors/Creditors Report'))
-    p.drawString(1 * inch, 9.5 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
-    y = 9.3 * inch
+    p.setFont("Helvetica", 12)
+    p.drawString(1 * inch, 10.5 * inch, trans('reports_debtors_creditors_report', default='Debtors/Creditors Report'))
+    p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
+    y = 9.5 * inch
     p.setFillColor(colors.black)
     p.drawString(1 * inch, y, trans('general_date', default='Date'))
     p.drawString(2.5 * inch, y, trans('general_name', default='Name'))
     p.drawString(4 * inch, y, trans('general_type', default='Type'))
     p.drawString(5 * inch, y, trans('general_amount_owed', default='Amount Owed'))
     p.drawString(6.5 * inch, y, trans('general_description', default='Description'))
-    y -= 0.25 * inch
+    y -= 0.3 * inch
     total_debtors = 0
     total_creditors = 0
     for r in records:
@@ -569,14 +583,14 @@ def generate_debtors_creditors_pdf(records):
             total_debtors += r['amount_owed']
         else:
             total_creditors += r['amount_owed']
-        y -= 0.25 * inch
+        y -= 0.3 * inch
         if y < 1 * inch:
             p.showPage()
             draw_ficore_pdf_header(p, current_user, y_start=10.5)
-            y = 9.3 * inch
-    y -= 0.25 * inch
+            y = 10.5 * inch
+    y -= 0.3 * inch
     p.drawString(1 * inch, y, f"{trans('reports_total_debtors', default='Total Debtors')}: {utils.format_currency(total_debtors)}")
-    y -= 0.25 * inch
+    y -= 0.3 * inch
     p.drawString(1 * inch, y, f"{trans('reports_total_creditors', default='Total Creditors')}: {utils.format_currency(total_creditors)}")
     p.showPage()
     p.save()
@@ -597,26 +611,26 @@ def generate_debtors_creditors_csv(records):
             total_creditors += r['amount_owed']
     output.append(['', '', '', f"{trans('reports_total_debtors', default='Total Debtors')}: {utils.format_currency(total_debtors)}", ''])
     output.append(['', '', '', f"{trans('reports_total_creditors', default='Total Creditors')}: {utils.format_currency(total_creditors)}", ''])
-    buffer = BytesIO()
+    buffer = StringIO()
     writer = csv.writer(buffer, lineterminator='\n')
     writer.writerows(output)
     buffer.seek(0)
-    return Response(buffer, mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=debtors_creditors.csv'})
+    return Response(buffer.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=debtors_creditors.csv'})
 
 def generate_tax_obligations_pdf(tax_reminders):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
     draw_ficore_pdf_header(p, current_user, y_start=10.5)
-    p.setFont("Helvetica", 11)
-    p.drawString(1 * inch, 9.8 * inch, trans('reports_tax_obligations_report', default='Tax Obligations Report'))
-    p.drawString(1 * inch, 9.5 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
-    y = 9.3 * inch
+    p.setFont("Helvetica", 12)
+    p.drawString(1 * inch, 10.5 * inch, trans('reports_tax_obligations_report', default='Tax Obligations Report'))
+    p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
+    y = 9.5 * inch
     p.setFillColor(colors.black)
     p.drawString(1 * inch, y, trans('general_due_date', default='Due Date'))
     p.drawString(2.5 * inch, y, trans('general_tax_type', default='Tax Type'))
     p.drawString(4 * inch, y, trans('general_amount', default='Amount'))
     p.drawString(5 * inch, y, trans('general_status', default='Status'))
-    y -= 0.25 * inch
+    y -= 0.3 * inch
     total_amount = 0
     for tr in tax_reminders:
         p.drawString(1 * inch, y, utils.format_date(tr['due_date']))
@@ -624,12 +638,12 @@ def generate_tax_obligations_pdf(tax_reminders):
         p.drawString(4 * inch, y, utils.format_currency(tr['amount']))
         p.drawString(5 * inch, y, trans(tr['status'], default=tr['status']))
         total_amount += tr['amount']
-        y -= 0.25 * inch
+        y -= 0.3 * inch
         if y < 1 * inch:
             p.showPage()
             draw_ficore_pdf_header(p, current_user, y_start=10.5)
-            y = 9.3 * inch
-    y -= 0.25 * inch
+            y = 10.5 * inch
+    y -= 0.3 * inch
     p.drawString(1 * inch, y, f"{trans('reports_total_tax_amount', default='Total Tax Amount')}: {utils.format_currency(total_amount)}")
     p.showPage()
     p.save()
@@ -645,20 +659,20 @@ def generate_tax_obligations_csv(tax_reminders):
         output.append([utils.format_date(tr['due_date']), tr['tax_type'], utils.format_currency(tr['amount']), trans(tr['status'], default=tr['status'])])
         total_amount += tr['amount']
     output.append(['', '', f"{trans('reports_total_tax_amount', default='Total Tax Amount')}: {utils.format_currency(total_amount)}", ''])
-    buffer = BytesIO()
+    buffer = StringIO()
     writer = csv.writer(buffer, lineterminator='\n')
     writer.writerows(output)
     buffer.seek(0)
-    return Response(buffer, mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=tax_obligations.csv'})
+    return Response(buffer.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=tax_obligations.csv'})
 
 def generate_budget_performance_pdf(budget_data):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
     draw_ficore_pdf_header(p, current_user, y_start=10.5)
     p.setFont("Helvetica", 10)
-    p.drawString(1 * inch, 9.8 * inch, trans('reports_budget_performance_report', default='Budget Performance Report'))
-    p.drawString(1 * inch, 9.5 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
-    y = 9.3 * inch
+    p.drawString(1 * inch, 10.5 * inch, trans('reports_budget_performance_report', default='Budget Performance Report'))
+    p.drawString(1 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
+    y = 9.5 * inch
     p.setFillColor(colors.black)
     headers = [
         trans('general_date', default='Date'),
@@ -673,7 +687,7 @@ def generate_budget_performance_pdf(budget_data):
     x_positions = [1 * inch + i * 0.9 * inch for i in range(len(headers))]
     for header, x in zip(headers, x_positions):
         p.drawString(x, y, header)
-    y -= 0.25 * inch
+    y -= 0.3 * inch
     for bd in budget_data:
         values = [
             utils.format_date(bd['created_at']),
@@ -687,11 +701,11 @@ def generate_budget_performance_pdf(budget_data):
         ]
         for value, x in zip(values, x_positions):
             p.drawString(x, y, value)
-        y -= 0.25 * inch
+        y -= 0.3 * inch
         if y < 1 * inch:
             p.showPage()
             draw_ficore_pdf_header(p, current_user, y_start=10.5)
-            y = 9.3 * inch
+            y = 10.5 * inch
     p.showPage()
     p.save()
     buffer.seek(0)
@@ -721,20 +735,20 @@ def generate_budget_performance_csv(budget_data):
             utils.format_currency(bd['actual_expenses']),
             utils.format_currency(bd['expense_variance'])
         ])
-    buffer = BytesIO()
+    buffer = StringIO()
     writer = csv.writer(buffer, lineterminator='\n')
     writer.writerows(output)
     buffer.seek(0)
-    return Response(buffer, mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=budget_performance.csv'})
+    return Response(buffer.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=budget_performance.csv'})
 
 def generate_customer_report_pdf(report_data):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
     draw_ficore_pdf_header(p, current_user, y_start=10.5)
     p.setFont("Helvetica", 8)
-    p.drawString(0.5 * inch, 9.8 * inch, trans('reports_customer_report', default='Customer Report'))
-    p.drawString(0.5 * inch, 9.5 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
-    y = 9.3 * inch
+    p.drawString(0.5 * inch, 10.5 * inch, trans('reports_customer_report', default='Customer Report'))
+    p.drawString(0.5 * inch, 10.2 * inch, f"{trans('reports_generated_on', default='Generated on')}: {utils.format_date(datetime.utcnow())}")
+    y = 9.5 * inch
     headers = [
         'Username', 'Email', 'Role', 'Credits', 'Lang',
         'Income', 'Fixed Exp', 'Var Exp', 'Surplus',
@@ -758,7 +772,7 @@ def generate_customer_report_pdf(report_data):
         if y < 0.5 * inch:
             p.showPage()
             draw_ficore_pdf_header(p, current_user, y_start=10.5)
-            y = 9.3 * inch
+            y = 10.5 * inch
     p.showPage()
     p.save()
     buffer.seek(0)
@@ -782,8 +796,8 @@ def generate_customer_report_csv(report_data):
             data['lessons_completed'], data['next_tax_due_date'], data['next_tax_amount']
         ]
         output.append(row)
-    buffer = BytesIO()
+    buffer = StringIO()
     writer = csv.writer(buffer, lineterminator='\n')
     writer.writerows(output)
     buffer.seek(0)
-    return Response(buffer, mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=customer_report.csv'})
+    return Response(buffer.getvalue(), mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=customer_report.csv'})
