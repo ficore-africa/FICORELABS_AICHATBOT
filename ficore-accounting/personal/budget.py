@@ -90,7 +90,7 @@ def deduct_ficore_credits(db, user_id, amount, action, budget_id=None):
             'session_id': session.get('sid', 'unknown'),
             'status': 'completed'
         }
-        db.credit_transactions.insert_one(transaction)
+        db.ficore_credit_transactions.insert_one(transaction)
         return True
     except Exception:
         return False
