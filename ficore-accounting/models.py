@@ -340,12 +340,15 @@ def initialize_app_data(app):
                             'description': {'bsonType': 'string'},
                             'created_at': {'bsonType': 'date'},
                             'session_id': {'bsonType': ['string', 'null']}
+                            'user_id': {'bsonType': ['string', 'null']},
+                            'list_id': {'bsonType': ['string', 'null']},
+                            'updated_at': {'bsonType': ['date', 'null']}
                         }
                      }   
                     },
                     'indexes': [
                         {'key': [('deadline_date', ASCENDING)]},
-                        {'key': [{'key': [('user_id', ASCENDING), ('created_at', DESCENDING)]},
+                        {'key': [('user_id', ASCENDING), ('created_at', DESCENDING)]},
                         {'key': [('list_id', ASCENDING), ('created_at', DESCENDING)]},
                         {'key': [('updated_at', DESCENDING)]}
                     ]
