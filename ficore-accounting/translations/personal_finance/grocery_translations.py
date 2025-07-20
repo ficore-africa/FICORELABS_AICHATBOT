@@ -4,7 +4,6 @@ Translations for the grocery management module in the FiCore application
 
 GROCERY_TRANSLATIONS = {
     'en': {
-        # Grocery module
         'grocery_management': 'Grocery Planner',
         'grocery_management_desc': 'Plan and manage your grocery shopping',
         'grocery_tooltip': 'Organize your grocery lists and meal plans',
@@ -24,7 +23,7 @@ GROCERY_TRANSLATIONS = {
         'grocery_item_not_found': 'Item not found',
         'grocery_invalid_email': 'Invalid email address',
         'grocery_user_not_found': 'User not found',
-        'grocery_list_shared\title': 'List shared successfully',
+        'grocery_list_shared': 'List shared successfully',
         'grocery_share_error': 'Error sharing list',
         'grocery_invalid_suggestion': 'Invalid or missing suggestion data',
         'grocery_suggestion_added': 'Suggestion added',
@@ -39,7 +38,6 @@ GROCERY_TRANSLATIONS = {
         'grocery_error': 'Error fetching grocery summary',
     },
     'ha': {
-        # Grocery module
         'grocery_management': 'Mai Tsara Kayayyakin Abinci',
         'grocery_management_desc': 'Shirya da sarrafa sayayyar kayayyakin abinci',
         'grocery_tooltip': 'Shirya jerin kayayyakin abinci da shirye-shiryen abinci',
