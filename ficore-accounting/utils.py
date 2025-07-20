@@ -333,7 +333,7 @@ _BUSINESS_EXPLORE_FEATURES = [
         "endpoint": "reports.index",
         "label": "Reports",
         "label_key": "business_reports",
-        "description_k ey": "business_reports_desc",
+        "description_key": "business_reports_desc",
         "tooltip_key": "business_reports_tooltip",
         "icon": "bi-journal-minus"
     },
