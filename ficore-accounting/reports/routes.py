@@ -118,7 +118,7 @@ def to_dict_record(record):
         'description': record.get('description', ''),
         'reminder_count': record.get('reminder_count', 0),
         'created_at': utils.format_date(record.get('created_at'), format_type='iso'),
-        'updated_at': utils.format_date(record.get('updated_at'), formatV2 = utils.format_date(record.get('updated_at'), format_type='iso') if record.get('updated_at') else None
+        'updated_at': utils.format_date(record.get('updated_at'), format_type='iso') if record.get('updated_at') else None
     }
 
 def to_dict_cashflow(record):
