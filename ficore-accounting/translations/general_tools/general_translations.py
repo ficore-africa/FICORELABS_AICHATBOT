@@ -1449,7 +1449,7 @@ GENERAL_TRANSLATIONS = {
         'settings_agent_account': 'Asusun Wakili',
         'settings_agent_account_info': 'Bayanin Asusun Wakili',
         'settings_explore_agent_tools': 'Bincika Kayan Aikin Wakili',
-        'settings_explore_agent_description': 'Bincika kayan aikin da ake da su ga wakilai don gudanar da yan kasuwa da ma'amaloli.',
+        'settings_explore_agent_description': 'Bincika kayan aikin da ake da su ga wakilai don gudanar da yan kasuwa da maamaloli.',
         'settings_agent_information': 'Bayanin Wakili',
         'settings_agent_name': 'Sunan Wakili',
         'settings_agent_name_placeholder': 'Shigar da sunan wakili',
