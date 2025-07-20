@@ -178,6 +178,14 @@ _PERSONAL_EXPLORE_FEATURES = [
         "icon": "bi-coin"
     },
     {
+        "endpoint": "reports.index",
+        "label": "Reports",
+        "label_key": "business_reports",
+        "description_key": "business_reports_desc",
+        "tooltip_key": "business_reports_tooltip",
+        "icon": "bi-journal-minus"
+    },
+    {
         "endpoint": "taxation_bp.calculate_tax",
         "label": "Taxation",
         "label_key": "taxation_calculator",
