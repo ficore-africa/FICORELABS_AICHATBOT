@@ -127,6 +127,14 @@ def manage_orders():
 def manage_items(order_id):
     """Manage items in a food order: list items (GET), add item (POST), update item (PUT)."""
     try:
+        # Validate order_id as a valid UUID
+        try:
+            uuid.UUID(order_id)
+        except ValueError:
+            current_app.logger.error(f"Invalid order_id {order_id}: not a valid UUID", 
+                                     extra={'session_id': session.get('sid', 'unknown')})
+            return jsonify({'error': trans('food_order_invalid_order_id', default='Invalid order ID')}), 400
+
         db = get_mongo_db()
         collection = db.FoodOrder
         user_id = str(current_user.id)
