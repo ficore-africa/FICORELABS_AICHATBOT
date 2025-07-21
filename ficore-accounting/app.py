@@ -310,6 +310,7 @@ def create_app():
     
     app.config['GOOGLE_CLIENT_ID'] = os.getenv('GOOGLE_CLIENT_ID')
     app.config['GOOGLE_CLIENT_SECRET'] = os.getenv('GOOGLE_CLIENT_SECRET')
+    app.config['GOOGLE_API_KEY'] = os.getenv('GOOGLE_API_KEY')
     app.config['SMTP_SERVER'] = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
     app.config['SMTP_PORT'] = int(os.getenv('SMTP_PORT', 587))
     app.config['SMTP_USERNAME'] = os.getenv('SMTP_USERNAME')
