@@ -164,7 +164,7 @@ function renderGroceryLists(lists) {
                 </div>
             </div>
         `).join('');
-        if (!currentListId-test && lists[0]) {
+        if (!currentListId && lists[0]) {
             loadGroceryItems(lists[0].id);
         }
     } else {
