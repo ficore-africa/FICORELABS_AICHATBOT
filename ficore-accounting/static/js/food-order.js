@@ -56,6 +56,12 @@ async function fetchWithCSRF(url, options = {}) {
     return fetch(url, { ...options, headers });
 }
 
+// Validate UUID
+function isValidUUID(id) {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return id && typeof id === 'string' && uuidRegex.test(id);
+}
+
 // Food Order Functions
 function loadFoodOrders() {
     fetchWithCSRF(window.apiUrls.manageFoodOrders)
@@ -92,7 +98,7 @@ function renderFoodOrders(orders) {
                 </div>
             </div>
         `).join('');
-        if (!currentOrderId && orders[0]) {
+        if (!currentOrderId && orders[0] && isValidUUID(orders[0].id)) {
             loadFoodOrderItems(orders[0].id);
         }
     } else {
@@ -101,6 +107,10 @@ function renderFoodOrders(orders) {
 }
 
 function loadFoodOrderItems(orderId) {
+    if (!isValidUUID(orderId)) {
+        showToast(window.foodOrderTranslations.general_select_order, 'warning');
+        return;
+    }
     currentOrderId = orderId;
     fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', orderId))
         .then(response => {
@@ -179,7 +189,7 @@ function createFoodOrder() {
 }
 
 function addFoodOrderItem() {
-    if (!currentOrderId) {
+    if (!isValidUUID(currentOrderId)) {
         showToast(window.foodOrderTranslations.general_select_order, 'warning');
         return;
     }
@@ -222,6 +232,10 @@ function addFoodOrderItem() {
 }
 
 function updateFoodOrderItem(itemId, field, value) {
+    if (!isValidUUID(currentOrderId)) {
+        showToast(window.foodOrderTranslations.general_select_order, 'warning');
+        return;
+    }
     const parsedValue = field === 'quantity' ? parseInt(value) : parseFloat(value);
     if (isNaN(parsedValue) || (field === 'quantity' && parsedValue <= 0) || (field === 'price' && parsedValue < 0)) {
         showToast(window.foodOrderTranslations.general_please_provide, 'warning');
