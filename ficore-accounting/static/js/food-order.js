@@ -64,7 +64,13 @@ async function fetchWithCSRF(url, options = {}) {
 // Food Order Functions
 function loadFoodOrders() {
     fetchWithCSRF('{{ url_for("personal.food_order.manage_orders") | e }}')
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(orders => {
             offlineData.orders = orders;
             localStorage.setItem('foodOrders', JSON.stringify(orders));
@@ -99,7 +105,13 @@ function renderFoodOrders(orders) {
 function loadFoodOrderItems(orderId) {
     currentOrderId = orderId;
     fetchWithCSRF('{{ url_for("personal.food_order.manage_items", order_id="") | e }}' + orderId)
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(items => {
             offlineData.items[orderId] = items;
             localStorage.setItem('foodOrderItems', JSON.stringify(offlineData.items));
@@ -139,7 +151,13 @@ function createFoodOrder() {
         method: 'POST',
         body: JSON.stringify({ name, vendor })
     })
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.error) {
                 showToast(data.error, 'danger');
@@ -173,7 +191,13 @@ function addFoodOrderItem() {
         method: 'POST',
         body: JSON.stringify({ name, quantity, price })
     })
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.error) {
                 showToast(data.error, 'danger');
@@ -197,7 +221,13 @@ function updateFoodOrderItem(itemId, field, value) {
         method: 'PUT',
         body: JSON.stringify({ item_id: itemId, [field]: value })
     })
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.error) {
                 showToast(data.error, 'danger');
@@ -218,21 +248,5 @@ function format_currency(value) {
     value = parseFloat(value);
     if (isNaN(value)) return '0.00';
     return value.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function showToast(message, type) {
-    const toastContainer = document.createElement('div');
-    toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-    toastContainer.innerHTML = `
-        <div class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body">${message}</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(toastContainer);
-    const toast = new bootstrap.Toast(toastContainer.querySelector('.toast'));
-    toast.show();
 }
 {% endif %}
