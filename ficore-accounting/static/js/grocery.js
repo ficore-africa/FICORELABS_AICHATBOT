@@ -145,7 +145,13 @@ async function fetchWithCSRF(url, options = {}) {
 // Grocery Planner Functions
 function loadGroceryLists() {
     fetchWithCSRF('{{ url_for("personal.grocery.manage_lists") | e }}')
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(lists => {
             offlineData.lists = lists;
             localStorage.setItem('groceryLists', JSON.stringify(lists));
@@ -181,7 +187,13 @@ function renderGroceryLists(lists) {
 function loadGroceryItems(listId) {
     currentListId = listId;
     fetchWithCSRF('{{ url_for("personal.grocery.manage_items", list_id="") | e }}' + listId)
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(items => {
             offlineData.items[listId] = items;
             localStorage.setItem('groceryItems', JSON.stringify(offlineData.items));
@@ -228,7 +240,13 @@ function createGroceryList() {
         method: 'POST',
         body: JSON.stringify({ name, budget })
     })
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.error) {
                 showToast(data.error, 'danger');
@@ -242,7 +260,7 @@ function createGroceryList() {
         })
         .catch(error => {
             console.error('Error creating grocery list:', error);
-            showToast(translations.grocery_list_error, 'danger');
+            showToast('Error creating grocery list', 'danger');
         });
 }
 
@@ -264,7 +282,13 @@ function addGroceryItem() {
         method: 'POST',
         body: JSON.stringify({ name, quantity, price, status, store })
     })
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.error) {
                 showToast(data.error, 'danger');
@@ -280,7 +304,7 @@ function addGroceryItem() {
         })
         .catch(error => {
             console.error('Error adding grocery item:', error);
-            showToast(translations.grocery_item_error, 'danger');
+            showToast('Error adding grocery item', 'danger');
         });
 }
 
@@ -289,7 +313,13 @@ function updateGroceryItem(itemId, field, value) {
         method: 'PUT',
         body: JSON.stringify({ item_id: itemId, [field]: value })
     })
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.error) {
                 showToast(data.error, 'danger');
@@ -301,7 +331,7 @@ function updateGroceryItem(itemId, field, value) {
         })
         .catch(error => {
             console.error('Error updating grocery item:', error);
-            showToast(translations.grocery_item_error, 'danger');
+            showToast('Error updating grocery item', 'danger');
         });
 }
 
@@ -319,7 +349,13 @@ function shareGroceryList() {
         method: 'POST',
         body: JSON.stringify({ email })
     })
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.error) {
                 showToast(data.error, 'danger');
@@ -331,13 +367,19 @@ function shareGroceryList() {
         })
         .catch(error => {
             console.error('Error sharing grocery list:', error);
-            showToast(translations.grocery_share_error, 'danger');
+            showToast('Error sharing grocery list', 'danger');
         });
 }
 
 function loadMealPlans() {
     fetchWithCSRF('{{ url_for("personal.grocery.manage_meal_plans") | e }}')
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(mealPlans => {
             offlineData.mealPlans = mealPlans;
             localStorage.setItem('mealPlans', JSON.stringify(mealPlans));
@@ -372,7 +414,13 @@ function renderMealPlans(mealPlans) {
 function loadMealPlanIngredients(mealPlanId) {
     currentMealPlanId = mealPlanId;
     fetchWithCSRF('{{ url_for("personal.grocery.manage_meal_plans") | e }}')
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(mealPlans => {
             const plan = mealPlans.find(p => p.id === mealPlanId);
             renderMealPlanIngredients(plan ? plan.ingredients : []);
@@ -409,7 +457,13 @@ function createMealPlan() {
         method: 'POST',
         body: JSON.stringify({ name, budget, auto_generate_list: !!budget, ingredients: [] })
     })
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.error) {
                 showToast(data.error, 'danger');
@@ -423,7 +477,7 @@ function createMealPlan() {
         })
         .catch(error => {
             console.error('Error creating meal plan:', error);
-            showToast(translations.grocery_meal_plan_error, 'danger');
+            showToast('Error creating meal plan', 'danger');
         });
 }
 
@@ -447,7 +501,13 @@ function addIngredient() {
             auto_generate_list: false 
         })
     })
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.error) {
                 showToast(data.error, 'danger');
@@ -461,13 +521,19 @@ function addIngredient() {
         })
         .catch(error => {
             console.error('Error adding ingredient:', error);
-            showToast(translations.grocery_item_error, 'danger');
+            showToast('Error adding ingredient', 'danger');
         });
 }
 
 function generateGroceryListFromMealPlan(mealPlanId) {
     fetchWithCSRF('{{ url_for("personal.grocery.manage_meal_plans") | e }}')
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(mealPlans => {
             const plan = mealPlans.find(p => p.id === mealPlanId);
             if (plan) {
@@ -479,7 +545,13 @@ function generateGroceryListFromMealPlan(mealPlanId) {
                         auto_generate_list: true
                     })
                 })
-                    .then(response => response.json())
+                    .then(response => {
+                        if (response.status === 403) {
+                            showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                            return Promise.reject(new Error('Unauthorized'));
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.error) {
                             showToast(data.error, 'danger');
@@ -491,19 +563,25 @@ function generateGroceryListFromMealPlan(mealPlanId) {
                     })
                     .catch(error => {
                         console.error('Error generating grocery list:', error);
-                        showToast(translations.grocery_list_error, 'danger');
+                        showToast('Error generating grocery list', 'danger');
                     });
             }
         })
         .catch(error => {
             console.error('Error fetching meal plan:', error);
-            showToast(translations.grocery_meal_plan_error, 'danger');
+            showToast('Error fetching meal plan', 'danger');
         });
 }
 
 function loadPredictiveSuggestions() {
     fetchWithCSRF('{{ url_for("personal.grocery.predictive_suggestions") | e }}')
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(suggestions => {
             offlineData.suggestions.predictive = suggestions;
             localStorage.setItem('predictiveSuggestions', JSON.stringify(suggestions));
@@ -542,7 +620,13 @@ function addSuggestedItem(name, quantity, price) {
         method: 'POST',
         body: JSON.stringify({ name, quantity, price, status: 'to_buy' })
     })
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.error) {
                 showToast(data.error, 'danger');
@@ -554,13 +638,19 @@ function addSuggestedItem(name, quantity, price) {
         })
         .catch(error => {
             console.error('Error adding suggested item:', error);
-            showToast(translations.grocery_item_error, 'danger');
+            showToast('Error adding suggested item', 'danger');
         });
 }
 
 function loadCollaboratorSuggestions(listId) {
     fetchWithCSRF('{{ url_for("personal.grocery.manage_suggestions", list_id="") | e }}' + listId)
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(suggestions => {
             offlineData.suggestions[listId] = suggestions;
             localStorage.setItem('collaboratorSuggestions', JSON.stringify(offlineData.suggestions));
@@ -606,7 +696,13 @@ function suggestItem() {
         method: 'POST',
         body: JSON.stringify({ name, quantity, price })
     })
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.error) {
                 showToast(data.error, 'danger');
@@ -620,7 +716,7 @@ function suggestItem() {
         })
         .catch(error => {
             console.error('Error suggesting item:', error);
-            showToast(translations.grocery_suggestion_error, 'danger');
+            showToast('Error suggesting item', 'danger');
         });
 }
 
@@ -628,7 +724,13 @@ function approveSuggestion(suggestionId, listId) {
     fetchWithCSRF('{{ url_for("personal.grocery.approve_suggestion", list_id=listId, suggestion_id=suggestionId) | e }}', {
         method: 'POST'
     })
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.error) {
                 showToast(data.error, 'danger');
@@ -641,13 +743,19 @@ function approveSuggestion(suggestionId, listId) {
         })
         .catch(error => {
             console.error('Error approving suggestion:', error);
-            showToast(translations.grocery_suggestion_error, 'danger');
+            showToast('Error approving suggestion', 'danger');
         });
 }
 
 function showPriceHistory(itemName) {
     fetchWithCSRF('{{ url_for("personal.grocery.price_history", item_name="") | e }}' + encodeURIComponent(itemName))
-        .then(response => response.json())
+        .then(response => {
+            if (response.status === 403) {
+                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
         .then(data => {
             const history = data.prices || [];
             const avgPrice = data.average_price || 0;
@@ -667,7 +775,7 @@ function showPriceHistory(itemName) {
         })
         .catch(error => {
             console.error('Error loading price history:', error);
-            showToast(translations.grocery_price_history_error, 'danger');
+            showToast('Error loading price history', 'danger');
         });
 }
 
@@ -701,21 +809,5 @@ function format_currency(value) {
     value = parseFloat(value);
     if (isNaN(value)) return '0.00';
     return value.toLocaleString('en-NG', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-}
-
-function showToast(message, type) {
-    const toastContainer = document.createElement('div');
-    toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-    toastContainer.innerHTML = `
-        <div class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body">${message}</div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(toastContainer);
-    const toast = new bootstrap.Toast(toastContainer.querySelector('.toast'));
-    toast.show();
 }
 {% endif %}
