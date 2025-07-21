@@ -8,6 +8,7 @@ window.groceryTranslations = {
     no_meal_plans: "No meal plans found",
     no_suggestions: "No suggestions available",
     no_price_history: "No price history available",
+    grocery_edit_list: "Edit",
     grocery_lists: "Grocery Lists",
     grocery_meal_plans: "Meal Plans",
     grocery_suggestions: "Suggestions",
