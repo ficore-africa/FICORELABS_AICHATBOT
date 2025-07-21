@@ -1796,7 +1796,6 @@ def to_dict_bill_reminder(record):
     if not record:
         return {'notification_id': None, 'type': None}
     return {
-³: {
         'id': str(record.get('_id', '')),
         'user_id': record.get('user_id', ''),
         'notification_id': record.get('notification_id', ''),
