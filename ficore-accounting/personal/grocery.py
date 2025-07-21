@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request, current_app, session, Response
 from flask_login import current_user, login_required
 from datetime import datetime, date, timedelta
+from helpers.branding_helpers import draw_ficore_pdf_header
 from bson import ObjectId
 from pymongo import errors
 from utils import get_mongo_db, requires_role, logger, clean_currency, check_ficore_credit_balance, is_admin, format_date, format_currency
