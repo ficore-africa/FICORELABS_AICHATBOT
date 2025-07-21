@@ -7,8 +7,6 @@ function setupCSRF() {
     const metaTag = document.querySelector('meta[name="csrf-token"]');
     if (metaTag) {
         csrfToken = metaTag.getAttribute('content');
-    } else {
-        console.warn('CSRF token not found. Requests may fail if CSRF protection is enabled.');
     }
 }
 
@@ -16,61 +14,69 @@ function setupCSRF() {
 function initFoodOrder() {
     setupCSRF();
     const root = document.getElementById('food-order-root');
-    if (!root) {
-        console.error('Food order root element not found');
-        return;
-    }
+    if (!root) return;
 
     root.innerHTML = `
-        <div class="mb-3">
-            <h6>${window.foodOrderTranslations.food_order_create}</h6>
-            <div class="input-group">
-                <input type="text" class="form-control" id="newOrderName" placeholder="${window.foodOrderTranslations.food_order_name}">
-                <input type="text" class="form-control" id="newOrderVendor" placeholder="${window.foodOrderTranslations.food_order_vendor}">
-                <button class="btn btn-primary" onclick="createFoodOrder()">${window.foodOrderTranslations.food_order_create}</button>
+        <ul class="nav nav-tabs mb-3" id="foodOrderTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab">${window.foodOrderTranslations.food_order_create}</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="manage-orders-tab" data-bs-toggle="tab" data-bs-target="#manage-orders" type="button" role="tab">${window.foodOrderTranslations.general_view_all}</button>
+            </li>
+        </ul>
+        <div class="tab-content" id="foodOrderTabContent">
+            <div class="tab-pane fade show active" id="orders" role="tabpanel" aria-labelledby="orders-tab">
+                <div class="mb-3">
+                    <h6>${window.foodOrderTranslations.food_order_create}</h6>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="newOrderName" placeholder="${window.foodOrderTranslations.food_order_name}">
+                        <input type="text" class="form-control" id="newOrderVendor" placeholder="${window.foodOrderTranslations.food_order_vendor}">
+                        <button class="btn btn-primary" onclick="createFoodOrder()">${window.foodOrderTranslations.food_order_create}</button>
+                    </div>
+                </div>
+                <div id="foodOrders"></div>
+                <div id="foodOrderItems" class="mt-3"></div>
+                <div class="mt-3">
+                    <h6>${window.foodOrderTranslations.food_order_add_item}</h6>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="newOrderItemName" placeholder="${window.foodOrderTranslations.food_order_item_name}">
+                        <input type="number" class="form-control" id="newOrderItemQuantity" placeholder="${window.foodOrderTranslations.food_order_quantity}" min="1">
+                        <input type="number" class="form-control" id="newOrderItemPrice" placeholder="${window.foodOrderTranslations.food_order_price}" min="0" step="0.01">
+                        <button class="btn btn-primary" onclick="addFoodOrderItem()">${window.foodOrderTranslations.food_order_add}</button>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div id="foodOrders"></div>
-        <div id="foodOrderItems" class="mt-3"></div>
-        <div class="mt-3">
-            <h6>${window.foodOrderTranslations.food_order_add_item}</h6>
-            <div class="input-group">
-                <input type="text" class="form-control" id="newItemName" placeholder="${window.foodOrderTranslations.food_order_item_name}">
-                <input type="number" class="form-control" id="newItemQuantity" placeholder="${window.foodOrderTranslations.food_order_quantity}" min="1">
-                <input type="number" class="form-control" id="newItemPrice" placeholder="${window.foodOrderTranslations.food_order_price}" min="0" step="0.01">
-                <button class="btn btn-primary" onclick="addFoodOrderItem()">${window.foodOrderTranslations.food_order_add}</button>
+            <div class="tab-pane fade" id="manage-orders" role="tabpanel" aria-labelledby="manage-orders-tab">
+                <div class="mb-3">
+                    <h6>${window.foodOrderTranslations.general_view_all}</h6>
+                    <div id="manageFoodOrders"></div>
+                </div>
             </div>
         </div>
     `;
 
     loadFoodOrders();
+    loadManageOrders();
 }
 
 // Fetch with CSRF token
 async function fetchWithCSRF(url, options = {}) {
     const headers = {
         'Content-Type': 'application/json',
-        ...(csrfToken && { 'X-CSRF-Token': csrfToken }),
+        'X-CSRF-Token': csrfToken,
         ...options.headers
     };
     return fetch(url, { ...options, headers });
-}
-
-// Validate UUID
-function isValidUUID(id) {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    return id && typeof id === 'string' && uuidRegex.test(id);
 }
 
 // Food Order Functions
 function loadFoodOrders() {
     fetchWithCSRF(window.apiUrls.manageFoodOrders)
         .then(response => {
-            if (!response.ok) {
-                if (response.status === 403) {
-                    throw new Error(window.foodOrderTranslations.insufficient_credits);
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
+            if (response.status === 403) {
+                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
         })
@@ -80,9 +86,8 @@ function loadFoodOrders() {
             renderFoodOrders(orders);
         })
         .catch(error => {
-            console.error('Error loading food orders:', error.message);
-            showToast(error.message || window.foodOrderTranslations.general_error, 'danger');
-            renderFoodOrders(offlineData.orders || []);
+            console.error('Error loading food orders:', error);
+            renderFoodOrders([]);
         });
 }
 
@@ -91,14 +96,14 @@ function renderFoodOrders(orders) {
     if (orders && orders.length > 0) {
         foodOrdersEl.innerHTML = orders.map(order => `
             <div class="food-order-item">
-                <span class="fw-semibold">${order.name} (Vendor: ${order.vendor})</span>
+                <span class="fw-semibold">${order.name} (${order.vendor})</span>
                 <div>
-                    <span class="text-muted">Total: ${formatCurrency(order.total_cost)}</span>
+                    <span class="text-muted">Total: ${format_currency(order.total_spent)}</span>
                     <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadFoodOrderItems('${order.id}')">${window.foodOrderTranslations.general_view_all}</button>
                 </div>
             </div>
         `).join('');
-        if (!currentOrderId && orders[0] && isValidUUID(orders[0].id)) {
+        if (!currentOrderId && orders[0]) {
             loadFoodOrderItems(orders[0].id);
         }
     } else {
@@ -106,19 +111,84 @@ function renderFoodOrders(orders) {
     }
 }
 
-function loadFoodOrderItems(orderId) {
-    if (!isValidUUID(orderId)) {
-        showToast(window.foodOrderTranslations.general_select_order, 'warning');
+function loadManageOrders() {
+    fetchWithCSRF(window.apiUrls.manageFoodOrders)
+        .then(response => {
+            if (response.status === 403) {
+                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
+        .then(orders => {
+            offlineData.orders = orders;
+            localStorage.setItem('foodOrders', JSON.stringify(orders));
+            renderManageOrders(orders);
+        })
+        .catch(error => {
+            console.error('Error loading food orders for management:', error);
+            renderManageOrders([]);
+        });
+}
+
+function renderManageOrders(orders) {
+    const manageOrdersEl = document.getElementById('manageFoodOrders');
+    if (orders && orders.length > 0) {
+        manageOrdersEl.innerHTML = orders.map(order => `
+            <div class="food-order-item">
+                <span class="fw-semibold">${order.name} (${order.vendor})</span>
+                <div>
+                    <span class="text-muted">Total: ${format_currency(order.total_spent)}</span>
+                    <button class="btn btn-sm btn-outline-danger ms-2" onclick="deleteFoodOrder('${order.id}', '${order.name}')">Delete</button>
+                </div>
+            </div>
+        `).join('');
+    } else {
+        manageOrdersEl.innerHTML = `<div class="text-muted">${window.foodOrderTranslations.no_orders}</div>`;
+    }
+}
+
+function deleteFoodOrder(orderId, orderName) {
+    if (!confirm(`Delete food order "${orderName}"?`)) {
         return;
     }
+    fetchWithCSRF(window.apiUrls.manageFoodOrders + `/${orderId}`, {
+        method: 'DELETE'
+    })
+        .then(response => {
+            if (response.status === 403) {
+                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast('Food order deleted', 'success');
+                if (currentOrderId === orderId) {
+                    currentOrderId = null;
+                    document.getElementById('foodOrderItems').innerHTML = '';
+                }
+                loadFoodOrders();
+                loadManageOrders();
+                loadFinancialSummary();
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting food order:', error);
+            showToast(window.foodOrderTranslations.general_error, 'danger');
+        });
+}
+
+function loadFoodOrderItems(orderId) {
     currentOrderId = orderId;
     fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', orderId))
         .then(response => {
-            if (!response.ok) {
-                if (response.status === 403) {
-                    throw new Error(window.foodOrderTranslations.insufficient_credits);
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
+            if (response.status === 403) {
+                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
         })
@@ -128,9 +198,8 @@ function loadFoodOrderItems(orderId) {
             renderFoodOrderItems(items);
         })
         .catch(error => {
-            console.error('Error loading food order items:', error.message);
-            showToast(error.message || window.foodOrderTranslations.no_items, 'danger');
-            renderFoodOrderItems(offlineData.items[orderId] || []);
+            console.error('Error loading food order items:', error);
+            renderFoodOrderItems([]);
         });
 }
 
@@ -141,8 +210,8 @@ function renderFoodOrderItems(items) {
             <div class="food-order-item">
                 <span class="fw-semibold">${item.name}</span>
                 <div class="d-flex align-items-center gap-2">
-                    <input type="number" class="form-control" value="${item.quantity}" min="1" onchange="updateFoodOrderItem('${item.item_id}', 'quantity', this.value)">
-                    <input type="number" class="form-control" value="${item.price}" min="0" step="0.01" onchange="updateFoodOrderItem('${item.item_id}', 'price', this.value)">
+                    <input type="number" class="form-control" value="${item.quantity}" min="1" onchange="updateFoodOrderItem('${item.id}', 'quantity', this.value)">
+                    <input type="number" class="form-control" value="${item.price}" min="0" step="0.01" onchange="updateFoodOrderItem('${item.id}', 'price', this.value)">
                 </div>
             </div>
         `).join('');
@@ -152,8 +221,8 @@ function renderFoodOrderItems(items) {
 }
 
 function createFoodOrder() {
-    const name = document.getElementById('newOrderName').value.trim();
-    const vendor = document.getElementById('newOrderVendor').value.trim();
+    const name = document.getElementById('newOrderName').value;
+    const vendor = document.getElementById('newOrderVendor').value;
     if (!name || !vendor) {
         showToast(window.foodOrderTranslations.general_please_provide, 'warning');
         return;
@@ -163,11 +232,9 @@ function createFoodOrder() {
         body: JSON.stringify({ name, vendor })
     })
         .then(response => {
-            if (!response.ok) {
-                if (response.status === 403) {
-                    throw new Error(window.foodOrderTranslations.insufficient_credits);
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
+            if (response.status === 403) {
+                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
         })
@@ -179,24 +246,25 @@ function createFoodOrder() {
                 document.getElementById('newOrderName').value = '';
                 document.getElementById('newOrderVendor').value = '';
                 loadFoodOrders();
+                loadManageOrders();
                 loadFinancialSummary();
             }
         })
         .catch(error => {
-            console.error('Error creating food order:', error.message);
-            showToast(error.message || window.foodOrderTranslations.general_error, 'danger');
+            console.error('Error creating food order:', error);
+            showToast(window.foodOrderTranslations.general_error, 'danger');
         });
 }
 
 function addFoodOrderItem() {
-    if (!isValidUUID(currentOrderId)) {
+    if (!currentOrderId) {
         showToast(window.foodOrderTranslations.general_select_order, 'warning');
         return;
     }
-    const name = document.getElementById('newItemName').value.trim();
-    const quantity = parseInt(document.getElementById('newItemQuantity').value);
-    const price = parseFloat(document.getElementById('newItemPrice').value);
-    if (!name || !quantity || quantity <= 0 || !price || price < 0) {
+    const name = document.getElementById('newOrderItemName').value;
+    const quantity = document.getElementById('newOrderItemQuantity').value;
+    const price = document.getElementById('newOrderItemPrice').value;
+    if (!name || !quantity || !price) {
         showToast(window.foodOrderTranslations.general_please_provide, 'warning');
         return;
     }
@@ -205,11 +273,9 @@ function addFoodOrderItem() {
         body: JSON.stringify({ name, quantity, price })
     })
         .then(response => {
-            if (!response.ok) {
-                if (response.status === 403) {
-                    throw new Error(window.foodOrderTranslations.insufficient_credits);
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
+            if (response.status === 403) {
+                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
         })
@@ -218,39 +284,28 @@ function addFoodOrderItem() {
                 showToast(data.error, 'danger');
             } else {
                 showToast(window.foodOrderTranslations.item_added, 'success');
-                document.getElementById('newItemName').value = '';
-                document.getElementById('newItemQuantity').value = '';
-                document.getElementById('newItemPrice').value = '';
+                document.getElementById('newOrderItemName').value = '';
+                document.getElementById('newOrderItemQuantity').value = '';
+                document.getElementById('newOrderItemPrice').value = '';
                 loadFoodOrderItems(currentOrderId);
                 loadFinancialSummary();
             }
         })
         .catch(error => {
-            console.error('Error adding food order item:', error.message);
-            showToast(error.message || window.foodOrderTranslations.general_error, 'danger');
+            console.error('Error adding food order item:', error);
+            showToast(window.foodOrderTranslations.general_error, 'danger');
         });
 }
 
 function updateFoodOrderItem(itemId, field, value) {
-    if (!isValidUUID(currentOrderId)) {
-        showToast(window.foodOrderTranslations.general_select_order, 'warning');
-        return;
-    }
-    const parsedValue = field === 'quantity' ? parseInt(value) : parseFloat(value);
-    if (isNaN(parsedValue) || (field === 'quantity' && parsedValue <= 0) || (field === 'price' && parsedValue < 0)) {
-        showToast(window.foodOrderTranslations.general_please_provide, 'warning');
-        return;
-    }
     fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', currentOrderId), {
         method: 'PUT',
-        body: JSON.stringify({ item_id: itemId, field, [field]: parsedValue })
+        body: JSON.stringify({ item_id: itemId, [field]: value })
     })
         .then(response => {
-            if (!response.ok) {
-                if (response.status === 403) {
-                    throw new Error(window.foodOrderTranslations.insufficient_credits);
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
+            if (response.status === 403) {
+                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
         })
@@ -264,7 +319,44 @@ function updateFoodOrderItem(itemId, field, value) {
             }
         })
         .catch(error => {
-            console.error('Error updating food order item:', error.message);
-            showToast(error.message || window.foodOrderTranslations.general_error, 'danger');
+            console.error('Error updating food order item:', error);
+            showToast(window.foodOrderTranslations.general_error, 'danger');
         });
+}
+
+function loadOfflineData() {
+    const cachedOrders = localStorage.getItem('foodOrders');
+    const cachedItems = localStorage.getItem('foodOrderItems');
+    if (cachedOrders) {
+        offlineData.orders = JSON.parse(cachedOrders);
+        renderFoodOrders(offlineData.orders);
+        renderManageOrders(offlineData.orders);
+    }
+    if (cachedItems) {
+        offlineData.items = JSON.parse(cachedItems);
+        if (currentOrderId && offlineData.items[currentOrderId]) {
+            renderFoodOrderItems(offlineData.items[currentOrderId]);
+        }
+    }
+}
+
+function format_currency(value) {
+    if (!value && value !== 0) return '0.00';
+    value = parseFloat(value);
+    if (isNaN(value)) return '0.00';
+    return value.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatTimeAgo(dateStr) {
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return window.foodOrderTranslations.just_now;
+    if (diffMins < 60) return `${diffMins} ${window.foodOrderTranslations.minutes_ago}`;
+    if (diffHours < 24) return `${diffHours} ${window.foodOrderTranslations.hours_ago}`;
+    return `${diffDays} ${window.foodOrderTranslations.days_ago}`;
 }
