@@ -4,7 +4,7 @@ Translations for the grocery management module in the FiCore application
 
 GROCERY_TRANSLATIONS = {
     'en': {
-        'grocery_management': 'Grocery Planner',
+        'grocery_management': 'Groceries',
         'grocery_management_desc': 'Plan and manage your grocery shopping',
         'grocery_tooltip': 'Organize your grocery lists and meal plans',
         'recent_activity_grocery_list_created': 'Created grocery list: {name}',
