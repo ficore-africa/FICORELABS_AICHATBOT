@@ -1,25 +1,3 @@
-{% if current_user.is_authenticated %}
-// Translation strings
-const translations = {
-    just_now: '{{ t("general_just_now", default="Just now") | e }}',
-    minutes_ago: '{{ t("general_minutes_ago", default="m ago") | e }}',
-    hours_ago: '{{ t("general_hours_ago", default="h ago") | e }}',
-    days_ago: '{{ t("general_days_ago", default="d ago") | e }}',
-    no_lists: '{{ t("grocery_no_lists", default="No grocery lists found") | e }}',
-    no_items: '{{ t("grocery_no_items", default="No items in this list") | e }}',
-    no_meal_plans: '{{ t("grocery_no_meal_plans", default="No meal plans found") | e }}',
-    no_suggestions: '{{ t("grocery_no_suggestions", default="No suggestions available") | e }}',
-    no_price_history: '{{ t("grocery_no_price_history", default="No price history available") | e }}',
-    grocery_list_created: '{{ t("grocery_list_created", default="Grocery list created") | e }}',
-    grocery_item_added: '{{ t("grocery_item_added", default="Item added to list") | e }}',
-    grocery_item_updated: '{{ t("grocery_item_updated", default="Item updated") | e }}',
-    grocery_list_shared: '{{ t("grocery_list_shared", default="List shared successfully") | e }}',
-    grocery_suggestion_added: '{{ t("grocery_suggestion_added", default="Suggestion added") | e }}',
-    grocery_suggestion_approved: '{{ t("grocery_suggestion_approved", default="Suggestion approved") | e }}',
-    grocery_meal_plan_created: '{{ t("grocery_meal_plan_created", default="Meal plan created") | e }}',
-    friday_reminder: '{{ t("grocery_friday_reminder", default="It's Friday! Time to prep your weekend grocery list.") | e }}'
-};
-
 let currentListId = null;
 let currentMealPlanId = null;
 let offlineData = { lists: [], items: {}, mealPlans: [], suggestions: {} };
@@ -42,86 +20,86 @@ function initGroceryPlanner() {
     root.innerHTML = `
         <ul class="nav nav-tabs mb-3" id="groceryTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="lists-tab" data-bs-toggle="tab" data-bs-target="#lists" type="button" role="tab">{{ t('grocery_lists', default='Lists') | e }}</button>
+                <button class="nav-link active" id="lists-tab" data-bs-toggle="tab" data-bs-target="#lists" type="button" role="tab">${window.groceryTranslations.grocery_lists}</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="meal-plans-tab" data-bs-toggle="tab" data-bs-target="#meal-plans" type="button" role="tab">{{ t('grocery_meal_plans', default='Meal Plans') | e }}</button>
+                <button class="nav-link" id="meal-plans-tab" data-bs-toggle="tab" data-bs-target="#meal-plans" type="button" role="tab">${window.groceryTranslations.grocery_meal_plans}</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="suggestions-tab" data-bs-toggle="tab" data-bs-target="#suggestions" type="button" role="tab">{{ t('grocery_suggestions', default='Suggestions') | e }}</button>
+                <button class="nav-link" id="suggestions-tab" data-bs-toggle="tab" data-bs-target="#suggestions" type="button" role="tab">${window.groceryTranslations.grocery_suggestions}</button>
             </li>
         </ul>
         <div class="tab-content" id="groceryTabContent">
             <div class="tab-pane fade show active" id="lists" role="tabpanel" aria-labelledby="lists-tab">
                 <div class="mb-3">
-                    <h6>{{ t('grocery_create_list', default='Create New List') | e }}</h6>
+                    <h6>${window.groceryTranslations.grocery_create_list}</h6>
                     <div class="input-group">
-                        <input type="text" class="form-control" id="newListName" placeholder="{{ t('grocery_list_name', default='List Name') | e }}">
-                        <input type="number" class="form-control" id="newListBudget" placeholder="{{ t('grocery_budget', default='Budget') | e }}" min="0" step="0.01">
-                        <button class="btn btn-primary" onclick="createGroceryList()">{{ t('grocery_create', default='Create') | e }}</button>
+                        <input type="text" class="form-control" id="newListName" placeholder="${window.groceryTranslations.grocery_list_name}">
+                        <input type="number" class="form-control" id="newListBudget" placeholder="${window.groceryTranslations.grocery_budget}" min="0" step="0.01">
+                        <button class="btn btn-primary" onclick="createGroceryList()">${window.groceryTranslations.grocery_create}</button>
                     </div>
                 </div>
                 <div id="groceryLists"></div>
                 <div id="groceryItems" class="mt-3"></div>
                 <div class="mt-3">
-                    <h6>{{ t('grocery_add_item', default='Add Item to List') | e }}</h6>
+                    <h6>${window.groceryTranslations.grocery_add_item}</h6>
                     <div class="input-group">
-                        <input type="text" class="form-control" id="newItemName" placeholder="{{ t('grocery_item_name', default='Item Name') | e }}">
-                        <input type="number" class="form-control" id="newItemQuantity" placeholder="{{ t('grocery_quantity', default='Quantity') | e }}" min="1">
-                        <input type="number" class="form-control" id="newItemPrice" placeholder="{{ t('grocery_price', default='Price') | e }}" min="0" step="0.01">
+                        <input type="text" class="form-control" id="newItemName" placeholder="${window.groceryTranslations.grocery_item_name}">
+                        <input type="number" class="form-control" id="newItemQuantity" placeholder="${window.groceryTranslations.grocery_quantity}" min="1">
+                        <input type="number" class="form-control" id="newItemPrice" placeholder="${window.groceryTranslations.grocery_price}" min="0" step="0.01">
                         <select class="form-select" id="newItemStatus">
-                            <option value="to_buy">{{ t('grocery_to_buy', default='To Buy') | e }}</option>
-                            <option value="in_pantry">{{ t('grocery_in_pantry', default='In Pantry') | e }}</option>
-                            <option value="bought">{{ t('grocery_bought', default='Bought') | e }}</option>
+                            <option value="to_buy">${window.groceryTranslations.grocery_to_buy}</option>
+                            <option value="in_pantry">${window.groceryTranslations.grocery_in_pantry}</option>
+                            <option value="bought">${window.groceryTranslations.grocery_bought}</option>
                         </select>
-                        <input type="text" class="form-control" id="newItemStore" placeholder="{{ t('grocery_store', default='Store') | e }}">
-                        <button class="btn btn-primary" onclick="addGroceryItem()">{{ t('grocery_add', default='Add') | e }}</button>
+                        <input type="text" class="form-control" id="newItemStore" placeholder="${window.groceryTranslations.grocery_store}">
+                        <button class="btn btn-primary" onclick="addGroceryItem()">${window.groceryTranslations.grocery_add}</button>
                     </div>
                 </div>
                 <div class="mt-3">
-                    <h6>{{ t('grocery_share_list', default='Share List') | e }}</h6>
+                    <h6>${window.groceryTranslations.grocery_share_list}</h6>
                     <div class="input-group">
-                        <input type="email" class="form-control" id="shareListEmail" placeholder="{{ t('grocery_collaborator_email', default='Collaborator Email') | e }}">
-                        <button class="btn btn-primary" onclick="shareGroceryList()">{{ t('grocery_share', default='Share') | e }}</button>
+                        <input type="email" class="form-control" id="shareListEmail" placeholder="${window.groceryTranslations.grocery_collaborator_email}">
+                        <button class="btn btn-primary" onclick="shareGroceryList()">${window.groceryTranslations.grocery_share}</button>
                     </div>
                 </div>
             </div>
             <div class="tab-pane fade" id="meal-plans" role="tabpanel" aria-labelledby="meal-plans-tab">
                 <div class="mb-3">
-                    <h6>{{ t('grocery_create_meal_plan', default='Create Meal Plan') | e }}</h6>
+                    <h6>${window.groceryTranslations.grocery_create_meal_plan}</h6>
                     <div class="input-group">
-                        <input type="text" class="form-control" id="newMealPlanName" placeholder="{{ t('grocery_meal_name', default='Meal Name') | e }}">
-                        <input type="number" class="form-control" id="newMealPlanBudget" placeholder="{{ t('grocery_budget', default='Budget') | e }}" min="0" step="0.01">
-                        <button class="btn btn-primary" onclick="createMealPlan()">{{ t('grocery_create', default='Create') | e }}</button>
+                        <input type="text" class="form-control" id="newMealPlanName" placeholder="${window.groceryTranslations.grocery_meal_name}">
+                        <input type="number" class="form-control" id="newMealPlanBudget" placeholder="${window.groceryTranslations.grocery_budget}" min="0" step="0.01">
+                        <button class="btn btn-primary" onclick="createMealPlan()">${window.groceryTranslations.grocery_create}</button>
                     </div>
                 </div>
                 <div id="mealPlans"></div>
                 <div class="mt-3">
-                    <h6>{{ t('grocery_add_ingredient', default='Add Ingredient') | e }}</h6>
+                    <h6>${window.groceryTranslations.grocery_add_ingredient}</h6>
                     <div class="input-group">
-                        <input type="text" class="form-control" id="newIngredientName" placeholder="{{ t('grocery_ingredient_name', default='Ingredient Name') | e }}">
-                        <input type="number" class="form-control" id="newIngredientQuantity" placeholder="{{ t('grocery_quantity', default='Quantity') | e }}" min="1">
-                        <input type="number" class="form-control" id="newIngredientPrice" placeholder="{{ t('grocery_price', default='Price') | e }}" min="0" step="0.01">
-                        <button class="btn btn-primary" onclick="addIngredient()">{{ t('grocery_add', default='Add') | e }}</button>
+                        <input type="text" class="form-control" id="newIngredientName" placeholder="${window.groceryTranslations.grocery_ingredient_name}">
+                        <input type="number" class="form-control" id="newIngredientQuantity" placeholder="${window.groceryTranslations.grocery_quantity}" min="1">
+                        <input type="number" class="form-control" id="newIngredientPrice" placeholder="${window.groceryTranslations.grocery_price}" min="0" step="0.01">
+                        <button class="btn btn-primary" onclick="addIngredient()">${window.groceryTranslations.grocery_add}</button>
                     </div>
                 </div>
             </div>
             <div class="tab-pane fade" id="suggestions" role="tabpanel" aria-labelledby="suggestions-tab">
                 <div class="mb-3">
-                    <h6>{{ t('grocery_suggested_items', default='Suggested Items') | e }}</h6>
+                    <h6>${window.groceryTranslations.grocery_suggested_items}</h6>
                     <div id="predictiveSuggestions"></div>
                 </div>
                 <div class="mb-3">
-                    <h6>{{ t('grocery_collaborator_suggestions', default='Collaborator Suggestions') | e }}</h6>
+                    <h6>${window.groceryTranslations.grocery_collaborator_suggestions}</h6>
                     <div id="collaboratorSuggestions"></div>
                 </div>
                 <div class="mt-3">
-                    <h6>{{ t('grocery_suggest_item', default='Suggest Item') | e }}</h6>
+                    <h6>${window.groceryTranslations.grocery_suggest_item}</h6>
                     <div class="input-group">
-                        <input type="text" class="form-control" id="suggestItemName" placeholder="{{ t('grocery_item_name', default='Item Name') | e }}">
-                        <input type="number" class="form-control" id="suggestItemQuantity" placeholder="{{ t('grocery_quantity', default='Quantity') | e }}" min="1">
-                        <input type="number" class="form-control" id="suggestItemPrice" placeholder="{{ t('grocery_price', default='Price') | e }}" min="0" step="0.01">
-                        <button class="btn btn-primary" onclick="suggestItem()">{{ t('grocery_suggest', default='Suggest') | e }}</button>
+                        <input type="text" class="form-control" id="suggestItemName" placeholder="${window.groceryTranslations.grocery_item_name}">
+                        <input type="number" class="form-control" id="suggestItemQuantity" placeholder="${window.groceryTranslations.grocery_quantity}" min="1">
+                        <input type="number" class="form-control" id="suggestItemPrice" placeholder="${window.groceryTranslations.grocery_price}" min="0" step="0.01">
+                        <button class="btn btn-primary" onclick="suggestItem()">${window.groceryTranslations.grocery_suggest}</button>
                     </div>
                 </div>
             </div>
@@ -144,10 +122,10 @@ async function fetchWithCSRF(url, options = {}) {
 
 // Grocery Planner Functions
 function loadGroceryLists() {
-    fetchWithCSRF('{{ url_for("personal.grocery.manage_lists") | e }}')
+    fetchWithCSRF(window.apiUrls.manageGroceryLists)
         .then(response => {
             if (response.status === 403) {
-                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
                 return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
@@ -172,7 +150,7 @@ function renderGroceryLists(lists) {
                 <div>
                     <span class="text-muted">Budget: ${format_currency(list.budget)}</span>
                     <span class="ms-2">Spent: ${format_currency(list.total_spent)}</span>
-                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadGroceryItems('${list.id}')">${translations.view_all}</button>
+                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadGroceryItems('${list - list.id}')">${window.groceryTranslations.general_view_all}</button>
                 </div>
             </div>
         `).join('');
@@ -180,16 +158,16 @@ function renderGroceryLists(lists) {
             loadGroceryItems(lists[0].id);
         }
     } else {
-        groceryListsEl.innerHTML = `<div class="text-muted">${translations.no_lists}</div>`;
+        groceryListsEl.innerHTML = `<div class="text-muted">${window.groceryTranslations.no_lists}</div>`;
     }
 }
 
 function loadGroceryItems(listId) {
     currentListId = listId;
-    fetchWithCSRF('{{ url_for("personal.grocery.manage_items", list_id="") | e }}' + listId)
+    fetchWithCSRF(window.apiUrls.manageGroceryItems.replace('{list_id}', listId))
         .then(response => {
             if (response.status === 403) {
-                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
                 return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
@@ -216,16 +194,16 @@ function renderGroceryItems(items) {
                     <input type="number" class="form-control" value="${item.quantity}" min="1" onchange="updateGroceryItem('${item.id}', 'quantity', this.value)">
                     <input type="number" class="form-control" value="${item.price}" min="0" step="0.01" onchange="updateGroceryItem('${item.id}', 'price', this.value)">
                     <select class="form-select" onchange="updateGroceryItem('${item.id}', 'status', this.value)">
-                        <option value="to_buy" ${item.status === 'to_buy' ? 'selected' : ''}>${translations.grocery_to_buy}</option>
-                        <option value="in_pantry" ${item.status === 'in_pantry' ? 'selected' : ''}>${translations.grocery_in_pantry}</option>
-                        <option value="bought" ${item.status === 'bought' ? 'selected' : ''}>${translations.grocery_bought}</option>
+                        <option value="to_buy" ${item.status === 'to_buy' ? 'selected' : ''}>${window.groceryTranslations.grocery_to_buy}</option>
+                        <option value="in_pantry" ${item.status === 'in_pantry' ? 'selected' : ''}>${window.groceryTranslations.grocery_in_pantry}</option>
+                        <option value="bought" ${item.status === 'bought' ? 'selected' : ''}>${window.groceryTranslations.grocery_bought}</option>
                     </select>
-                    <button class="btn btn-sm btn-outline-info" onclick="showPriceHistory('${item.name}')">${translations.grocery_price_history}</button>
+                    <button class="btn btn-sm btn-outline-info" onclick="showPriceHistory('${item.name}')">${window.groceryTranslations.grocery_price_history}</button>
                 </div>
             </div>
         `).join('');
     } else {
-        groceryItemsEl.innerHTML = `<div class="text-muted">${translations.no_items}</div>`;
+        groceryItemsEl.innerHTML = `<div class="text-muted">${window.groceryTranslations.no_items}</div>`;
     }
 }
 
@@ -233,16 +211,16 @@ function createGroceryList() {
     const name = document.getElementById('newListName').value;
     const budget = document.getElementById('newListBudget').value;
     if (!name || !budget) {
-        showToast('Please provide list name and budget', 'warning');
+        showToast(window.groceryTranslations.general_please_provide, 'warning');
         return;
     }
-    fetchWithCSRF('{{ url_for("personal.grocery.manage_lists") | e }}', {
+    fetchWithCSRF(window.apiUrls.manageGroceryLists, {
         method: 'POST',
         body: JSON.stringify({ name, budget })
     })
         .then(response => {
             if (response.status === 403) {
-                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
                 return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
@@ -251,7 +229,7 @@ function createGroceryList() {
             if (data.error) {
                 showToast(data.error, 'danger');
             } else {
-                showToast(translations.grocery_list_created, 'success');
+                showToast(window.groceryTranslations.grocery_list_created, 'success');
                 document.getElementById('newListName').value = '';
                 document.getElementById('newListBudget').value = '';
                 loadGroceryLists();
@@ -260,13 +238,13 @@ function createGroceryList() {
         })
         .catch(error => {
             console.error('Error creating grocery list:', error);
-            showToast('Error creating grocery list', 'danger');
+            showToast(window.groceryTranslations.general_error, 'danger');
         });
 }
 
 function addGroceryItem() {
     if (!currentListId) {
-        showToast('Please select a list first', 'warning');
+        showToast(window.groceryTranslations.general_select_list, 'warning');
         return;
     }
     const name = document.getElementById('newItemName').value;
@@ -275,16 +253,16 @@ function addGroceryItem() {
     const status = document.getElementById('newItemStatus').value;
     const store = document.getElementById('newItemStore').value;
     if (!name || !quantity || !price) {
-        showToast('Please provide item name, quantity, and price', 'warning');
+        showToast(window.groceryTranslations.general_please_provide, 'warning');
         return;
     }
-    fetchWithCSRF('{{ url_for("personal.grocery.manage_items", list_id="") | e }}' + currentListId, {
+    fetchWithCSRF(window.apiUrls.manageGroceryItems.replace('{list_id}', currentListId), {
         method: 'POST',
         body: JSON.stringify({ name, quantity, price, status, store })
     })
         .then(response => {
             if (response.status === 403) {
-                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
                 return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
@@ -293,7 +271,7 @@ function addGroceryItem() {
             if (data.error) {
                 showToast(data.error, 'danger');
             } else {
-                showToast(translations.grocery_item_added, 'success');
+                showToast(window.groceryTranslations.grocery_item_added, 'success');
                 document.getElementById('newItemName').value = '';
                 document.getElementById('newItemQuantity').value = '';
                 document.getElementById('newItemPrice').value = '';
@@ -304,18 +282,18 @@ function addGroceryItem() {
         })
         .catch(error => {
             console.error('Error adding grocery item:', error);
-            showToast('Error adding grocery item', 'danger');
+            showToast(window.groceryTranslations.general_error, 'danger');
         });
 }
 
 function updateGroceryItem(itemId, field, value) {
-    fetchWithCSRF('{{ url_for("personal.grocery.manage_items", list_id="") | e }}' + currentListId, {
+    fetchWithCSRF(window.apiUrls.manageGroceryItems.replace('{list_id}', currentListId), {
         method: 'PUT',
         body: JSON.stringify({ item_id: itemId, [field]: value })
     })
         .then(response => {
             if (response.status === 403) {
-                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
                 return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
@@ -324,34 +302,34 @@ function updateGroceryItem(itemId, field, value) {
             if (data.error) {
                 showToast(data.error, 'danger');
             } else {
-                showToast(translations.grocery_item_updated, 'success');
+                showToast(window.groceryTranslations.grocery_item_updated, 'success');
                 loadGroceryItems(currentListId);
                 loadFinancialSummary();
             }
         })
         .catch(error => {
             console.error('Error updating grocery item:', error);
-            showToast('Error updating grocery item', 'danger');
+            showToast(window.groceryTranslations.general_error, 'danger');
         });
 }
 
 function shareGroceryList() {
     if (!currentListId) {
-        showToast('Please select a list first', 'warning');
+        showToast(window.groceryTranslations.general_select_list, 'warning');
         return;
     }
     const email = document.getElementById('shareListEmail').value;
     if (!email) {
-        showToast('Please provide a collaborator email', 'warning');
+        showToast(window.groceryTranslations.general_please_provide_email, 'warning');
         return;
     }
-    fetchWithCSRF('{{ url_for("personal.grocery.share_list", list_id="") | e }}' + currentListId, {
+    fetchWithCSRF(window.apiUrls.shareGroceryList.replace('{list_id}', currentListId), {
         method: 'POST',
         body: JSON.stringify({ email })
     })
         .then(response => {
             if (response.status === 403) {
-                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
                 return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
@@ -360,22 +338,22 @@ function shareGroceryList() {
             if (data.error) {
                 showToast(data.error, 'danger');
             } else {
-                showToast(translations.grocery_list_shared, 'success');
+                showToast(window.groceryTranslations.grocery_list_shared, 'success');
                 document.getElementById('shareListEmail').value = '';
                 loadGroceryLists();
             }
         })
         .catch(error => {
             console.error('Error sharing grocery list:', error);
-            showToast('Error sharing grocery list', 'danger');
+            showToast(window.groceryTranslations.general_error, 'danger');
         });
 }
 
 function loadMealPlans() {
-    fetchWithCSRF('{{ url_for("personal.grocery.manage_meal_plans") | e }}')
+    fetchWithCSRF(window.apiUrls.manageMealPlans)
         .then(response => {
             if (response.status === 403) {
-                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
                 return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
@@ -398,8 +376,8 @@ function renderMealPlans(mealPlans) {
             <div class="meal-plan-item">
                 <span class="fw-semibold">${plan.name}</span>
                 <div>
-                    <button class="btn btn-sm btn-outline-primary" onclick="loadMealPlanIngredients('${plan.id}')">${translations.view_all}</button>
-                    <button class="btn btn-sm btn-outline-success" onclick="generateGroceryListFromMealPlan('${plan.id}')">Generate List</button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="loadMealPlanIngredients('${plan.id}')">${window.groceryTranslations.general_view_all}</button>
+                    <button class="btn btn-sm btn-outline-success" onclick="generateGroceryListFromMealPlan('${plan.id}')">${window.groceryTranslations.generate_list}</button>
                 </div>
             </div>
         `).join('');
@@ -407,16 +385,16 @@ function renderMealPlans(mealPlans) {
             loadMealPlanIngredients(mealPlans[0].id);
         }
     } else {
-        mealPlansEl.innerHTML = `<div class="text-muted">${translations.no_meal_plans}</div>`;
+        mealPlansEl.innerHTML = `<div class="text-muted">${window.groceryTranslations.no_meal_plans}</div>`;
     }
 }
 
 function loadMealPlanIngredients(mealPlanId) {
     currentMealPlanId = mealPlanId;
-    fetchWithCSRF('{{ url_for("personal.grocery.manage_meal_plans") | e }}')
+    fetchWithCSRF(window.apiUrls.manageMealPlans)
         .then(response => {
             if (response.status === 403) {
-                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
                 return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
@@ -450,16 +428,16 @@ function createMealPlan() {
     const name = document.getElementById('newMealPlanName').value;
     const budget = document.getElementById('newMealPlanBudget').value;
     if (!name) {
-        showToast('Please provide meal plan name', 'warning');
+        showToast(window.groceryTranslations.general_please_provide, 'warning');
         return;
     }
-    fetchWithCSRF('{{ url_for("personal.grocery.manage_meal_plans") | e }}', {
+    fetchWithCSRF(window.apiUrls.manageMealPlans, {
         method: 'POST',
         body: JSON.stringify({ name, budget, auto_generate_list: !!budget, ingredients: [] })
     })
         .then(response => {
             if (response.status === 403) {
-                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
                 return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
@@ -468,7 +446,7 @@ function createMealPlan() {
             if (data.error) {
                 showToast(data.error, 'danger');
             } else {
-                showToast(translations.grocery_meal_plan_created, 'success');
+                showToast(window.groceryTranslations.grocery_meal_plan_created, 'success');
                 document.getElementById('newMealPlanName').value = '';
                 document.getElementById('newMealPlanBudget').value = '';
                 loadMealPlans();
@@ -477,23 +455,23 @@ function createMealPlan() {
         })
         .catch(error => {
             console.error('Error creating meal plan:', error);
-            showToast('Error creating meal plan', 'danger');
+            showToast(window.groceryTranslations.general_error, 'danger');
         });
 }
 
 function addIngredient() {
     if (!currentMealPlanId) {
-        showToast('Please select a meal plan first', 'warning');
+        showToast(window.groceryTranslations.general_select_meal_plan, 'warning');
         return;
     }
     const name = document.getElementById('newIngredientName').value;
     const quantity = document.getElementById('newIngredientQuantity').value;
     const price = document.getElementById('newIngredientPrice').value;
     if (!name || !quantity || !price) {
-        showToast('Please provide ingredient name, quantity, and price', 'warning');
+        showToast(window.groceryTranslations.general_please_provide, 'warning');
         return;
     }
-    fetchWithCSRF('{{ url_for("personal.grocery.manage_meal_plans") | e }}', {
+    fetchWithCSRF(window.apiUrls.manageMealPlans, {
         method: 'POST',
         body: JSON.stringify({ 
             name: `Update for ${currentMealPlanId}`, 
@@ -503,7 +481,7 @@ function addIngredient() {
     })
         .then(response => {
             if (response.status === 403) {
-                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
                 return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
@@ -512,7 +490,7 @@ function addIngredient() {
             if (data.error) {
                 showToast(data.error, 'danger');
             } else {
-                showToast(translations.grocery_item_added, 'success');
+                showToast(window.groceryTranslations.grocery_item_added, 'success');
                 document.getElementById('newIngredientName').value = '';
                 document.getElementById('newIngredientQuantity').value = '';
                 document.getElementById('newIngredientPrice').value = '';
@@ -521,15 +499,15 @@ function addIngredient() {
         })
         .catch(error => {
             console.error('Error adding ingredient:', error);
-            showToast('Error adding ingredient', 'danger');
+            showToast(window.groceryTranslations.general_error, 'danger');
         });
 }
 
 function generateGroceryListFromMealPlan(mealPlanId) {
-    fetchWithCSRF('{{ url_for("personal.grocery.manage_meal_plans") | e }}')
+    fetchWithCSRF(window.apiUrls.manageMealPlans)
         .then(response => {
             if (response.status === 403) {
-                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
                 return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
@@ -537,7 +515,7 @@ function generateGroceryListFromMealPlan(mealPlanId) {
         .then(mealPlans => {
             const plan = mealPlans.find(p => p.id === mealPlanId);
             if (plan) {
-                fetchWithCSRF('{{ url_for("personal.grocery.manage_lists") | e }}', {
+                fetchWithCSRF(window.apiUrls.manageGroceryLists, {
                     method: 'POST',
                     body: JSON.stringify({
                         name: `${plan.name} Grocery List`,
@@ -547,7 +525,7 @@ function generateGroceryListFromMealPlan(mealPlanId) {
                 })
                     .then(response => {
                         if (response.status === 403) {
-                            showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                            showToast(window.groceryTranslations.insufficient_credits, 'error');
                             return Promise.reject(new Error('Unauthorized'));
                         }
                         return response.json();
@@ -556,28 +534,28 @@ function generateGroceryListFromMealPlan(mealPlanId) {
                         if (data.error) {
                             showToast(data.error, 'danger');
                         } else {
-                            showToast(translations.grocery_list_created, 'success');
+                            showToast(window.groceryTranslations.grocery_list_created, 'success');
                             loadGroceryLists();
                             loadFinancialSummary();
                         }
                     })
                     .catch(error => {
                         console.error('Error generating grocery list:', error);
-                        showToast('Error generating grocery list', 'danger');
+                        showToast(window.groceryTranslations.general_error, 'danger');
                     });
             }
         })
         .catch(error => {
             console.error('Error fetching meal plan:', error);
-            showToast('Error fetching meal plan', 'danger');
+            showToast(window.groceryTranslations.general_error, 'danger');
         });
 }
 
 function loadPredictiveSuggestions() {
-    fetchWithCSRF('{{ url_for("personal.grocery.predictive_suggestions") | e }}')
+    fetchWithCSRF(window.apiUrls.predictiveSuggestions)
         .then(response => {
             if (response.status === 403) {
-                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
                 return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
@@ -602,27 +580,27 @@ function renderPredictiveSuggestions(suggestions) {
                 <div>
                     <span>Qty: ${s.suggested_quantity}</span>
                     <span class="ms-2">Price: ${format_currency(s.estimated_price)}</span>
-                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="addSuggestedItem('${s.name}', ${s.suggested_quantity}, ${s.estimated_price})">Add</button>
+                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="addSuggestedItem('${s.name}', ${s.suggested_quantity}, ${s.estimated_price})">${window.groceryTranslations.grocery_add}</button>
                 </div>
             </div>
         `).join('');
     } else {
-        suggestionsEl.innerHTML = `<div class="text-muted">${translations.no_suggestions}</div>`;
+        suggestionsEl.innerHTML = `<div class="text-muted">${window.groceryTranslations.no_suggestions}</div>`;
     }
 }
 
 function addSuggestedItem(name, quantity, price) {
     if (!currentListId) {
-        showToast('Please select a list first', 'warning');
+        showToast(window.groceryTranslations.general_select_list, 'warning');
         return;
     }
-    fetchWithCSRF('{{ url_for("personal.grocery.manage_items", list_id="") | e }}' + currentListId, {
+    fetchWithCSRF(window.apiUrls.manageGroceryItems.replace('{list_id}', currentListId), {
         method: 'POST',
         body: JSON.stringify({ name, quantity, price, status: 'to_buy' })
     })
         .then(response => {
             if (response.status === 403) {
-                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
                 return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
@@ -631,22 +609,22 @@ function addSuggestedItem(name, quantity, price) {
             if (data.error) {
                 showToast(data.error, 'danger');
             } else {
-                showToast(translations.grocery_item_added, 'success');
+                showToast(window.groceryTranslations.grocery_item_added, 'success');
                 loadGroceryItems(currentListId);
                 loadFinancialSummary();
             }
         })
         .catch(error => {
             console.error('Error adding suggested item:', error);
-            showToast('Error adding suggested item', 'danger');
+            showToast(window.groceryTranslations.general_error, 'danger');
         });
 }
 
 function loadCollaboratorSuggestions(listId) {
-    fetchWithCSRF('{{ url_for("personal.grocery.manage_suggestions", list_id="") | e }}' + listId)
+    fetchWithCSRF(window.apiUrls.manageGrocerySuggestions.replace('{list_id}', listId))
         .then(response => {
             if (response.status === 403) {
-                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
                 return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
@@ -671,34 +649,34 @@ function renderCollaboratorSuggestions(suggestions) {
                 <div>
                     <span>Qty: ${s.quantity}</span>
                     <span class="ms-2">Price: ${format_currency(s.price)}</span>
-                    ${s.status === 'pending' ? `<button class="btn btn-sm btn-outline-success ms-2" onclick="approveSuggestion('${s.id}', '${currentListId}')">${translations.grocery_suggestion_approved}</button>` : ''}
+                    ${s.status === 'pending' ? `<button class="btn btn-sm btn-outline-success ms-2" onclick="approveSuggestion('${s.id}', '${currentListId}')">${window.groceryTranslations.grocery_suggestion_approve}</button>` : ''}
                 </div>
             </div>
         `).join('');
     } else {
-        suggestionsEl.innerHTML = `<div class="text-muted">${translations.no_suggestions}</div>`;
+        suggestionsEl.innerHTML = `<div class="text-muted">${window.groceryTranslations.no_suggestions}</div>`;
     }
 }
 
 function suggestItem() {
     if (!currentListId) {
-        showToast('Please select a list first', 'warning');
+        showToast(window.groceryTranslations.general_select_list, 'warning');
         return;
     }
     const name = document.getElementById('suggestItemName').value;
     const quantity = document.getElementById('suggestItemQuantity').value;
     const price = document.getElementById('suggestItemPrice').value;
     if (!name || !quantity || !price) {
-        showToast('Please provide item name, quantity, and price', 'warning');
+        showToast(window.groceryTranslations.general_please_provide, 'warning');
         return;
     }
-    fetchWithCSRF('{{ url_for("personal.grocery.manage_suggestions", list_id="") | e }}' + currentListId, {
+    fetchWithCSRF(window.apiUrls.manageGrocerySuggestions.replace('{list_id}', currentListId), {
         method: 'POST',
         body: JSON.stringify({ name, quantity, price })
     })
         .then(response => {
             if (response.status === 403) {
-                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
                 return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
@@ -707,7 +685,7 @@ function suggestItem() {
             if (data.error) {
                 showToast(data.error, 'danger');
             } else {
-                showToast(translations.grocery_suggestion_added, 'success');
+                showToast(window.groceryTranslations.grocery_suggestion_added, 'success');
                 document.getElementById('suggestItemName').value = '';
                 document.getElementById('suggestItemQuantity').value = '';
                 document.getElementById('suggestItemPrice').value = '';
@@ -716,17 +694,17 @@ function suggestItem() {
         })
         .catch(error => {
             console.error('Error suggesting item:', error);
-            showToast('Error suggesting item', 'danger');
+            showToast(window.groceryTranslations.general_error, 'danger');
         });
 }
 
 function approveSuggestion(suggestionId, listId) {
-    fetchWithCSRF('{{ url_for("personal.grocery.approve_suggestion", list_id=listId, suggestion_id=suggestionId) | e }}', {
+    fetchWithCSRF(window.apiUrls.approveGrocerySuggestion.replace('{list_id}', listId).replace('{suggestion_id}', suggestionId), {
         method: 'POST'
     })
         .then(response => {
             if (response.status === 403) {
-                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
                 return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
@@ -735,7 +713,7 @@ function approveSuggestion(suggestionId, listId) {
             if (data.error) {
                 showToast(data.error, 'danger');
             } else {
-                showToast(translations.grocery_suggestion_approved, 'success');
+                showToast(window.groceryTranslations.grocery_suggestion_approved, 'success');
                 loadGroceryItems(currentListId);
                 loadCollaboratorSuggestions(currentListId);
                 loadFinancialSummary();
@@ -743,15 +721,15 @@ function approveSuggestion(suggestionId, listId) {
         })
         .catch(error => {
             console.error('Error approving suggestion:', error);
-            showToast('Error approving suggestion', 'danger');
+            showToast(window.groceryTranslations.general_error, 'danger');
         });
 }
 
 function showPriceHistory(itemName) {
-    fetchWithCSRF('{{ url_for("personal.grocery.price_history", item_name="") | e }}' + encodeURIComponent(itemName))
+    fetchWithCSRF(window.apiUrls.priceHistory.replace('{item_name}', encodeURIComponent(itemName)))
         .then(response => {
             if (response.status === 403) {
-                showToast('Insufficient Ficore Credits. Please purchase more.', 'error');
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
                 return Promise.reject(new Error('Unauthorized'));
             }
             return response.json();
@@ -765,17 +743,17 @@ function showPriceHistory(itemName) {
                     <span>${h.store}: ${format_currency(h.price)}</span>
                     <span class="text-muted">${formatTimeAgo(h.date)}</span>
                 </div>
-            `).join('') : `<div class="text-muted">${translations.no_price_history}</div>`;
+            `).join('') : `<div class="text-muted">${window.groceryTranslations.no_price_history}</div>`;
             modalBody.innerHTML += `
                 <div class="mt-3">
-                    <h6>Price History for ${itemName} (Avg: ${format_currency(avgPrice)})</h6>
+                    <h6>${window.groceryTranslations.grocery_price_history_for} ${itemName} (Avg: ${format_currency(avgPrice)})</h6>
                     ${historyHtml}
                 </div>
             `;
         })
         .catch(error => {
             console.error('Error loading price history:', error);
-            showToast('Error loading price history', 'danger');
+            showToast(window.groceryTranslations.general_error, 'danger');
         });
 }
 
@@ -808,6 +786,19 @@ function format_currency(value) {
     if (!value && value !== 0) return '0.00';
     value = parseFloat(value);
     if (isNaN(value)) return '0.00';
-    return value.toLocaleString('en-NG', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    return value.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
-{% endif %}
+
+function formatTimeAgo(dateStr) {
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return window.groceryTranslations.just_now;
+    if (diffMins < 60) return `${diffMins} ${window.groceryTranslations.minutes_ago}`;
+    if (diffHours < 24) return `${diffHours} ${window.groceryTranslations.hours_ago}`;
+    return `${diffDays} ${window.groceryTranslations.days_ago}`;
+}
