@@ -2,6 +2,7 @@
     // Private scope to avoid conflicts
     let currentOrderId = null;
     let offlineData = { orders: [], items: {} };
+    let modalElement = null; // Track modal element for cleanup
 
     // CSRF Token Setup
     let csrfToken = null;
@@ -70,53 +71,94 @@
                 </div>
             `;
 
-            loadFoodOrders();
-            loadManageOrders();
-
             // Initialize Bootstrap tabs
             const tabEl = document.querySelector('#foodOrderTabs');
             if (tabEl) {
                 new bootstrap.Tab(tabEl.querySelector('.nav-link.active')).show();
             }
+
+            // Store modal element and attach cleanup listener
+            modalElement = document.getElementById('foodOrderModal');
+            if (modalElement) {
+                modalElement.addEventListener('hidden.bs.modal', cleanupModal);
+            }
+
+            // Load initial data
+            loadFoodOrders();
+            loadManageOrders();
         } catch (error) {
             console.error('Error initializing food order:', error);
             showToast(window.foodOrderTranslations.general_error, 'danger');
         }
     }
 
+    // Clean up modal state when hidden
+    function cleanupModal() {
+        try {
+            currentOrderId = null; // Reset current order
+            const foodOrdersEl = document.getElementById('foodOrders');
+            const foodOrderItemsEl = document.getElementById('foodOrderItems');
+            const manageOrdersEl = document.getElementById('manageFoodOrders');
+            if (foodOrdersEl) foodOrdersEl.innerHTML = '';
+            if (foodOrderItemsEl) foodOrderItemsEl.innerHTML = '';
+            if (manageOrdersEl) manageOrdersEl.innerHTML = '';
+            // Remove event listeners from tabs
+            const tabEl = document.querySelector('#foodOrderTabs');
+            if (tabEl) {
+                const tabs = tabEl.querySelectorAll('.nav-link');
+                tabs.forEach(tab => {
+                    const newTab = tab.cloneNode(true);
+                    tab.parentNode.replaceChild(newTab, tab);
+                });
+            }
+            // Ensure body scroll is restored
+            document.body.classList.remove('modal-open');
+            const modalBackdrop = document.querySelector('.modal-backdrop');
+            if (modalBackdrop) {
+                modalBackdrop.remove();
+            }
+        } catch (error) {
+            console.error('Error during modal cleanup:', error);
+        }
+    }
+
     // Fetch with CSRF token
     async function fetchWithCSRF(url, options = {}) {
-        const headers = {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrfToken,
-            ...options.headers
-        };
-        return fetch(url, { ...options, headers });
+        try {
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken,
+                ...options.headers
+            };
+            const response = await fetch(url, { ...options, headers });
+            return response;
+        } catch (error) {
+            console.error('Fetch error:', error);
+            throw error;
+        }
     }
 
     // Food Order Functions
-    function loadFoodOrders() {
-        fetchWithCSRF(window.apiUrls.manageFoodOrders)
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.foodOrderTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(orders => {
-                offlineData.orders = orders;
-                localStorage.setItem('foodOrders', JSON.stringify(orders));
-                renderFoodOrders(orders);
-            })
-            .catch(error => {
-                console.error('Error loading food orders:', error);
-                renderFoodOrders([]);
-            });
+    async function loadFoodOrders() {
+        try {
+            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrders);
+            if (response.status === 403) {
+                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                throw new Error('Unauthorized');
+            }
+            const orders = await response.json();
+            offlineData.orders = orders;
+            localStorage.setItem('foodOrders', JSON.stringify(orders));
+            renderFoodOrders(orders);
+        } catch (error) {
+            console.error('Error loading food orders:', error);
+            renderFoodOrders([]);
+        }
     }
 
     function renderFoodOrders(orders) {
         const foodOrdersEl = document.getElementById('foodOrders');
+        if (!foodOrdersEl) return;
         if (orders && orders.length > 0) {
             foodOrdersEl.innerHTML = orders.map(order => `
                 <div class="food-order-item">
@@ -135,28 +177,26 @@
         }
     }
 
-    function loadManageOrders() {
-        fetchWithCSRF(window.apiUrls.manageFoodOrders)
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.foodOrderTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(orders => {
-                offlineData.orders = orders;
-                localStorage.setItem('foodOrders', JSON.stringify(orders));
-                renderManageOrders(orders);
-            })
-            .catch(error => {
-                console.error('Error loading food orders for management:', error);
-                renderManageOrders([]);
-            });
+    async function loadManageOrders() {
+        try {
+            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrders);
+            if (response.status === 403) {
+                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                throw new Error('Unauthorized');
+            }
+            const orders = await response.json();
+            offlineData.orders = orders;
+            localStorage.setItem('foodOrders', JSON.stringify(orders));
+            renderManageOrders(orders);
+        } catch (error) {
+            console.error('Error loading food orders for management:', error);
+            renderManageOrders([]);
+        }
     }
 
     function renderManageOrders(orders) {
         const manageOrdersEl = document.getElementById('manageFoodOrders');
+        if (!manageOrdersEl) return;
         if (orders && orders.length > 0) {
             manageOrdersEl.innerHTML = orders.map(order => `
                 <div class="food-order-item">
@@ -172,63 +212,59 @@
         }
     }
 
-    function deleteFoodOrder(orderId, orderName) {
+    async function deleteFoodOrder(orderId, orderName) {
         if (!confirm(`Delete food order "${orderName}"?`)) {
             return;
         }
-        fetchWithCSRF(window.apiUrls.manageFoodOrders + `/${orderId}`, {
-            method: 'DELETE'
-        })
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.foodOrderTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.error) {
-                    showToast(data.error, 'danger');
-                } else {
-                    showToast('Food order deleted', 'success');
-                    if (currentOrderId === orderId) {
-                        currentOrderId = null;
-                        document.getElementById('foodOrderItems').innerHTML = '';
-                    }
-                    loadFoodOrders();
-                    loadManageOrders();
-                    loadFinancialSummary();
-                }
-            })
-            .catch(error => {
-                console.error('Error deleting food order:', error);
-                showToast(window.foodOrderTranslations.general_error, 'danger');
+        try {
+            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrders + `/${orderId}`, {
+                method: 'DELETE'
             });
+            if (response.status === 403) {
+                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                throw new Error('Unauthorized');
+            }
+            const data = await response.json();
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast('Food order deleted', 'success');
+                if (currentOrderId === orderId) {
+                    currentOrderId = null;
+                    const foodOrderItemsEl = document.getElementById('foodOrderItems');
+                    if (foodOrderItemsEl) foodOrderItemsEl.innerHTML = '';
+                }
+                loadFoodOrders();
+                loadManageOrders();
+                loadFinancialSummary();
+            }
+        } catch (error) {
+            console.error('Error deleting food order:', error);
+            showToast(window.foodOrderTranslations.general_error, 'danger');
+        }
     }
 
-    function loadFoodOrderItems(orderId) {
+    async function loadFoodOrderItems(orderId) {
         currentOrderId = orderId;
-        fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', orderId))
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.foodOrderTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(items => {
-                offlineData.items[orderId] = items;
-                localStorage.setItem('foodOrderItems', JSON.stringify(offlineData.items));
-                renderFoodOrderItems(items);
-            })
-            .catch(error => {
-                console.error('Error loading food order items:', error);
-                renderFoodOrderItems([]);
-            });
+        try {
+            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', orderId));
+            if (response.status === 403) {
+                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                throw new Error('Unauthorized');
+            }
+            const items = await response.json();
+            offlineData.items[orderId] = items;
+            localStorage.setItem('foodOrderItems', JSON.stringify(offlineData.items));
+            renderFoodOrderItems(items);
+        } catch (error) {
+            console.error('Error loading food order items:', error);
+            renderFoodOrderItems([]);
+        }
     }
 
     function renderFoodOrderItems(items) {
         const foodOrderItemsEl = document.getElementById('foodOrderItems');
+        if (!foodOrderItemsEl) return;
         if (items && items.length > 0) {
             foodOrderItemsEl.innerHTML = items.map(item => `
                 <div class="food-order-item">
@@ -244,43 +280,40 @@
         }
     }
 
-    function createFoodOrder() {
+    async function createFoodOrder() {
         const name = document.getElementById('newOrderName').value;
         const vendor = document.getElementById('newOrderVendor').value;
         if (!name || !vendor) {
             showToast(window.foodOrderTranslations.general_please_provide, 'warning');
             return;
         }
-        fetchWithCSRF(window.apiUrls.manageFoodOrders, {
-            method: 'POST',
-            body: JSON.stringify({ name, vendor })
-        })
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.foodOrderTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.error) {
-                    showToast(data.error, 'danger');
-                } else {
-                    showToast(window.foodOrderTranslations.order_created, 'success');
-                    document.getElementById('newOrderName').value = '';
-                    document.getElementById('newOrderVendor').value = '';
-                    loadFoodOrders();
-                    loadManageOrders();
-                    loadFinancialSummary();
-                }
-            })
-            .catch(error => {
-                console.error('Error creating food order:', error);
-                showToast(window.foodOrderTranslations.general_error, 'danger');
+        try {
+            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrders, {
+                method: 'POST',
+                body: JSON.stringify({ name, vendor })
             });
+            if (response.status === 403) {
+                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                throw new Error('Unauthorized');
+            }
+            const data = await response.json();
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast(window.foodOrderTranslations.order_created, 'success');
+                document.getElementById('newOrderName').value = '';
+                document.getElementById('newOrderVendor').value = '';
+                loadFoodOrders();
+                loadManageOrders();
+                loadFinancialSummary();
+            }
+        } catch (error) {
+            console.error('Error creating food order:', error);
+            showToast(window.foodOrderTranslations.general_error, 'danger');
+        }
     }
 
-    function addFoodOrderItem() {
+    async function addFoodOrderItem() {
         if (!currentOrderId) {
             showToast(window.foodOrderTranslations.general_select_order, 'warning');
             return;
@@ -292,60 +325,54 @@
             showToast(window.foodOrderTranslations.general_please_provide, 'warning');
             return;
         }
-        fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', currentOrderId), {
-            method: 'POST',
-            body: JSON.stringify({ name, quantity, price })
-        })
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.foodOrderTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.error) {
-                    showToast(data.error, 'danger');
-                } else {
-                    showToast(window.foodOrderTranslations.item_added, 'success');
-                    document.getElementById('newOrderItemName').value = '';
-                    document.getElementById('newOrderItemQuantity').value = '';
-                    document.getElementById('newOrderItemPrice').value = '';
-                    loadFoodOrderItems(currentOrderId);
-                    loadFinancialSummary();
-                }
-            })
-            .catch(error => {
-                console.error('Error adding food order item:', error);
-                showToast(window.foodOrderTranslations.general_error, 'danger');
+        try {
+            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', currentOrderId), {
+                method: 'POST',
+                body: JSON.stringify({ name, quantity, price })
             });
+            if (response.status === 403) {
+                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                throw new Error('Unauthorized');
+            }
+            const data = await response.json();
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast(window.foodOrderTranslations.item_added, 'success');
+                document.getElementById('newOrderItemName').value = '';
+                document.getElementById('newOrderItemQuantity').value = '';
+                document.getElementById('newOrderItemPrice').value = '';
+                loadFoodOrderItems(currentOrderId);
+                loadFinancialSummary();
+            }
+        } catch (error) {
+            console.error('Error adding food order item:', error);
+            showToast(window.foodOrderTranslations.general_error, 'danger');
+        }
     }
 
-    function updateFoodOrderItem(itemId, field, value) {
-        fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', currentOrderId), {
-            method: 'PUT',
-            body: JSON.stringify({ item_id: itemId, [field]: value })
-        })
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.foodOrderTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.error) {
-                    showToast(data.error, 'danger');
-                } else {
-                    showToast(window.foodOrderTranslations.item_updated, 'success');
-                    loadFoodOrderItems(currentOrderId);
-                    loadFinancialSummary();
-                }
-            })
-            .catch(error => {
-                console.error('Error updating food order item:', error);
-                showToast(window.foodOrderTranslations.general_error, 'danger');
+    async function updateFoodOrderItem(itemId, field, value) {
+        try {
+            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', currentOrderId), {
+                method: 'PUT',
+                body: JSON.stringify({ item_id: itemId, [field]: value })
             });
+            if (response.status === 403) {
+                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                throw new Error('Unauthorized');
+            }
+            const data = await response.json();
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast(window.foodOrderTranslations.item_updated, 'success');
+                loadFoodOrderItems(currentOrderId);
+                loadFinancialSummary();
+            }
+        } catch (error) {
+            console.error('Error updating food order item:', error);
+            showToast(window.foodOrderTranslations.general_error, 'danger');
+        }
     }
 
     function loadOfflineData() {
@@ -394,4 +421,7 @@
         loadFoodOrderItems,
         deleteFoodOrder
     };
+
+    // Initialize CSRF token
+    setupCSRF();
 })();
