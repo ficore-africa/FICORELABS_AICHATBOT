@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, current_app, request, session, redirect, url_for
 from flask_login import current_user, login_required
-from utils import requires_role, get_mongo_db, check_ficore_credit_balance, deduct_ficore_credits
+from utils import requires_role, get_mongo_db, check_ficore_credit_balance
 from translations import trans
 import logging
 from datetime import datetime
