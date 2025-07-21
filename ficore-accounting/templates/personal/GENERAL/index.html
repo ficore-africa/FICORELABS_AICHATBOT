@@ -3,7 +3,28 @@
 
 {% block content %}
 <div class="page-container">
+    <noscript>
+        <div style="padding: 1rem; background: #ffebee; border: 1px solid #ef5350; margin-bottom: 1rem;">
+            {{ t('general_js_required', default='JavaScript is required to use this dashboard. Please enable it in your browser.') | e }}
+        </div>
+    </noscript>
+
     {% if current_user.is_authenticated %}
+        <!-- Daily Tools -->
+        <section class="section-card daily-tools">
+            <h3 class="section-title">{{ t('general_daily_tools', default='Daily Tools') | e }}</h3>
+            <div class="quick-actions">
+                <a href="#" class="quick-action-card grocery-management text-decoration-none" data-bs-toggle="modal" data-bs-target="#groceryModal" aria-label="{{ t('grocery_management', default='Smart Grocery Planner') | e }}">
+                    <i class="bi bi-cart action-icon text-info"></i>
+                    <div class="action-label">{{ t('grocery_management', default='Smart Grocery Planner') | e }}</div>
+                </a>
+                <a href="#" class="quick-action-card food-order text-decoration-none" data-bs-toggle="modal" data-bs-target="#foodOrderModal" aria-label="{{ t('food_order', default='Food Order') | e }}">
+                    <i class="bi bi-box-seam action-icon text-primary"></i>
+                    <div class="action-label">{{ t('food_order', default='Food Order') | e }}</div>
+                </a>
+            </div>
+        </section>
+
         <!-- Financial Snapshots -->
         <div class="section-card financial-snapshots">
             <h3 class="section-title">{{ t('general_snapshots', default='Financial Snapshots') | e }}</h3>
@@ -30,17 +51,18 @@
                     </div>
                     <div class="status-label" id="billsStatusLabel"></div>
                 </div>
-                <div class="summary-card grocery-card">
-                    <div class="card-header d-flex align-items-center gap-3">
-                        <i class="bi bi-cart card-icon text-info"></i>
-                        <span class="fw-bold">{{ t('grocery_shopping_budget', default='Shopping Budget') | e }}</span>
-                    </div>
-                    <div class="card-amount mt-3" id="groceryBudget">
-                        <span class="currency-symbol">₦</span>
-                        <span class="amount-value" data-amount="0">0.00</span>
-                    </div>
-                    <div class="status-label" id="groceryStatusLabel"></div>
-                </div>
+            </div>
+            <div class="mt-3 text-end">
+                <button class="btn btn-link" onclick="toggleAmountVisibility()" data-bs-toggle="tooltip" data-bs-title="{{ t('general_toggle_visibility', default='Toggle amount visibility') | e }}">
+                    <i id="visibilityIcon" class="bi bi-eye"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Balance Overview -->
+        <div class="section-card balance-overview">
+            <h3 class="section-title">{{ t('general_balance_overview', default='Balance Overview') | e }}</h3>
+            <div class="summary-cards">
                 <div class="summary-card wallet-balance">
                     <div class="card-header d-flex align-items-center gap-3">
                         <i class="bi bi-wallet2 card-icon text-success"></i>
@@ -51,11 +73,6 @@
                         <span class="amount-value" data-amount="0">0.00</span>
                     </div>
                 </div>
-            </div>
-            <div class="mt-3 text-end">
-                <button class="btn btn-link" onclick="toggleAmountVisibility()" data-bs-toggle="tooltip" data-bs-title="{{ t('general_toggle_visibility', default='Toggle amount visibility') | e }}">
-                    <i id="visibilityIcon" class="bi bi-eye"></i>
-                </button>
             </div>
         </div>
 
@@ -103,24 +120,6 @@
             </div>
         </div>
 
-        <!-- Quick Actions -->
-        <section class="quick-actions-section">
-            <h3 class="quick-actions-heading">{{ t('general_quick_actions', default='Quick Actions') | e }}</h3>
-            <div class="quick-actions">
-                {% for tool in tools_for_template %}
-                <a href="{{ tool.get('url', '#') | e }}" class="quick-action-card {{ tool.get('class', '') | e }} text-decoration-none" 
-                   {% if tool.get('label_key') == 'grocery_management' %}data-bs-toggle="modal" data-bs-target="#groceryModal"{% endif %}
-                   aria-label="{{ t(tool.get('label_key', ''), default=tool.get('label', 'Tool')) | e }}">
-                    {% if tool.badge %}
-                    <span class="badge bg-danger position-absolute top-0 end-0 translate-middle rounded-pill">{{ tool.badge | e }}</span>
-                    {% endif %}
-                    <i class="bi {{ tool.get('icon', 'bi-circle') | e }} action-icon"></i>
-                    <div class="action-label">{{ t(tool.get('label_key', ''), default=tool.get('label', 'Tool')) | e }}</div>
-                </a>
-                {% endfor %}
-            </div>
-        </section>
-
         <!-- Explore Features -->
         <div class="section-card explore-section">
             <h3 class="section-title">{{ t('general_explore_features', default='Explore Features') | e }}</h3>
@@ -146,7 +145,35 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
+                        <noscript>
+                            <div style="padding: 1rem; background: #ffebee; border: 1px solid #ef5350;">
+                                {{ t('grocery_js_required', default='JavaScript is required to use the Grocery Planner. Please enable it in your browser.') | e }}
+                            </div>
+                        </noscript>
                         <div id="grocery-planner-root"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('general_close', default='Close') | e }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Food Order Modal -->
+        <div class="modal fade" id="foodOrderModal" tabindex="-1" aria-labelledby="foodOrderModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="foodOrderModalLabel">{{ t('food_order', default='Food Order') | e }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <noscript>
+                            <div style="padding: 1rem; background: #ffebee; border: 1px solid #ef5350;">
+                                {{ t('food_order_js_required', default='JavaScript is required to use the Food Order feature. Please enable it in your browser.') | e }}
+                            </div>
+                        </noscript>
+                        <div id="food-order-root"></div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('general_close', default='Close') | e }}</button>
@@ -201,14 +228,14 @@
     font-weight: 500;
     margin-top: 0.25rem;
 }
-.grocery-item, .meal-plan-item, .suggestion-item {
+.grocery-item, .meal-plan-item, .suggestion-item, .food-order-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0.5rem 0;
     border-bottom: 1px solid #e9ecef;
 }
-.grocery-item select, .grocery-item input, .meal-plan-item input, .suggestion-item input {
+.grocery-item select, .grocery-item input, .meal-plan-item input, .suggestion-item input, .food-order-item input {
     max-width: 100px;
 }
 </style>
@@ -218,6 +245,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/grocery.js') }}"></script>
+<script src="{{ url_for('static', filename='js/food-order.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize tooltips
@@ -250,6 +278,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize grocery planner
     initGroceryPlanner();
+
+    // Initialize food order
+    initFoodOrder();
 
     // Check for Friday reminder
     const today = new Date();
