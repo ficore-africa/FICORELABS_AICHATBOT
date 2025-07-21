@@ -7,6 +7,8 @@ function setupCSRF() {
     const metaTag = document.querySelector('meta[name="csrf-token"]');
     if (metaTag) {
         csrfToken = metaTag.getAttribute('content');
+    } else {
+        console.warn('CSRF token not found. Requests may fail if CSRF protection is enabled.');
     }
 }
 
@@ -14,7 +16,10 @@ function setupCSRF() {
 function initFoodOrder() {
     setupCSRF();
     const root = document.getElementById('food-order-root');
-    if (!root) return;
+    if (!root) {
+        console.error('Food order root element not found');
+        return;
+    }
 
     root.innerHTML = `
         <div class="mb-3">
@@ -45,7 +50,7 @@ function initFoodOrder() {
 async function fetchWithCSRF(url, options = {}) {
     const headers = {
         'Content-Type': 'application/json',
-        'X-CSRF-Token': csrfToken,
+        ...(csrfToken && { 'X-CSRF-Token': csrfToken }),
         ...options.headers
     };
     return fetch(url, { ...options, headers });
@@ -55,9 +60,11 @@ async function fetchWithCSRF(url, options = {}) {
 function loadFoodOrders() {
     fetchWithCSRF(window.apiUrls.manageFoodOrders)
         .then(response => {
-            if (response.status === 403) {
-                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
-                return Promise.reject(new Error('Unauthorized'));
+            if (!response.ok) {
+                if (response.status === 403) {
+                    throw new Error(window.foodOrderTranslations.insufficient_credits);
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
@@ -67,8 +74,9 @@ function loadFoodOrders() {
             renderFoodOrders(orders);
         })
         .catch(error => {
-            console.error('Error loading food orders:', error);
-            renderFoodOrders([]);
+            console.error('Error loading food orders:', error.message);
+            showToast(error.message || window.foodOrderTranslations.general_error, 'danger');
+            renderFoodOrders(offlineData.orders || []);
         });
 }
 
@@ -79,7 +87,7 @@ function renderFoodOrders(orders) {
             <div class="food-order-item">
                 <span class="fw-semibold">${order.name} (Vendor: ${order.vendor})</span>
                 <div>
-                    <span class="text-muted">Total: ${format_currency(order.total_cost)}</span>
+                    <span class="text-muted">Total: ${formatCurrency(order.total_cost)}</span>
                     <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadFoodOrderItems('${order.id}')">${window.foodOrderTranslations.general_view_all}</button>
                 </div>
             </div>
@@ -96,9 +104,11 @@ function loadFoodOrderItems(orderId) {
     currentOrderId = orderId;
     fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', orderId))
         .then(response => {
-            if (response.status === 403) {
-                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
-                return Promise.reject(new Error('Unauthorized'));
+            if (!response.ok) {
+                if (response.status === 403) {
+                    throw new Error(window.foodOrderTranslations.insufficient_credits);
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
@@ -108,8 +118,9 @@ function loadFoodOrderItems(orderId) {
             renderFoodOrderItems(items);
         })
         .catch(error => {
-            console.error('Error loading food order items:', error);
-            renderFoodOrderItems([]);
+            console.error('Error loading food order items:', error.message);
+            showToast(error.message || window.foodOrderTranslations.no_items, 'danger');
+            renderFoodOrderItems(offlineData.items[orderId] || []);
         });
 }
 
@@ -131,8 +142,8 @@ function renderFoodOrderItems(items) {
 }
 
 function createFoodOrder() {
-    const name = document.getElementById('newOrderName').value;
-    const vendor = document.getElementById('newOrderVendor').value;
+    const name = document.getElementById('newOrderName').value.trim();
+    const vendor = document.getElementById('newOrderVendor').value.trim();
     if (!name || !vendor) {
         showToast(window.foodOrderTranslations.general_please_provide, 'warning');
         return;
@@ -142,9 +153,11 @@ function createFoodOrder() {
         body: JSON.stringify({ name, vendor })
     })
         .then(response => {
-            if (response.status === 403) {
-                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
-                return Promise.reject(new Error('Unauthorized'));
+            if (!response.ok) {
+                if (response.status === 403) {
+                    throw new Error(window.foodOrderTranslations.insufficient_credits);
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
@@ -160,8 +173,8 @@ function createFoodOrder() {
             }
         })
         .catch(error => {
-            console.error('Error creating food order:', error);
-            showToast(window.foodOrderTranslations.general_error, 'danger');
+            console.error('Error creating food order:', error.message);
+            showToast(error.message || window.foodOrderTranslations.general_error, 'danger');
         });
 }
 
@@ -170,10 +183,10 @@ function addFoodOrderItem() {
         showToast(window.foodOrderTranslations.general_select_order, 'warning');
         return;
     }
-    const name = document.getElementById('newItemName').value;
-    const quantity = document.getElementById('newItemQuantity').value;
-    const price = document.getElementById('newItemPrice').value;
-    if (!name || !quantity || !price) {
+    const name = document.getElementById('newItemName').value.trim();
+    const quantity = parseInt(document.getElementById('newItemQuantity').value);
+    const price = parseFloat(document.getElementById('newItemPrice').value);
+    if (!name || !quantity || quantity <= 0 || !price || price < 0) {
         showToast(window.foodOrderTranslations.general_please_provide, 'warning');
         return;
     }
@@ -182,9 +195,11 @@ function addFoodOrderItem() {
         body: JSON.stringify({ name, quantity, price })
     })
         .then(response => {
-            if (response.status === 403) {
-                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
-                return Promise.reject(new Error('Unauthorized'));
+            if (!response.ok) {
+                if (response.status === 403) {
+                    throw new Error(window.foodOrderTranslations.insufficient_credits);
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
@@ -201,20 +216,27 @@ function addFoodOrderItem() {
             }
         })
         .catch(error => {
-            console.error('Error adding food order item:', error);
-            showToast(window.foodOrderTranslations.general_error, 'danger');
+            console.error('Error adding food order item:', error.message);
+            showToast(error.message || window.foodOrderTranslations.general_error, 'danger');
         });
 }
 
 function updateFoodOrderItem(itemId, field, value) {
+    const parsedValue = field === 'quantity' ? parseInt(value) : parseFloat(value);
+    if (isNaN(parsedValue) || (field === 'quantity' && parsedValue <= 0) || (field === 'price' && parsedValue < 0)) {
+        showToast(window.foodOrderTranslations.general_please_provide, 'warning');
+        return;
+    }
     fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', currentOrderId), {
         method: 'PUT',
-        body: JSON.stringify({ item_id: itemId, [field]: value })
+        body: JSON.stringify({ item_id: itemId, field, [field]: parsedValue })
     })
         .then(response => {
-            if (response.status === 403) {
-                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
-                return Promise.reject(new Error('Unauthorized'));
+            if (!response.ok) {
+                if (response.status === 403) {
+                    throw new Error(window.foodOrderTranslations.insufficient_credits);
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
@@ -228,14 +250,7 @@ function updateFoodOrderItem(itemId, field, value) {
             }
         })
         .catch(error => {
-            console.error('Error updating food order item:', error);
-            showToast(window.foodOrderTranslations.general_error, 'danger');
+            console.error('Error updating food order item:', error.message);
+            showToast(error.message || window.foodOrderTranslations.general_error, 'danger');
         });
-}
-
-function format_currency(value) {
-    if (!value && value !== 0) return '0.00';
-    value = parseFloat(value);
-    if (isNaN(value)) return '0.00';
-    return value.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
