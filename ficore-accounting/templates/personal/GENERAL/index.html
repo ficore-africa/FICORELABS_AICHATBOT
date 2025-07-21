@@ -21,7 +21,7 @@
                     <i class="bi bi-cart action-icon text-info"></i>
                     <div class="action-label">Smart Grocery Planner</div>
                 </a>
-                <a href="#" class="quick-action-card food-order text-decoration-none" data-bs-toggle="modal" data-bs-target="#foodOrderModal" aria-label="Food Order">
+                <a href="#" class="quick-action-card food-order text-decoration-none" data-bs-toggle="modal" data-bs-target="#foodOrderModal" aria-label="Food Order" onclick="debugModalTrigger('foodOrderModal')">
                     <i class="bi bi-box-seam action-icon text-primary"></i>
                     <div class="action-label">Food Order</div>
                 </a>
@@ -229,6 +229,8 @@
 {% block extra_scripts %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/static/js/grocery.js"></script>
+<script src="/static/js/food-order.js"></script>
 <script>
 window.groceryTranslations = {
     just_now: "Just now",
@@ -350,6 +352,18 @@ function formatTimeAgo(timestamp) {
     if (hours < 24) return hours + " " + window.groceryTranslations.hours_ago;
     const days = Math.floor(hours / 24);
     return days + " " + window.groceryTranslations.days_ago;
+}
+
+function debugModalTrigger(modalId) {
+    console.log(`Attempting to trigger modal: ${modalId}`);
+    const modalEl = document.getElementById(modalId);
+    if (modalEl) {
+        console.log(`Modal element found: ${modalId}`);
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    } else {
+        console.error(`Modal element not found: ${modalId}`);
+    }
 }
 
 function toggleAmountVisibility() {
@@ -566,6 +580,4 @@ document.addEventListener('DOMContentLoaded', function() {
     initFoodOrder();
 });
 </script>
-<script src="/static/js/grocery.js"></script>
-<script src="/static/js/food-order.js"></script>
 {% endblock %}
