@@ -15,16 +15,18 @@ from personal.bill import bill_bp
 from personal.budget import budget_bp
 from personal.summaries import summaries_bp
 from personal.grocery import grocery_bp
+from personal.food_order import food_order_bp
 
 personal_bp.register_blueprint(bill_bp)
 personal_bp.register_blueprint(budget_bp)
 personal_bp.register_blueprint(summaries_bp)
 personal_bp.register_blueprint(grocery_bp)
+personal_bp.register_blueprint(food_order_bp)
 
 def init_app(app):
     """Initialize all personal finance sub-blueprints."""
     try:
-        for blueprint in [bill_bp, budget_bp, summaries_bp, grocery_bp]:
+        for blueprint in [bill_bp, budget_bp, summaries_bp, grocery_bp, food_order_bp]:
             if hasattr(blueprint, 'init_app'):
                 blueprint.init_app(app)
                 current_app.logger.info(f"Initialized {blueprint.name} blueprint", extra={'session_id': 'no-request-context'})
@@ -44,24 +46,6 @@ def index():
         # Hardcoded PERSONAL_TOOLS
         hardcoded_tools = [
             {
-                "endpoint": "personal.budget.main",
-                "label": "Budget",
-                "label_key": "budget_budget_planner",
-                "description_key": "budget_budget_desc",
-                "tooltip_key": "budget_tooltip",
-                "icon": "bi-wallet",
-                "url": url_for("personal.budget.main", _external=True)
-            },
-            {
-                "endpoint": "personal.bill.main",
-                "label": "Bills",
-                "label_key": "bill_bill_planner",
-                "description_key": "bill_bill_desc",
-                "tooltip_key": "bill_tooltip",
-                "icon": "bi-receipt",
-                "url": url_for("personal.bill.main", _external=True)
-            },
-            {
                 "endpoint": "personal.grocery.index",
                 "label": "Grocery Planner",
                 "label_key": "grocery_management",
@@ -71,13 +55,13 @@ def index():
                 "url": "#"  # Modal trigger, no server-side endpoint
             },
             {
-                "endpoint": "credits.history",
-                "label": "Ficore Credits",
-                "label_key": "credits_your_wallet",
-                "description_key": "credits_your_wallet_desc",
-                "tooltip_key": "credits_your_wallet_tooltip",
-                "icon": "bi-coin",
-                "url": url_for("credits.history", _external=True)
+                "endpoint": "personal.food_order.index",
+                "label": "Food Order",
+                "label_key": "food_order",
+                "description_key": "food_order_desc",
+                "tooltip_key": "food_order_tooltip",
+                "icon": "bi-box-seam",
+                "url": "#"  # Modal trigger, no server-side endpoint
             },
         ]
 
@@ -108,6 +92,15 @@ def index():
                 "description_key": "grocery_management_desc",
                 "tooltip_key": "grocery_tooltip",
                 "icon": "bi-cart",
+                "url": "#"  # Modal trigger, no server-side endpoint
+            },
+            {
+                "endpoint": "personal.food_order.index",
+                "label": "Food Order",
+                "label_key": "food_order",
+                "description_key": "food_order_desc",
+                "tooltip_key": "food_order_tooltip",
+                "icon": "bi-box-seam",
                 "url": "#"  # Modal trigger, no server-side endpoint
             },
             {
