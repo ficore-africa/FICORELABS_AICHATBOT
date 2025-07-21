@@ -55,17 +55,15 @@ def deduct_ficore_credits(db, user_id, amount, action, order_id=None):
         
         current_app.logger.info(f"Deducted {amount} Ficore Credits for {action} by user {user_id}", extra={'session_id': session.get('sid', 'unknown')})
         return True
-    except ValueError as e:
+    except (ValueError, errors.PyMongoError) as e:
         current_app.logger.error(f"Transaction aborted for user {user_id}, action: {action}: {str(e)}", extra={'session_id': session.get('sid', 'unknown')})
-        mongo_session.abort_transaction()
-        return False
-    except errors.PyMongoError as e:
-        current_app.logger.error(f"MongoDB error during Ficore Credit deduction for user {user_id}, action: {action}: {str(e)}", extra={'session_id': session.get('sid', 'unknown')})
-        mongo_session.abort_transaction()
         return False
     except Exception as e:
         current_app.logger.error(f"Error deducting {amount} Ficore Credits for {action} by user {user_id}: {str(e)}", extra={'session_id': session.get('sid', 'unknown')})
         return False
+    finally:
+        if 'mongo_session' in locals():
+            mongo_session.end_session()
 
 @food_order_bp.route('/manage_orders', methods=['GET', 'POST'])
 @login_required
@@ -269,6 +267,7 @@ def manage_items(order_id):
 def init_app(app):
     """Initialize the food order blueprint."""
     try:
+        app.register_blueprint(food_order_bp)
         current_app.logger.info("Food order blueprint initialized successfully", extra={'session_id': 'no-request-context'})
     except Exception as e:
         current_app.logger.error(f"Error initializing food order blueprint: {str(e)}", extra={'session_id': 'no-request-context'})
