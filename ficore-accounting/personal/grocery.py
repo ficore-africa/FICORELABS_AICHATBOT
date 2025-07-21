@@ -54,13 +54,11 @@ def deduct_ficore_credits(db, user_id, amount, action, item_id=None, mongo_sessi
         logger.error(f"Transaction aborted for user {user_id}, action: {action}: {str(e)}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
         if not mongo_session:
             session_to_use.__exit__(None, None, None)
-        session_to_use.abort_transaction()
         return False
     except errors.PyMongoError as e:
         logger.error(f"MongoDB error during Ficore Credit deduction for user {user_id}, action: {action}: {str(e)}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
         if not mongo_session:
             session_to_use.__exit__(None, None, None)
-        session_to_use.abort_transaction()
         return False
     except Exception as e:
         logger.error(f"Error deducting {amount} Ficore Credits for {action} by user {user_id}: {str(e)}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
@@ -192,7 +190,8 @@ def delete_list(list_id):
             if not check_ficore_credit_balance(required_amount=2.0, user_id=current_user.id):
                 logger.warning(f"Insufficient Ficore Credits for deleting list {list_id} by user {current_user.id}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                 return jsonify({'error': trans('grocery_insufficient_credits', default='Insufficient Ficore Credits to delete a list. Please purchase more credits.')}), 403
-        with db.client.start_session() as mongo_session:
+        mongo_session = db.client.start_session()
+        try:
             with mongo_session.start_transaction():
                 db.grocery_items.delete_many({'list_id': list_id}, session=mongo_session)
                 db.grocery_suggestions.delete_many({'list_id': list_id}, session=mongo_session)
@@ -204,18 +203,18 @@ def delete_list(list_id):
                     if not deduct_ficore_credits(db, current_user.id, 2.0, 'delete_grocery_list', list_id, mongo_session):
                         logger.error(f"Failed to deduct 2.0 Ficore Credits for deleting list {list_id} by user {current_user.id}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                         raise ValueError(f"Failed to deduct Ficore Credits for deleting list {list_id}")
-        logger.info(f"Deleted grocery list {list_id} for user {current_user.id}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-        return jsonify({'message': trans('grocery_list_deleted', default='Grocery list deleted successfully')}), 200
-    except ValueError as e:
-        logger.error(f"Transaction aborted for deleting list {list_id} by user {current_user.id}: {str(e)}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-        mongo_session.abort_transaction()
-        return jsonify({'error': trans('grocery_credit_deduction_failed', default='Failed to deduct Ficore Credits for deleting list.')}), 500
-    except errors.PyMongoError as e:
-        logger.error(f"MongoDB error during deletion of list {list_id} for user {current_user.id}: {str(e)}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-        mongo_session.abort_transaction()
-        return jsonify({'error': trans('grocery_list_error', default='Error deleting grocery list')}), 500
+            logger.info(f"Deleted grocery list {list_id} for user {current_user.id}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+            mongo_session.end_session()
+            return jsonify({'message': trans('grocery_list_deleted', default='Grocery list deleted successfully')}), 200
+        except (ValueError, errors.PyMongoError) as e:
+            logger.error(f"Transaction aborted for deleting list {list_id} by user {current_user.id}: {str(e)}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+            mongo_session.abort_transaction()
+            mongo_session.end_session()
+            return jsonify({'error': trans('grocery_list_error', default='Error deleting grocery list')}), 500
     except Exception as e:
         logger.error(f"Error deleting grocery list {list_id} for user {current_user.id}: {str(e)}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+        if 'mongo_session' in locals():
+            mongo_session.end_session()
         return jsonify({'error': trans('grocery_list_error', default='Error deleting grocery list')}), 500
 
 @grocery_bp.route('/lists/<list_id>/items', methods=['GET', 'POST', 'PUT'])
