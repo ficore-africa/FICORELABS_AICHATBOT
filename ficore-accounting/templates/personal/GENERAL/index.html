@@ -109,7 +109,20 @@
                     View All
                 </a>
             </div>
-            <div id="recentActivityList">
+            <div id="recentActivityListLimited">
+                <div class="recent-activity-card">
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="bi bi-info-circle text-muted"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-description fw-semibold">No recent activity</div>
+                            <div class="activity-time text-muted">Start by adding a budget or bill</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="recentActivityListFull" style="display: none;">
                 <div class="recent-activity-card">
                     <div class="activity-item">
                         <div class="activity-icon">
@@ -335,6 +348,7 @@ window.apiUrls = {
 };
 
 let amountsVisible = true;
+let isActivityExpanded = false;
 
 function formatCurrency(value) {
     if (!value && value !== 0) return '0.00';
@@ -376,6 +390,17 @@ function toggleAmountVisibility() {
     document.querySelectorAll('.amount-value').forEach(el => {
         el.textContent = amountsVisible ? formatCurrency(el.dataset.amount) : '****';
     });
+}
+
+function toggleRecentActivities() {
+    const limitedList = document.getElementById('recentActivityListLimited');
+    const fullList = document.getElementById('recentActivityListFull');
+    const viewAllButton = document.getElementById('viewAllActivities');
+    
+    isActivityExpanded = !isActivityExpanded;
+    limitedList.style.display = isActivityExpanded ? 'none' : 'block';
+    fullList.style.display = isActivityExpanded ? 'block' : 'none';
+    viewAllButton.textContent = isActivityExpanded ? 'View Less' : 'View All';
 }
 
 function loadFinancialSummary() {
@@ -473,8 +498,39 @@ function loadRecentActivity() {
     fetch(window.apiUrls.recentActivity)
         .then(response => response.json())
         .then(activities => {
-            const activityList = document.getElementById('recentActivityList');
-            activityList.innerHTML = activities.length > 0 ? activities.map(activity => `
+            const limitedList = document.getElementById('recentActivityListLimited');
+            const fullList = document.getElementById('recentActivityListFull');
+            const limitedActivities = activities.slice(0, 2); // Show only the two most recent activities
+
+            // Render limited view (top 2 activities)
+            limitedList.innerHTML = limitedActivities.length > 0 ? limitedActivities.map(activity => `
+                <div class="recent-activity-card">
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="${activity.icon} text-${activity.type}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-description fw-semibold">${activity.description}</div>
+                            <div class="activity-time text-muted">${formatTimeAgo(activity.timestamp)}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('') : `
+                <div class="recent-activity-card">
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="bi bi-info-circle text-muted"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-description fw-semibold">No recent activity</div>
+                            <div class="activity-time text-muted">Start by adding a budget or bill</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Render full view (all activities)
+            fullList.innerHTML = activities.length > 0 ? activities.map(activity => `
                 <div class="recent-activity-card">
                     <div class="activity-item">
                         <div class="activity-icon">
@@ -500,7 +556,25 @@ function loadRecentActivity() {
                 </div>
             `;
         })
-        .catch(error => console.error('Error loading recent activity:', error));
+        .catch(error => {
+            console.error('Error loading recent activity:', error);
+            const limitedList = document.getElementById('recentActivityListLimited');
+            const fullList = document.getElementById('recentActivityListFull');
+            limitedList.innerHTML = `
+                <div class="recent-activity-card">
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="bi bi-info-circle text-muted"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-description fw-semibold">Error loading activities</div>
+                            <div class="activity-time text-muted">Please try again later</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            fullList.innerHTML = limitedList.innerHTML;
+        });
 }
 
 function loadNotifications() {
