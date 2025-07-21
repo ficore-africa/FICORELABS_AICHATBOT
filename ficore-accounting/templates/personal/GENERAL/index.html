@@ -21,7 +21,7 @@
                     <i class="bi bi-cart action-icon text-info"></i>
                     <div class="action-label">Smart Grocery Planner</div>
                 </a>
-                <a href="#" class="quick-action-card food-order text-decoration-none" data-bs-toggle="modal" data-bs-target="#foodOrderModal" aria-label="Food Order" onclick="debugModalTrigger('foodOrderModal')">
+                <a href="#" class="quick-action-card food-order text-decoration-none" data-bs-toggle="modal" data-bs-target="#foodOrderModal" aria-label="Food Order">
                     <i class="bi bi-box-seam action-icon text-primary"></i>
                     <div class="action-label">Food Order</div>
                 </a>
@@ -264,8 +264,8 @@ window.apiUrls = {
     predictiveSuggestions: "/personal/grocery/suggestions",
     manageFoodOrders: "/personal/food_order/manage_orders",
     manageFoodOrderItems: "/personal/food_order/manage_items/{order_id}",
-    getNearestVendor: "/food_order/get_nearest_vendor",
-    reorderFoodOrder: "/food_order/reorder/{order_id}"
+    reorderFoodOrder: "/personal/food_order/reorder/{order_id}",
+    getNearestVendor: "/personal/food_order/nearest_vendor"
 };
 
 let amountsVisible = true;
@@ -289,18 +289,6 @@ function formatTimeAgo(timestamp) {
     if (hours < 24) return hours + " " + window.groceryTranslations.hours_ago;
     const days = Math.floor(hours / 24);
     return days + " " + window.groceryTranslations.days_ago;
-}
-
-function debugModalTrigger(modalId) {
-    console.log(`Attempting to trigger modal: ${modalId}`);
-    const modalEl = document.getElementById(modalId);
-    if (modalEl) {
-        console.log(`Modal element found: ${modalId}`);
-        const modal = new bootstrap.Modal(modalEl);
-        modal.show();
-    } else {
-        console.error(`Modal element not found: ${modalId}`);
-    }
 }
 
 function toggleAmountVisibility() {
@@ -573,15 +561,21 @@ document.addEventListener('DOMContentLoaded', function() {
     loadFinancialSummary();
     loadRecentActivity();
     loadNotifications();
-    if (typeof groceryModule !== 'undefined' && typeof groceryModule.initGroceryPlanner === 'function') {
-        groceryModule.initGroceryPlanner();
-    } else {
-        console.warn('groceryModule.initGroceryPlanner is not defined');
-    }
-    if (typeof foodOrderModule !== 'undefined' && typeof foodOrderModule.initFoodOrder === 'function') {
-        foodOrderModule.initFoodOrder();
-    } else {
-        console.warn('foodOrderModule.initFoodOrder is not defined');
+    try {
+        if (typeof groceryModule !== 'undefined' && typeof groceryModule.initGroceryPlanner === 'function') {
+            groceryModule.initGroceryPlanner();
+        } else {
+            console.warn('groceryModule.initGroceryPlanner is not defined');
+        }
+        if (typeof foodOrderModule !== 'undefined' && typeof foodOrderModule.initFoodOrder === 'function') {
+            foodOrderModule.initFoodOrder();
+        } else {
+            console.error('foodOrderModule.initFoodOrder is not defined');
+            showToast('Failed to initialize Food Order feature', 'danger');
+        }
+    } catch (error) {
+        console.error('Error initializing modules:', error);
+        showToast('Error initializing application', 'danger');
     }
 });
 </script>
