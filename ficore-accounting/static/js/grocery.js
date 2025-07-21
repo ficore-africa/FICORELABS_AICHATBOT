@@ -1,8 +1,8 @@
 (function () {
     // Private scope to avoid conflicts
     let currentListId = null;
-    let currentMealPlanId = null;
-    let offlineData = { lists: [], items: {}, mealPlans: [], suggestions: {} };
+    let offlineData = { lists: [], items: {} };
+    let deletionTimer = null;
 
     // CSRF Token Setup
     let csrfToken = null;
@@ -38,12 +38,6 @@
             <ul class="nav nav-tabs mb-3" id="groceryTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="lists-tab" data-bs-toggle="tab" data-bs-target="#lists" type="button" role="tab">${window.groceryTranslations.grocery_lists}</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="meal-plans-tab" data-bs-toggle="tab" data-bs-target="#meal-plans" type="button" role="tab">${window.groceryTranslations.grocery_meal_plans}</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="suggestions-tab" data-bs-toggle="tab" data-bs-target="#suggestions" type="button" role="tab">${window.groceryTranslations.grocery_suggestions}</button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="manage-list-tab" data-bs-toggle="tab" data-bs-target="#manage-list" type="button" role="tab">${window.groceryTranslations.grocery_manage_list}</button>
@@ -84,45 +78,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="tab-pane fade" id="meal-plans" role="tabpanel" aria-labelledby="meal-plans-tab">
-                    <div class="mb-3">
-                        <h6>${window.groceryTranslations.grocery_create_meal_plan}</h6>
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="newMealPlanName" placeholder="${window.groceryTranslations.grocery_meal_name}">
-                            <input type="number" class="form-control" id="newMealPlanBudget" placeholder="${window.groceryTranslations.grocery_budget}" min="0" step="0.01">
-                            <button class="btn btn-primary" onclick="groceryModule.createMealPlan()">${window.groceryTranslations.grocery_create}</button>
-                        </div>
-                    </div>
-                    <div id="mealPlans"></div>
-                    <div class="mt-3">
-                        <h6>${window.groceryTranslations.grocery_add_ingredient}</h6>
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="newIngredientName" placeholder="${window.groceryTranslations.grocery_ingredient_name}">
-                            <input type="number" class="form-control" id="newIngredientQuantity" placeholder="${window.groceryTranslations.grocery_quantity}" min="1">
-                            <input type="number" class="form-control" id="newIngredientPrice" placeholder="${window.groceryTranslations.grocery_price}" min="0" step="0.01">
-                            <button class="btn btn-primary" onclick="groceryModule.addIngredient()">${window.groceryTranslations.grocery_add}</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="tab-pane fade" id="suggestions" role="tabpanel" aria-labelledby="suggestions-tab">
-                    <div class="mb-3">
-                        <h6>${window.groceryTranslations.grocery_suggested_items}</h6>
-                        <div id="predictiveSuggestions"></div>
-                    </div>
-                    <div class="mb-3">
-                        <h6>${window.groceryTranslations.grocery_collaborator_suggestions}</h6>
-                        <div id="collaboratorSuggestions"></div>
-                    </div>
-                    <div class="mt-3">
-                        <h6>${window.groceryTranslations.grocery_suggest_item}</h6>
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="suggestItemName" placeholder="${window.groceryTranslations.grocery_item_name}">
-                            <input type="number" class="form-control" id="suggestItemQuantity" placeholder="${window.groceryTranslations.grocery_quantity}" min="1">
-                            <input type="number" class="form-control" id="suggestItemPrice" placeholder="${window.groceryTranslations.grocery_price}" min="0" step="0.01">
-                            <button class="btn btn-primary" onclick="groceryModule.suggestItem()">${window.groceryTranslations.grocery_suggest}</button>
-                        </div>
-                    </div>
-                </div>
                 <div class="tab-pane fade" id="manage-list" role="tabpanel" aria-labelledby="manage-list-tab">
                     <div class="mb-3">
                         <h6>${window.groceryTranslations.grocery_manage_list}</h6>
@@ -130,10 +85,65 @@
                     </div>
                 </div>
             </div>
+            <div class="modal fade" id="listDetailsModal" tabindex="-1" aria-labelledby="listDetailsModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="listDetailsModalLabel">${window.groceryTranslations.grocery_list_details}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body" id="listDetailsModalBody"></div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${window.groceryTranslations.grocery_close}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="deleteConfirmModalLabel">${window.groceryTranslations.grocery_confirm_delete}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p id="deleteConfirmMessage"></p>
+                            <p id="countdownMessage"></p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${window.groceryTranslations.grocery_cancel}</button>
+                            <button type="button" class="btn btn-danger" id="confirmDeleteButton">${window.groceryTranslations.grocery_delete}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal fade" id="editListModal" tabindex="-1" aria-labelledby="editListModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editListModalLabel">${window.groceryTranslations.grocery_edit_list}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="editListName" class="form-label">${window.groceryTranslations.grocery_list_name}</label>
+                                <input type="text" class="form-control" id="editListName">
+                            </div>
+                            <div class="mb-3">
+                                <label for="editListBudget" class="form-label">${window.groceryTranslations.grocery_budget}</label>
+                                <input type="number" class="form-control" id="editListBudget" min="0" step="0.01">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${window.groceryTranslations.grocery_cancel}</button>
+                            <button type="button" class="btn btn-primary" id="saveEditListButton">${window.groceryTranslations.grocery_save}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         `;
 
         loadGroceryLists();
-        loadPredictiveSuggestions();
         loadManageLists();
 
         // Initialize Bootstrap tabs
@@ -158,7 +168,7 @@
 
     // Grocery Planner Functions
     function loadGroceryLists() {
-        fetchWithCSRF(window.apiUrls.manageGroceryLists)
+        fetchWithCSRF(`${window.apiUrls.manageGroceryLists}?status=active`)
             .then(response => {
                 if (response.status === 403) {
                     showToast(window.groceryTranslations.insufficient_credits, 'error');
@@ -186,10 +196,9 @@
                     <div class="d-flex align-items-center gap-2">
                         <span class="text-muted">Budget: ${format_currency(list.budget)}</span>
                         <span class="ms-2">Spent: ${format_currency(list.total_spent)}</span>
-                        <span class="ms-2">Status: ${list.status}</span>
                         <button class="btn btn-sm btn-outline-primary ms-2" onclick="groceryModule.loadGroceryItems('${list.id}')">${window.groceryTranslations.general_view_all}</button>
-                        <button class="btn btn-sm btn-outline-success ms-2" onclick="groceryModule.saveGroceryList('${list.id}')" ${list.status === 'saved' ? 'disabled' : ''}>Save</button>
-                        <button class="btn btn-sm btn-outline-info ms-2" onclick="groceryModule.exportGroceryListToPDF('${list.id}')" ${list.status !== 'saved' ? 'disabled' : ''}>Export to PDF</button>
+                        <button class="btn btn-sm btn-outline-info ms-2" onclick="groceryModule.showListDetails('${list.id}')">${window.groceryTranslations.grocery_view_details}</button>
+                        <button class="btn btn-sm btn-outline-success ms-2" onclick="groceryModule.saveGroceryList('${list.id}')" ${list.status === 'saved' ? 'disabled' : ''}>${window.groceryTranslations.grocery_save}</button>
                     </div>
                 </div>
             `).join('');
@@ -202,7 +211,7 @@
     }
 
     function loadManageLists() {
-        fetchWithCSRF(window.apiUrls.manageGroceryLists)
+        fetchWithCSRF(`${window.apiUrls.manageGroceryLists}?status=saved`)
             .then(response => {
                 if (response.status === 403) {
                     showToast(window.groceryTranslations.insufficient_credits, 'error');
@@ -212,11 +221,11 @@
             })
             .then(lists => {
                 offlineData.lists = lists;
-                localStorage.setItem('groceryLists', JSON.stringify(lists));
+                localStorage.setItem('manageGroceryLists', JSON.stringify(lists));
                 renderManageLists(lists);
             })
             .catch(error => {
-                console.error('Error loading grocery lists for management:', error);
+                console.error('Error loading manage lists:', error);
                 renderManageLists([]);
             });
     }
@@ -229,149 +238,16 @@
                     <span class="fw-semibold">${list.name}</span>
                     <div class="d-flex align-items-center gap-2">
                         <span class="text-muted">Budget: ${format_currency(list.budget)}</span>
-                        <span class="ms-2">Status: ${list.status}</span>
-                        <button class="btn btn-sm btn-outline-success ms-2" onclick="groceryModule.saveGroceryList('${list.id}')" ${list.status === 'saved' ? 'disabled' : ''}>Save</button>
-                        <button class="btn btn-sm btn-outline-info ms-2" onclick="groceryModule.exportGroceryListToPDF('${list.id}')" ${list.status !== 'saved' ? 'disabled' : ''}>Export to PDF</button>
-                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="groceryModule.deleteGroceryList('${list.id}', '${list.name}')">Delete</button>
+                        <span class="ms-2">Created: ${formatTimeAgo(list.created_at)}</span>
+                        <button class="btn btn-sm btn-outline-primary ms-2" onclick="groceryModule.editGroceryList('${list.id}', '${list.name}', ${list.budget})">${window.groceryTranslations.grocery_edit}</button>
+                        <button class="btn btn-sm btn-outline-info ms-2" onclick="groceryModule.showListDetails('${list.id}')">${window.groceryTranslations.grocery_view_details}</button>
+                        <button class="btn btn-sm btn-outline-info ms-2" onclick="groceryModule.exportGroceryListToPDF('${list.id}')">${window.groceryTranslations.grocery_export_pdf}</button>
+                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="groceryModule.initiateDeleteGroceryList('${list.id}', '${list.name}')">${window.groceryTranslations.grocery_delete}</button>
                     </div>
                 </div>
             `).join('');
         } else {
             manageListsEl.innerHTML = `<div class="text-muted">${window.groceryTranslations.no_lists}</div>`;
-        }
-    }
-
-    const saveGroceryList = debounce(function (listId) {
-        fetchWithCSRF(window.apiUrls.manageGroceryLists + `/${listId}/save`, {
-            method: 'PUT'
-        })
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.groceryTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.error) {
-                    showToast(data.error, 'danger');
-                } else {
-                    showToast('Grocery list saved', 'success');
-                    loadGroceryLists();
-                    loadManageLists();
-                }
-            })
-            .catch(error => {
-                console.error('Error saving grocery list:', error);
-                showToast(window.groceryTranslations.general_error, 'danger');
-            });
-    }, 500);
-
-    const exportGroceryListToPDF = debounce(function (listId) {
-        fetchWithCSRF(window.apiUrls.manageGroceryLists + `/${listId}/export_pdf`, {
-            method: 'GET',
-            responseType: 'blob'
-        })
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.groceryTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.blob();
-            })
-            .then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `grocery_list_${listId}.pdf`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
-                showToast('Grocery list exported to PDF', 'success');
-            })
-            .catch(error => {
-                console.error('Error exporting grocery list to PDF:', error);
-                showToast(window.groceryTranslations.general_error, 'danger');
-            });
-    }, 500);
-
-    function deleteGroceryList(listId, listName) {
-        if (!confirm(`Delete grocery list "${listName}"?`)) {
-            return;
-        }
-        fetchWithCSRF(window.apiUrls.manageGroceryLists + `/${listId}`, {
-            method: 'DELETE'
-        })
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.groceryTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.error) {
-                    showToast(data.error, 'danger');
-                } else {
-                    showToast('Grocery list deleted', 'success');
-                    if (currentListId === listId) {
-                        currentListId = null;
-                        document.getElementById('groceryItems').innerHTML = '';
-                    }
-                    loadGroceryLists();
-                    loadManageLists();
-                    loadFinancialSummary();
-                }
-            })
-            .catch(error => {
-                console.error('Error deleting grocery list:', error);
-                showToast(window.groceryTranslations.general_error, 'danger');
-            });
-    }
-
-    function loadGroceryItems(listId) {
-        currentListId = listId;
-        fetchWithCSRF(window.apiUrls.manageGroceryItems.replace('{list_id}', listId))
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.groceryTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(items => {
-                offlineData.items[listId] = items;
-                localStorage.setItem('groceryItems', JSON.stringify(offlineData.items));
-                renderGroceryItems(items);
-                loadCollaboratorSuggestions(listId);
-            })
-            .catch(error => {
-                console.error('Error loading grocery items:', error);
-                renderGroceryItems([]);
-            });
-    }
-
-    function renderGroceryItems(items) {
-        const groceryItemsEl = document.getElementById('groceryItems');
-        if (items && items.length > 0) {
-            groceryItemsEl.innerHTML = items.map(item => `
-                <div class="grocery-item">
-                    <span class="fw-semibold">${item.name} (${item.category})</span>
-                    <div class="d-flex align-items-center gap-2">
-                        <input type="number" class="form-control" value="${item.quantity}" min="1" onchange="groceryModule.updateGroceryItem('${item.id}', 'quantity', this.value)">
-                        <input type="number" class="form-control" value="${item.price}" min="0" step="0.01" onchange="groceryModule.updateGroceryItem('${item.id}', 'price', this.value)">
-                        <select class="form-select" onchange="groceryModule.updateGroceryItem('${item.id}', 'status', this.value)">
-                            <option value="to_buy" ${item.status === 'to_buy' ? 'selected' : ''}>${window.groceryTranslations.grocery_to_buy}</option>
-                            <option value="in_pantry" ${item.status === 'in_pantry' ? 'selected' : ''}>${window.groceryTranslations.grocery_in_pantry}</option>
-                            <option value="bought" ${item.status === 'bought' ? 'selected' : ''}>${window.groceryTranslations.grocery_bought}</option>
-                        </select>
-                        <button class="btn btn-sm btn-outline-info" onclick="groceryModule.showPriceHistory('${item.name}')">${window.groceryTranslations.grocery_price_history}</button>
-                    </div>
-                </div>
-            `).join('');
-        } else {
-            groceryItemsEl.innerHTML = `<div class="text-muted">${window.groceryTranslations.no_items}</div>`;
         }
     }
 
@@ -402,7 +278,6 @@
                     document.getElementById('newListBudget').value = '';
                     loadGroceryLists();
                     loadManageLists();
-                    loadFinancialSummary();
                 }
             })
             .catch(error => {
@@ -410,6 +285,222 @@
                 showToast(window.groceryTranslations.general_error, 'danger');
             });
     }, 500);
+
+    const saveGroceryList = debounce(function (listId) {
+        fetchWithCSRF(`${window.apiUrls.manageGroceryLists}/${listId}/save`, {
+            method: 'PUT'
+        })
+            .then(response => {
+                if (response.status === 403) {
+                    showToast(window.groceryTranslations.insufficient_credits, 'error');
+                    return Promise.reject(new Error('Unauthorized'));
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    showToast(data.error, 'danger');
+                } else {
+                    showToast(window.groceryTranslations.grocery_list_saved, 'success');
+                    loadGroceryLists();
+                    loadManageLists();
+                }
+            })
+            .catch(error => {
+                console.error('Error saving grocery list:', error);
+                showToast(window.groceryTranslations.general_error, 'danger');
+            });
+    }, 500);
+
+    const editGroceryList = debounce(function (listId, currentName, currentBudget) {
+        const modal = new bootstrap.Modal(document.getElementById('editListModal'));
+        document.getElementById('editListName').value = currentName;
+        document.getElementById('editListBudget').value = currentBudget;
+        document.getElementById('saveEditListButton').onclick = () => {
+            const name = document.getElementById('editListName').value;
+            const budget = document.getElementById('editListBudget').value;
+            if (!name || !budget) {
+                showToast(window.groceryTranslations.general_please_provide, 'warning');
+                return;
+            }
+            fetchWithCSRF(`${window.apiUrls.manageGroceryLists}/${listId}/edit`, {
+                method: 'PUT',
+                body: JSON.stringify({ name, budget })
+            })
+                .then(response => {
+                    if (response.status === 403) {
+                        showToast(window.groceryTranslations.insufficient_credits, 'error');
+                        return Promise.reject(new Error('Unauthorized'));
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        showToast(data.error, 'danger');
+                    } else {
+                        showToast(window.groceryTranslations.grocery_list_updated, 'success');
+                        modal.hide();
+                        loadGroceryLists();
+                        loadManageLists();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error editing grocery list:', error);
+                    showToast(window.groceryTranslations.general_error, 'danger');
+                });
+        };
+        modal.show();
+    }, 500);
+
+    const exportGroceryListToPDF = debounce(function (listId) {
+        fetchWithCSRF(`${window.apiUrls.manageGroceryLists}/${listId}/export_pdf`, {
+            method: 'GET',
+            responseType: 'blob'
+        })
+            .then(response => {
+                if (response.status === 403) {
+                    showToast(window.groceryTranslations.insufficient_credits, 'error');
+                    return Promise.reject(new Error('Unauthorized'));
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `grocery_list_${listId}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                showToast(window.groceryTranslations.grocery_export_pdf_success, 'success');
+            })
+            .catch(error => {
+                console.error('Error exporting grocery list to PDF:', error);
+                showToast(window.groceryTranslations.grocery_export_error, 'danger');
+            });
+    }, 500);
+
+    function initiateDeleteGroceryList(listId, listName) {
+        const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+        document.getElementById('deleteConfirmMessage').innerText = `${window.groceryTranslations.grocery_confirm_delete_message} "${listName}"?`;
+        document.getElementById('countdownMessage').innerText = '';
+        document.getElementById('confirmDeleteButton').onclick = () => {
+            fetchWithCSRF(`${window.apiUrls.manageGroceryLists}/${listId}/pending_delete`, {
+                method: 'POST'
+            })
+                .then(response => {
+                    if (response.status === 403) {
+                        showToast(window.groceryTranslations.insufficient_credits, 'error');
+                        return Promise.reject(new Error('Unauthorized'));
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        showToast(data.error, 'danger');
+                        modal.hide();
+                    } else {
+                        showToast(window.groceryTranslations.grocery_list_deletion_initiated, 'info');
+                        startDeletionCountdown(listId, modal);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error initiating list deletion:', error);
+                    showToast(window.groceryTranslations.general_error, 'danger');
+                    modal.hide();
+                });
+        };
+        modal.show();
+    }
+
+    function startDeletionCountdown(listId, modal) {
+        let remainingSeconds = 20;
+        document.getElementById('confirmDeleteButton').disabled = true;
+        document.getElementById('countdownMessage').innerText = `${window.groceryTranslations.grocery_deleting_in} ${remainingSeconds} ${window.groceryTranslations.grocery_seconds}`;
+        
+        deletionTimer = setInterval(() => {
+            fetchWithCSRF(`${window.apiUrls.manageGroceryLists}/${listId}/pending_delete/status`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.pending) {
+                        clearInterval(deletionTimer);
+                        modal.hide();
+                        showToast(window.groceryTranslations.grocery_list_deleted, 'success');
+                        if (currentListId === listId) {
+                            currentListId = null;
+                            document.getElementById('groceryItems').innerHTML = '';
+                        }
+                        loadGroceryLists();
+                        loadManageLists();
+                    } else {
+                        remainingSeconds = data.remaining_seconds;
+                        document.getElementById('countdownMessage').innerText = `${window.groceryTranslations.grocery_deleting_in} ${remainingSeconds} ${window.groceryTranslations.grocery_seconds}`;
+                        if (remainingSeconds <= 0) {
+                            clearInterval(deletionTimer);
+                            modal.hide();
+                            showToast(window.groceryTranslations.grocery_list_deleted, 'success');
+                            if (currentListId === listId) {
+                                currentListId = null;
+                                document.getElementById('groceryItems').innerHTML = '';
+                            }
+                            loadGroceryLists();
+                            loadManageLists();
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking deletion status:', error);
+                    clearInterval(deletionTimer);
+                    modal.hide();
+                    showToast(window.groceryTranslations.general_error, 'danger');
+                });
+        }, 1000);
+    }
+
+    function loadGroceryItems(listId) {
+        currentListId = listId;
+        fetchWithCSRF(window.apiUrls.manageGroceryItems.replace('{list_id}', listId))
+            .then(response => {
+                if (response.status === 403) {
+                    showToast(window.groceryTranslations.insufficient_credits, 'error');
+                    return Promise.reject(new Error('Unauthorized'));
+                }
+                return response.json();
+            })
+            .then(items => {
+                offlineData.items[listId] = items;
+                localStorage.setItem('groceryItems', JSON.stringify(offlineData.items));
+                renderGroceryItems(items);
+            })
+            .catch(error => {
+                console.error('Error loading grocery items:', error);
+                renderGroceryItems([]);
+            });
+    }
+
+    function renderGroceryItems(items) {
+        const groceryItemsEl = document.getElementById('groceryItems');
+        if (items && items.length > 0) {
+            groceryItemsEl.innerHTML = items.map(item => `
+                <div class="grocery-item">
+                    <span class="fw-semibold">${item.name} (${item.category})</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="number" class="form-control" value="${item.quantity}" min="1" onchange="groceryModule.updateGroceryItem('${item.id}', 'quantity', this.value)">
+                        <input type="number" class="form-control" value="${item.price}" min="0" step="0.01" onchange="groceryModule.updateGroceryItem('${item.id}', 'price', this.value)">
+                        <select class="form-select" onchange="groceryModule.updateGroceryItem('${item.id}', 'status', this.value)">
+                            <option value="to_buy" ${item.status === 'to_buy' ? 'selected' : ''}>${window.groceryTranslations.grocery_to_buy}</option>
+                            <option value="in_pantry" ${item.status === 'in_pantry' ? 'selected' : ''}>${window.groceryTranslations.grocery_in_pantry}</option>
+                            <option value="bought" ${item.status === 'bought' ? 'selected' : ''}>${window.groceryTranslations.grocery_bought}</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline-info" onclick="groceryModule.showPriceHistory('${item.name}')">${window.groceryTranslations.grocery_price_history}</button>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            groceryItemsEl.innerHTML = `<div class="text-muted">${window.groceryTranslations.no_items}</div>`;
+        }
+    }
 
     const addGroceryItem = debounce(function () {
         if (!currentListId) {
@@ -446,7 +537,6 @@
                     document.getElementById('newItemPrice').value = '';
                     document.getElementById('newItemStore').value = '';
                     loadGroceryItems(currentListId);
-                    loadFinancialSummary();
                 }
             })
             .catch(error => {
@@ -473,7 +563,6 @@
                 } else {
                     showToast(window.groceryTranslations.grocery_item_updated, 'success');
                     loadGroceryItems(currentListId);
-                    loadFinancialSummary();
                 }
             })
             .catch(error => {
@@ -519,92 +608,8 @@
             });
     }, 500);
 
-    function loadMealPlans() {
-        fetchWithCSRF(window.apiUrls.manageMealPlans)
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.groceryTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(mealPlans => {
-                offlineData.mealPlans = mealPlans;
-                localStorage.setItem('mealPlans', JSON.stringify(mealPlans));
-                renderMealPlans(mealPlans);
-            })
-            .catch(error => {
-                console.error('Error loading meal plans:', error);
-                renderMealPlans([]);
-            });
-    }
-
-    function renderMealPlans(mealPlans) {
-        const mealPlansEl = document.getElementById('mealPlans');
-        if (mealPlans && mealPlans.length > 0) {
-            mealPlansEl.innerHTML = mealPlans.map(plan => `
-                <div class="meal-plan-item">
-                    <span class="fw-semibold">${plan.name}</span>
-                    <div>
-                        <button class="btn btn-sm btn-outline-primary" onclick="groceryModule.loadMealPlanIngredients('${plan.id}')">${window.groceryTranslations.general_view_all}</button>
-                        <button class="btn btn-sm btn-outline-success" onclick="groceryModule.generateGroceryListFromMealPlan('${plan.id}')">${window.groceryTranslations.generate_list}</button>
-                    </div>
-                </div>
-            `).join('');
-            if (!currentMealPlanId && mealPlans[0]) {
-                loadMealPlanIngredients(mealPlans[0].id);
-            }
-        } else {
-            mealPlansEl.innerHTML = `<div class="text-muted">${window.groceryTranslations.no_meal_plans}</div>`;
-        }
-    }
-
-    function loadMealPlanIngredients(mealPlanId) {
-        currentMealPlanId = mealPlanId;
-        fetchWithCSRF(window.apiUrls.manageMealPlans)
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.groceryTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(mealPlans => {
-                const plan = mealPlans.find(p => p.id === mealPlanId);
-                renderMealPlanIngredients(plan ? plan.ingredients : []);
-            })
-            .catch(error => {
-                console.error('Error loading meal plan ingredients:', error);
-                renderMealPlanIngredients([]);
-            });
-    }
-
-    function renderMealPlanIngredients(ingredients) {
-        const mealPlansEl = document.getElementById('mealPlans');
-        if (ingredients && ingredients.length > 0) {
-            mealPlansEl.innerHTML += ingredients.map(ingredient => `
-                <div class="grocery-item">
-                    <span class="fw-semibold">${ingredient.name} (${ingredient.category})</span>
-                    <div>
-                        <span>Qty: ${ingredient.quantity}</span>
-                        <span class="ms-2">Price: ${format_currency(ingredient.price)}</span>
-                    </div>
-                </div>
-            `).join('');
-        }
-    }
-
-    const createMealPlan = debounce(function () {
-        const name = document.getElementById('newMealPlanName').value;
-        const budget = document.getElementById('newMealPlanBudget').value;
-        if (!name) {
-            showToast(window.groceryTranslations.general_please_provide, 'warning');
-            return;
-        }
-        fetchWithCSRF(window.apiUrls.manageMealPlans, {
-            method: 'POST',
-            body: JSON.stringify({ name, budget, auto_generate_list: !!budget, ingredients: [] })
-        })
+    function showListDetails(listId) {
+        fetchWithCSRF(`${window.apiUrls.manageGroceryLists}/${listId}`)
             .then(response => {
                 if (response.status === 403) {
                     showToast(window.groceryTranslations.insufficient_credits, 'error');
@@ -613,288 +618,36 @@
                 return response.json();
             })
             .then(data => {
-                if (data.error) {
-                    showToast(data.error, 'danger');
-                } else {
-                    showToast(window.groceryTranslations.grocery_meal_plan_created, 'success');
-                    document.getElementById('newMealPlanName').value = '';
-                    document.getElementById('newMealPlanBudget').value = '';
-                    loadMealPlans();
-                    loadFinancialSummary();
-                }
+                const modalBody = document.getElementById('listDetailsModalBody');
+                modalBody.innerHTML = `
+                    <h6>${window.groceryTranslations.grocery_list_details}</h6>
+                    <p><strong>${window.groceryTranslations.grocery_list_name}:</strong> ${data.name}</p>
+                    <p><strong>${window.groceryTranslations.grocery_budget}:</strong> ${format_currency(data.budget)}</p>
+                    <p><strong>${window.groceryTranslations.grocery_total_spent}:</strong> ${format_currency(data.total_spent)}</p>
+                    <p><strong>${window.groceryTranslations.grocery_status}:</strong> ${data.status}</p>
+                    <p><strong>${window.groceryTranslations.grocery_created_at}:</strong> ${formatTimeAgo(data.created_at)}</p>
+                    <p><strong>${window.groceryTranslations.grocery_collaborators}:</strong> ${data.collaborators.length > 0 ? data.collaborators.join(', ') : 'None'}</p>
+                    <h6 class="mt-3">${window.groceryTranslations.grocery_items}</h6>
+                    ${data.items.length > 0 ? data.items.map(item => `
+                        <div class="grocery-item">
+                            <span class="fw-semibold">${item.name} (${item.category})</span>
+                            <div>
+                                <span>Qty: ${item.quantity}</span>
+                                <span class="ms-2">Price: ${format_currency(item.price)}</span>
+                                <span class="ms-2">Status: ${window.groceryTranslations[item.status] || item.status}</span>
+                                <span class="ms-2">Store: ${item.store}</span>
+                            </div>
+                        </div>
+                    `).join('') : `<div class="text-muted">${window.groceryTranslations.no_items}</div>`}
+                `;
+                const modal = new bootstrap.Modal(document.getElementById('listDetailsModal'));
+                modal.show();
             })
             .catch(error => {
-                console.error('Error creating meal plan:', error);
-                showToast(window.groceryTranslations.general_error, 'danger');
-            });
-    }, 500);
-
-    const addIngredient = debounce(function () {
-        if (!currentMealPlanId) {
-            showToast(window.groceryTranslations.general_select_meal_plan, 'warning');
-            return;
-        }
-        const name = document.getElementById('newIngredientName').value;
-        const quantity = document.getElementById('newIngredientQuantity').value;
-        const price = document.getElementById('newIngredientPrice').value;
-        if (!name || !quantity || !price) {
-            showToast(window.groceryTranslations.general_please_provide, 'warning');
-            return;
-        }
-        fetchWithCSRF(window.apiUrls.manageMealPlans, {
-            method: 'POST',
-            body: JSON.stringify({ 
-                name: `Update for ${currentMealPlanId}`, 
-                ingredients: [{ name, quantity, price }], 
-                auto_generate_list: false 
-            })
-        })
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.groceryTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.error) {
-                    showToast(data.error, 'danger');
-                } else {
-                    showToast(window.groceryTranslations.grocery_item_added, 'success');
-                    document.getElementById('newIngredientName').value = '';
-                    document.getElementById('newIngredientQuantity').value = '';
-                    document.getElementById('newIngredientPrice').value = '';
-                    loadMealPlans();
-                }
-            })
-            .catch(error => {
-                console.error('Error adding ingredient:', error);
-                showToast(window.groceryTranslations.general_error, 'danger');
-            });
-    }, 500);
-
-    const generateGroceryListFromMealPlan = debounce(function (mealPlanId) {
-        fetchWithCSRF(window.apiUrls.manageMealPlans)
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.groceryTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(mealPlans => {
-                const plan = mealPlans.find(p => p.id === mealPlanId);
-                if (plan) {
-                    fetchWithCSRF(window.apiUrls.manageGroceryLists, {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            name: `${plan.name} Grocery List`,
-                            budget: plan.ingredients.reduce((sum, i) => sum + i.price * i.quantity, 0),
-                            auto_generate_list: true
-                        })
-                    })
-                        .then(response => {
-                            if (response.status === 403) {
-                                showToast(window.groceryTranslations.insufficient_credits, 'error');
-                                return Promise.reject(new Error('Unauthorized'));
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            if (data.error) {
-                                showToast(data.error, 'danger');
-                            } else {
-                                showToast(window.groceryTranslations.grocery_list_created, 'success');
-                                loadGroceryLists();
-                                loadManageLists();
-                                loadFinancialSummary();
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error generating grocery list:', error);
-                            showToast(window.groceryTranslations.general_error, 'danger');
-                        });
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching meal plan:', error);
-                showToast(window.groceryTranslations.general_error, 'danger');
-            });
-    }, 500);
-
-    function loadPredictiveSuggestions() {
-        fetchWithCSRF(window.apiUrls.predictiveSuggestions)
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.groceryTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(suggestions => {
-                offlineData.suggestions.predictive = suggestions;
-                localStorage.setItem('predictiveSuggestions', JSON.stringify(suggestions));
-                renderPredictiveSuggestions(suggestions);
-            })
-            .catch(error => {
-                console.error('Error loading predictive suggestions:', error);
-                renderPredictiveSuggestions([]);
+                console.error('Error loading list details:', error);
+                showToast(window.groceryTranslations.grocery_list_error, 'danger');
             });
     }
-
-    function renderPredictiveSuggestions(suggestions) {
-        const suggestionsEl = document.getElementById('predictiveSuggestions');
-        if (suggestions && suggestions.length > 0) {
-            suggestionsEl.innerHTML = suggestions.map(s => `
-                <div class="suggestion-item">
-                    <span class="fw-semibold">${s.name} (${s.category})</span>
-                    <div>
-                        <span>Qty: ${s.suggested_quantity}</span>
-                        <span class="ms-2">Price: ${format_currency(s.estimated_price)}</span>
-                        <button class="btn btn-sm btn-outline-primary ms-2" onclick="groceryModule.addSuggestedItem('${s.name}', ${s.suggested_quantity}, ${s.estimated_price})">${window.groceryTranslations.grocery_add}</button>
-                    </div>
-                </div>
-            `).join('');
-        } else {
-            suggestionsEl.innerHTML = `<div class="text-muted">${window.groceryTranslations.no_suggestions}</div>`;
-        }
-    }
-
-    const addSuggestedItem = debounce(function (name, quantity, price) {
-        if (!currentListId) {
-            showToast(window.groceryTranslations.general_select_list, 'warning');
-            return;
-        }
-        fetchWithCSRF(window.apiUrls.manageGroceryItems.replace('{list_id}', currentListId), {
-            method: 'POST',
-            body: JSON.stringify({ name, quantity, price, status: 'to_buy' })
-        })
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.groceryTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.error) {
-                    showToast(data.error, 'danger');
-                } else {
-                    showToast(window.groceryTranslations.grocery_item_added, 'success');
-                    loadGroceryItems(currentListId);
-                    loadFinancialSummary();
-                }
-            })
-            .catch(error => {
-                console.error('Error adding suggested item:', error);
-                showToast(window.groceryTranslations.general_error, 'danger');
-            });
-    }, 500);
-
-    function loadCollaboratorSuggestions(listId) {
-        fetchWithCSRF(window.apiUrls.manageGrocerySuggestions.replace('{list_id}', listId))
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.groceryTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(suggestions => {
-                offlineData.suggestions[listId] = suggestions;
-                localStorage.setItem('collaboratorSuggestions', JSON.stringify(offlineData.suggestions));
-                renderCollaboratorSuggestions(suggestions);
-            })
-            .catch(error => {
-                console.error('Error loading collaborator suggestions:', error);
-                renderCollaboratorSuggestions([]);
-            });
-    }
-
-    function renderCollaboratorSuggestions(suggestions) {
-        const suggestionsEl = document.getElementById('collaboratorSuggestions');
-        if (suggestions && suggestions.length > 0) {
-            suggestionsEl.innerHTML = suggestions.map(s => `
-                <div class="suggestion-item">
-                    <span class="fw-semibold">${s.name} (${s.category})</span>
-                    <div>
-                        <span>Qty: ${s.quantity}</span>
-                        <span class="ms-2">Price: ${format_currency(s.price)}</span>
-                        ${s.status === 'pending' ? `<button class="btn btn-sm btn-outline-success ms-2" onclick="groceryModule.approveSuggestion('${s.id}', '${currentListId}')">${window.groceryTranslations.grocery_suggestion_approve}</button>` : ''}
-                    </div>
-                </div>
-            `).join('');
-        } else {
-            suggestionsEl.innerHTML = `<div class="text-muted">${window.groceryTranslations.no_suggestions}</div>`;
-        }
-    }
-
-    const suggestItem = debounce(function () {
-        if (!currentListId) {
-            showToast(window.groceryTranslations.general_select_list, 'warning');
-            return;
-        }
-        const name = document.getElementById('suggestItemName').value;
-        const quantity = document.getElementById('suggestItemQuantity').value;
-        const price = document.getElementById('suggestItemPrice').value;
-        if (!name || !quantity || !price) {
-            showToast(window.groceryTranslations.general_please_provide, 'warning');
-            return;
-        }
-        fetchWithCSRF(window.apiUrls.manageGrocerySuggestions.replace('{list_id}', currentListId), {
-            method: 'POST',
-            body: JSON.stringify({ name, quantity, price })
-        })
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.groceryTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.error) {
-                    showToast(data.error, 'danger');
-                } else {
-                    showToast(window.groceryTranslations.grocery_suggestion_added, 'success');
-                    document.getElementById('suggestItemName').value = '';
-                    document.getElementById('suggestItemQuantity').value = '';
-                    document.getElementById('suggestItemPrice').value = '';
-                    loadCollaboratorSuggestions(currentListId);
-                }
-            })
-            .catch(error => {
-                console.error('Error suggesting item:', error);
-                showToast(window.groceryTranslations.general_error, 'danger');
-            });
-    }, 500);
-
-    const approveSuggestion = debounce(function (suggestionId, listId) {
-        fetchWithCSRF(window.apiUrls.approveGrocerySuggestion.replace('{list_id}', listId).replace('{suggestion_id}', suggestionId), {
-            method: 'POST'
-        })
-            .then(response => {
-                if (response.status === 403) {
-                    showToast(window.groceryTranslations.insufficient_credits, 'error');
-                    return Promise.reject(new Error('Unauthorized'));
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.error) {
-                    showToast(data.error, 'danger');
-                } else {
-                    showToast(window.groceryTranslations.grocery_suggestion_approved, 'success');
-                    loadGroceryItems(currentListId);
-                    loadCollaboratorSuggestions(currentListId);
-                    loadFinancialSummary();
-                }
-            })
-            .catch(error => {
-                console.error('Error approving suggestion:', error);
-                showToast(window.groceryTranslations.general_error, 'danger');
-            });
-    }, 500);
 
     function showPriceHistory(itemName) {
         fetchWithCSRF(window.apiUrls.groceryPriceHistory.replace('{item_name}', encodeURIComponent(itemName)))
@@ -908,34 +661,35 @@
             .then(data => {
                 const history = data.prices || [];
                 const avgPrice = data.average_price || 0;
-                const modalBody = document.querySelector('#groceryModal .modal-body');
-                const historyHtml = history.length > 0 ? history.map(h => `
-                    <div class="grocery-item">
-                        <span>${h.store}: ${format_currency(h.price)}</span>
-                        <span class="text-muted">${formatTimeAgo(h.date)}</span>
-                    </div>
-                `).join('') : `<div class="text-muted">${window.groceryTranslations.no_price_history}</div>`;
-                modalBody.innerHTML += `
-                    <div class="mt-3">
-                        <h6>${window.groceryTranslations.grocery_price_history_for} ${itemName} (Avg: ${format_currency(avgPrice)})</h6>
-                        ${historyHtml}
-                    </div>
+                const modalBody = document.getElementById('listDetailsModalBody');
+                modalBody.innerHTML = `
+                    <h6>${window.groceryTranslations.grocery_price_history_for} ${itemName} (Avg: ${format_currency(avgPrice)})</h6>
+                    ${history.length > 0 ? history.map(h => `
+                        <div class="grocery-item">
+                            <span>${h.store}: ${format_currency(h.price)}</span>
+                            <span class="text-muted">${formatTimeAgo(h.date)}</span>
+                        </div>
+                    `).join('') : `<div class="text-muted">${window.groceryTranslations.no_price_history}</div>`}
                 `;
+                const modal = new bootstrap.Modal(document.getElementById('listDetailsModal'));
+                modal.show();
             })
             .catch(error => {
                 console.error('Error loading price history:', error);
-                showToast(window.groceryTranslations.general_error, 'danger');
+                showToast(window.groceryTranslations.grocery_price_history_error, 'danger');
             });
     }
 
     function loadOfflineData() {
         const cachedLists = localStorage.getItem('groceryLists');
+        const cachedManageLists = localStorage.getItem('manageGroceryLists');
         const cachedItems = localStorage.getItem('groceryItems');
-        const cachedMealPlans = localStorage.getItem('mealPlans');
-        const cachedSuggestions = localStorage.getItem('predictiveSuggestions');
         if (cachedLists) {
             offlineData.lists = JSON.parse(cachedLists);
             renderGroceryLists(offlineData.lists);
+        }
+        if (cachedManageLists) {
+            offlineData.lists = JSON.parse(cachedManageLists);
             renderManageLists(offlineData.lists);
         }
         if (cachedItems) {
@@ -944,21 +698,13 @@
                 renderGroceryItems(offlineData.items[currentListId]);
             }
         }
-        if (cachedMealPlans) {
-            offlineData.mealPlans = JSON.parse(cachedMealPlans);
-            renderMealPlans(offlineData.mealPlans);
-        }
-        if (cachedSuggestions) {
-            offlineData.suggestions.predictive = JSON.parse(cachedSuggestions);
-            renderPredictiveSuggestions(offlineData.suggestions.predictive);
-        }
     }
 
     function format_currency(value) {
-        if (!value && value !== 0) return '0.00';
+        if (!value && value !== 0) return '₦0.00';
         value = parseFloat(value);
-        if (isNaN(value)) return '0.00';
-        return value.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (isNaN(value)) return '₦0.00';
+        return value.toLocaleString('en-NG', { style: 'currency', currency: 'NGN' });
     }
 
     function formatTimeAgo(dateStr) {
@@ -983,16 +729,11 @@
         updateGroceryItem,
         shareGroceryList,
         loadGroceryItems,
-        deleteGroceryList,
+        initiateDeleteGroceryList,
         saveGroceryList,
         exportGroceryListToPDF,
-        loadMealPlanIngredients,
-        createMealPlan,
-        addIngredient,
-        generateGroceryListFromMealPlan,
-        addSuggestedItem,
-        suggestItem,
-        approveSuggestion,
+        showListDetails,
+        editGroceryList,
         showPriceHistory
     };
 })();
