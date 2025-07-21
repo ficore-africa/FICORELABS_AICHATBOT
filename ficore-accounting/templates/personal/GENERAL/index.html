@@ -287,7 +287,9 @@ window.groceryTranslations = {
     general_error: "An error occurred",
     insufficient_credits: "Insufficient credits",
     friday_reminder: "It's Friday! Time to prep your weekend grocery list.",
-    not_found: "Resource not found"
+    not_found: "Resource not found",
+    grocery_manage_list: "Manage Lists",
+    grocery_delete: "Delete"
 };
 
 window.foodOrderTranslations = {
@@ -576,10 +578,10 @@ document.addEventListener('DOMContentLoaded', function() {
     loadFinancialSummary();
     loadRecentActivity();
     loadNotifications();
-    if (typeof initGroceryPlanner === 'function') {
-        initGroceryPlanner();
+    if (typeof groceryModule !== 'undefined' && typeof groceryModule.initGroceryPlanner === 'function') {
+        groceryModule.initGroceryPlanner();
     } else {
-        console.warn('initGroceryPlanner is not defined');
+        console.warn('groceryModule.initGroceryPlanner is not defined');
     }
     if (typeof foodOrderModule !== 'undefined' && typeof foodOrderModule.initFoodOrder === 'function') {
         foodOrderModule.initFoodOrder();
