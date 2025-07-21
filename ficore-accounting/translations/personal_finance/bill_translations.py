@@ -4,7 +4,7 @@ Bill management translations for personal finance tools
 
 BILL_TRANSLATIONS = {
     'en': {
-        'bill_bill_planner': 'Bill Planner',
+        'bill_bill_planner': 'Bills',
         'bill_manage_track_bills': 'Manage and track all your bills in one place',
         'bill_add_bill': 'Add Bill',
         'bill_manage_bills': 'Manage Bills',
