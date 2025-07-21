@@ -21,6 +21,22 @@
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/apple-touch-icon.png') | e }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32x32.png') | e }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16x16.png') | e }}">
+    <style>
+        .toast {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background: #333;
+            color: #fff;
+            padding: 0.75rem 1rem;
+            border-radius: 5px;
+            z-index: 9999;
+            opacity: 0.95;
+        }
+        .toast-success { background: green; }
+        .toast-error { background: red; }
+        .toast-info { background: #555; }
+    </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body class="{% if session.get('dark_mode', False) %}dark-mode{% endif %}">
@@ -244,6 +260,14 @@
       chat-icon="{{ url_for('static', filename='img/chat-icon.png') | e }}"
     ></df-messenger>
     <script>
+        function showToast(message, type = "info") {
+            const toast = document.createElement("div");
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
         // Flag to prevent rendering authenticated content after 401/403
         window.isAuthenticatedContentBlocked = false;
 
