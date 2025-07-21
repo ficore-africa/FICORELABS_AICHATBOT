@@ -267,7 +267,7 @@ def manage_items(order_id):
 def init_app(app):
     """Initialize the food order blueprint."""
     try:
-        app.register_blueprint(food_order_bp)
+        
         current_app.logger.info("Food order blueprint initialized successfully", extra={'session_id': 'no-request-context'})
     except Exception as e:
         current_app.logger.error(f"Error initializing food order blueprint: {str(e)}", extra={'session_id': 'no-request-context'})
