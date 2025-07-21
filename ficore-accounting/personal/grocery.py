@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request, current_app, session, redirect, u
 from flask_login import current_user, login_required
 from datetime import datetime, date, timedelta
 from bson import ObjectId
+from pymongo import errors
 from models import get_bills, get_budgets
 from utils import get_mongo_db, requires_role, logger, format_currency, clean_currency, check_ficore_credit_balance, is_admin
 from translations import trans
@@ -9,6 +10,60 @@ from decimal import Decimal
 import re
 
 grocery_bp = Blueprint('grocery', __name__, url_prefix='/grocery')
+
+def deduct_ficore_credits(db, user_id, amount, action, item_id=None):
+    """Deduct Ficore Credits from user balance and log the transaction using MongoDB transaction."""
+    try:
+        if amount <= 0:
+            logger.error(f"Invalid deduction amount {amount} for user {user_id}, action: {action}")
+            return False
+
+        client = db.client
+        user = db.users.find_one({'_id': user_id})
+        if not user:
+            logger.error(f"User {user_id} not found for credit deduction, action: {action}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+            return False
+        current_balance = user.get('ficore_credit_balance', 0)
+        if current_balance < amount:
+            logger.warning(f"Insufficient credits for user {user_id}: required {amount}, available {current_balance}, action: {action}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+            return False
+
+        with client.start_session() as mongo_session:
+            with mongo_session.start_transaction():
+                result = db.users.update_one(
+                    {'_id': user_id},
+                    {'$inc': {'ficore_credit_balance': -amount}},
+                    session=mongo_session
+                )
+                if result.modified_count == 0:
+                    logger.error(f"Failed to deduct {amount} credits for user {user_id}, action: {action}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                    raise ValueError(f"Failed to update user balance for {user_id}")
+
+                transaction = {
+                    '_id': ObjectId(),
+                    'user_id': user_id,
+                    'action': action,
+                    'amount': -amount,
+                    'item_id': str(item_id) if item_id else None,
+                    'timestamp': datetime.utcnow(),
+                    'session_id': session.get('sid', 'no-session-id'),
+                    'status': 'completed'
+                }
+                db.ficore_credit_transactions.insert_one(transaction, session=mongo_session)
+        
+        logger.info(f"Deducted {amount} Ficore Credits for {action} by user {user_id}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+        return True
+    except ValueError as e:
+        logger.error(f"Transaction aborted for user {user_id}, action: {action}: {str(e)}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+        mongo_session.abort_transaction()
+        return False
+    except errors.PyMongoError as e:
+        logger.error(f"MongoDB error during Ficore Credit deduction for user {user_id}, action: {action}: {str(e)}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+        mongo_session.abort_transaction()
+        return False
+    except Exception as e:
+        logger.error(f"Error deducting {amount} Ficore Credits for {action} by user {user_id}: {str(e)}", extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+        return False
 
 # Helper function to auto-categorize items
 def auto_categorize_item(item_name):
@@ -98,7 +153,6 @@ def manage_lists():
                     logger.warning(f"Insufficient Ficore Credits for creating grocery list by user {current_user.id}", 
                                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                     return jsonify({'error': trans('grocery_insufficient_credits', default='Insufficient Ficore Credits to create a list. Please purchase more credits.')}), 403
-                    # Redirect option: return redirect(url_for('agents_bp.manage_credits'))
 
             list_data = {
                 'name': data.get('name'),
@@ -169,7 +223,6 @@ def manage_items(list_id):
                     logger.warning(f"Insufficient Ficore Credits for adding item to list {list_id} by user {current_user.id}", 
                                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                     return jsonify({'error': trans('grocery_insufficient_credits', default='Insufficient Ficore Credits to add an item. Please purchase more credits.')}), 403
-                    # Redirect option: return redirect(url_for('agents_bp.manage_credits'))
 
             item_data = {
                 'list_id': list_id,
@@ -222,7 +275,6 @@ def manage_items(list_id):
                     logger.warning(f"Insufficient Ficore Credits for updating item {item_id} in list {list_id} by user {current_user.id}", 
                                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                     return jsonify({'error': trans('grocery_insufficient_credits', default='Insufficient Ficore Credits to update an item. Please purchase more credits.')}), 403
-                    # Redirect option: return redirect(url_for('agents_bp.manage_credits'))
 
             # Store original item for potential rollback
             original_item = item.copy()
@@ -381,6 +433,13 @@ def approve_suggestion(list_id, suggestion_id):
         if not suggestion:
             return jsonify({'error': trans('grocery_suggestion_not_found', default='Suggestion not found')}), 404
 
+        # Check Ficore Credits for authenticated non-admin users
+        if current_user.is_authenticated and not is_admin():
+            if not check_ficore_credit_balance(required_amount=0.5, user_id=current_user.id):
+                logger.warning(f"Insufficient Ficore Credits for approving suggestion {suggestion_id} in list {list_id} by user {current_user.id}", 
+                               extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                return jsonify({'error': trans('grocery_insufficient_credits', default='Insufficient Ficore Credits to approve a suggestion. Please purchase more credits.')}), 403
+
         item_data = {
             'list_id': list_id,
             'user_id': str(current_user.id),
@@ -407,14 +466,8 @@ def approve_suggestion(list_id, suggestion_id):
              '$set': {'updated_at': datetime.utcnow()}}
         )
 
-        # Deduct Ficore Credits for approving a suggestion
+        # Deduct Ficore Credits
         if current_user.is_authenticated and not is_admin():
-            if not check_ficore_credit_balance(required_amount=0.5, user_id=current_user.id):
-                logger.warning(f"Insufficient Ficore Credits for approving suggestion {suggestion_id} in list {list_id} by user {current_user.id}", 
-                               extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-                return jsonify({'error': trans('grocery_insufficient_credits', default='Insufficient Ficore Credits to approve a suggestion. Please purchase more credits.')}), 403
-                # Redirect option: return redirect(url_for('agents_bp.manage_credits'))
-
             if not deduct_ficore_credits(db, current_user.id, 0.5, 'approve_grocery_suggestion', str(result.inserted_id)):
                 # Roll back by removing the item and suggestion status
                 db.grocery_items.delete_one({'_id': result.inserted_id})
@@ -458,7 +511,6 @@ def manage_meal_plans():
                     logger.warning(f"Insufficient Ficore Credits for creating meal plan by user {current_user.id}", 
                                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                     return jsonify({'error': trans('grocery_insufficient_credits', default='Insufficient Ficore Credits to create a meal plan. Please purchase more credits.')}), 403
-                    # Redirect option: return redirect(url_for('agents_bp.manage_credits'))
 
             meal_plan = {
                 'user_id': str(current_user.id),
@@ -593,7 +645,7 @@ def predictive_suggestions():
         return jsonify(suggestions), 200
     except Exception as e:
         logger.error(f"Error fetching predictive suggestions for user {current_user.id}: {str(e)}", 
-                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                     extra={'ession_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
         return jsonify({'error': trans('grocery_suggestions_error', default='Error fetching suggestions')}), 500
 
 def init_app(app):
