@@ -576,8 +576,16 @@ document.addEventListener('DOMContentLoaded', function() {
     loadFinancialSummary();
     loadRecentActivity();
     loadNotifications();
-    initGroceryPlanner();
-    initFoodOrder();
+    if (typeof initGroceryPlanner === 'function') {
+        initGroceryPlanner();
+    } else {
+        console.warn('initGroceryPlanner is not defined');
+    }
+    if (typeof foodOrderModule !== 'undefined' && typeof foodOrderModule.initFoodOrder === 'function') {
+        foodOrderModule.initFoodOrder();
+    } else {
+        console.warn('foodOrderModule.initFoodOrder is not defined');
+    }
 });
 </script>
 {% endblock %}
