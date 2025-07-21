@@ -75,6 +75,13 @@ window.groceryTranslations = {
 
 window.foodOrderTranslations = {
     no_orders: "No food orders found",
+    just_now: "Just now",
+    minutes_ago: "m ago",
+    hours_ago: "h ago",
+    days_ago: "d ago",
+    food_order_phone: "Phone Number",
+    food_order_location: "Delivery Location",
+    food_order_item_notes: "Notes",
     no_items: "No items in this order",
     order_created: "Food order created",
     item_added: "Item added to order",
