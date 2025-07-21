@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, current_app, session, Response
 from flask_login import current_user, login_required
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from bson import ObjectId
 from pymongo import errors
 from utils import get_mongo_db, requires_role, logger, clean_currency, check_ficore_credit_balance, is_admin, format_date, format_currency
@@ -14,6 +14,8 @@ from contextlib import nullcontext
 import traceback
 import threading
 import time
+import re
+import pymongo
 
 grocery_bp = Blueprint('grocery', __name__, url_prefix='/grocery')
 
@@ -21,20 +23,26 @@ def deduct_ficore_credits(db, user_id, amount, action, item_id=None, mongo_sessi
     try:
         if amount <= 0:
             logger.error(f"Invalid deduction amount {amount} for user {user_id}, action: {action}", 
-                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
             return False
         
         user = db.users.find_one({'_id': user_id}, session=mongo_session)
         if not user:
             logger.error(f"User {user_id} not found for credit deduction, action: {action}", 
-                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
             return False
         
         current_balance = user.get('ficore_credit_balance', 0)
         if current_balance < amount:
             logger.warning(f"Insufficient credits for user {user_id}: required {amount}, available {current_balance}, action: {action}", 
-                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                          extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
             return False
+        
+        # Ensure db.client is a MongoClient instance
+        if not hasattr(db, 'client') or not isinstance(db.client, pymongo.mongo_client.MongoClient):
+            logger.error(f"Invalid MongoDB client for user {user_id}, action: {action}", 
+                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+            raise ValueError("MongoDB client is not properly initialized")
         
         session_to_use = mongo_session if mongo_session else db.client.start_session()
         owns_session = not mongo_session
@@ -48,7 +56,7 @@ def deduct_ficore_credits(db, user_id, amount, action, item_id=None, mongo_sessi
                 )
                 if result.modified_count == 0:
                     logger.error(f"Failed to deduct {amount} credits for user {user_id}, action: {action}: No documents modified", 
-                                extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                                 extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                     raise ValueError(f"Failed to update user balance for {user_id}")
                 
                 transaction = {
@@ -64,18 +72,18 @@ def deduct_ficore_credits(db, user_id, amount, action, item_id=None, mongo_sessi
                 db.ficore_credit_transactions.insert_one(transaction, session=session_to_use)
                 
             logger.info(f"Deducted {amount} Ficore Credits for {action} by user {user_id}", 
-                       extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
             return True
         except (ValueError, errors.PyMongoError) as e:
             logger.error(f"Transaction aborted for user {user_id}, action: {action}: {str(e)}", 
-                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
             return False
         finally:
             if owns_session:
                 session_to_use.end_session()
     except Exception as e:
         logger.error(f"Unexpected error deducting {amount} Ficore Credits for {action} by user {user_id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return False
 
 def auto_categorize_item(item_name):
@@ -111,19 +119,19 @@ def process_delayed_deletion(list_id, user_id):
                 result = db.grocery_lists.delete_one({'_id': ObjectId(list_id)}, session=mongo_session)
                 if result.deleted_count == 0:
                     logger.error(f"Failed to delete grocery list {list_id} for user {user_id}: No documents deleted", 
-                                extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                                 extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                     raise ValueError(f"Failed to delete grocery list {list_id}")
                 db.pending_deletions.delete_one({'list_id': list_id}, session=mongo_session)
                 if current_user.is_authenticated and not is_admin():
                     if not deduct_ficore_credits(db, user_id, 0.5, 'delete_grocery_list', list_id, mongo_session):
                         logger.error(f"Failed to deduct 0.5 Ficore Credits for deleting list {list_id} by user {user_id}", 
-                                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                         raise ValueError(f"Failed to deduct Ficore Credits for deleting list {list_id}")
         logger.info(f"Completed delayed deletion of grocery list {list_id} for user {user_id}", 
-                   extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
     except Exception as e:
         logger.error(f"Error in delayed deletion of list {list_id} for user {user_id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
 
 @grocery_bp.route('/', methods=['GET'])
 @login_required
@@ -142,11 +150,11 @@ def index():
             } for l in lists]
         }
         logger.info(f"Fetched grocery summary for user {current_user.id}", 
-                   extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
         return jsonify(summary), 200
     except Exception as e:
         logger.error(f"Error fetching grocery summary for user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_error', default='Error fetching grocery summary. Please try again later.')}), 500
 
 @grocery_bp.route('/lists', methods=['GET', 'POST'])
@@ -165,7 +173,7 @@ def manage_lists():
             if current_user.is_authenticated and not is_admin():
                 if not check_ficore_credit_balance(required_amount=0.1, user_id=current_user.id):
                     logger.warning(f"Insufficient Ficore Credits for creating grocery list by user {current_user.id}", 
-                                 extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                                  extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                     return jsonify({'error': trans('grocery_insufficient_credits', default='Insufficient Ficore Credits to create a list. Please purchase more credits.')}), 403
             list_data = {
                 'name': data.get('name'),
@@ -184,10 +192,10 @@ def manage_lists():
                     if current_user.is_authenticated and not is_admin():
                         if not deduct_ficore_credits(db, current_user.id, 0.1, 'create_grocery_list', str(result.inserted_id), mongo_session):
                             logger.error(f"Failed to deduct 0.1 Ficore Credits for creating grocery list {result.inserted_id} by user {current_user.id}", 
-                                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                             raise ValueError(f"Failed to deduct Ficore Credits for creating list {result.inserted_id}")
             logger.info(f"Created grocery list {result.inserted_id} for user {current_user.id}", 
-                       extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
             return jsonify({'list_id': str(result.inserted_id), 'message': trans('grocery_list_created', default='Grocery list created successfully')}), 201
         status = request.args.get('status', 'active')
         lists = db.grocery_lists.find({'user_id': str(current_user.id), 'status': status}).sort('updated_at', -1)
@@ -202,15 +210,15 @@ def manage_lists():
         } for l in lists]), 200
     except ValueError as e:
         logger.error(f"Transaction aborted for creating grocery list by user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_credit_deduction_failed', default='Failed to deduct Ficore Credits for creating list. Please try again.')}), 500
     except errors.PyMongoError as e:
         logger.error(f"MongoDB error during grocery list creation for user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_list_error', default='Error managing grocery lists. Please try again later.')}), 500
     except Exception as e:
         logger.error(f"Unexpected error managing grocery lists for user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_list_error', default='Error managing grocery lists. Please try again later.')}), 500
 
 @grocery_bp.route('/lists/<list_id>/edit', methods=['PUT'])
@@ -221,7 +229,7 @@ def edit_list(list_id):
     try:
         if not ObjectId.is_valid(list_id):
             logger.error(f"Invalid list_id {list_id}: not a valid ObjectId", 
-                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
             return jsonify({'error': trans('grocery_invalid_list_id', default='Invalid list ID format.')}), 400
         grocery_list = db.grocery_lists.find_one({'_id': ObjectId(list_id), 'user_id': str(current_user.id)})
         if not grocery_list:
@@ -235,7 +243,7 @@ def edit_list(list_id):
         if current_user.is_authenticated and not is_admin():
             if not check_ficore_credit_balance(required_amount=0.1, user_id=current_user.id):
                 logger.warning(f"Insufficient Ficore Credits for editing list {list_id} by user {current_user.id}", 
-                             extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                              extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                 return jsonify({'error': trans('grocery_insufficient_credits', default='Insufficient Ficore Credits to edit a list. Please purchase more credits.')}), 403
         with db.client.start_session() as mongo_session:
             with mongo_session.start_transaction():
@@ -246,27 +254,27 @@ def edit_list(list_id):
                 )
                 if result.modified_count == 0:
                     logger.error(f"Failed to edit grocery list {list_id} for user {current_user.id}: No documents modified", 
-                                extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                                 extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                     raise ValueError(f"Failed to edit grocery list {list_id}")
                 if current_user.is_authenticated and not is_admin():
                     if not deduct_ficore_credits(db, current_user.id, 0.1, 'edit_grocery_list', list_id, mongo_session):
                         logger.error(f"Failed to deduct 0.1 Ficore Credits for editing list {list_id} by user {current_user.id}", 
-                                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                         raise ValueError(f"Failed to deduct Ficore Credits for editing list {list_id}")
         logger.info(f"Edited grocery list {list_id} for user {current_user.id}", 
-                   extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
         return jsonify({'message': trans('grocery_list_updated', default='Grocery list updated successfully')}), 200
     except ValueError as e:
         logger.error(f"Transaction aborted for editing list {list_id} by user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
-        return jsonify({'error': trans('grocery_list_error', default='Error editing grocery list. Please try again.')}), 500
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+        return jsonify({'error': trans('grocery_credit_deduction_failed', default='Failed to deduct Ficore Credits for editing list. Please try again.')}), 500
     except errors.PyMongoError as e:
         logger.error(f"MongoDB error during editing of list {list_id} by user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_list_error', default='Error editing grocery list due to database issue. Please try again later.')}), 500
     except Exception as e:
         logger.error(f"Unexpected error editing grocery list {list_id} for user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_list_error', default='Error editing grocery list. Please try again later.')}), 500
 
 @grocery_bp.route('/lists/<list_id>/save', methods=['PUT'])
@@ -277,7 +285,7 @@ def save_list(list_id):
     try:
         if not ObjectId.is_valid(list_id):
             logger.error(f"Invalid list_id {list_id}: not a valid ObjectId", 
-                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
             return jsonify({'error': trans('grocery_invalid_list_id', default='Invalid list ID format.')}), 400
         grocery_list = db.grocery_lists.find_one({'_id': ObjectId(list_id), 'user_id': str(current_user.id)})
         if not grocery_list:
@@ -287,7 +295,7 @@ def save_list(list_id):
         if current_user.is_authenticated and not is_admin():
             if not check_ficore_credit_balance(required_amount=0.1, user_id=current_user.id):
                 logger.warning(f"Insufficient Ficore Credits for saving list {list_id} by user {current_user.id}", 
-                             extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                              extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                 return jsonify({'error': trans('grocery_insufficient_credits', default='Insufficient Ficore Credits to save a list. Please purchase more credits.')}), 403
         with db.client.start_session() as mongo_session:
             with mongo_session.start_transaction():
@@ -298,27 +306,27 @@ def save_list(list_id):
                 )
                 if result.modified_count == 0:
                     logger.error(f"Failed to save grocery list {list_id} for user {current_user.id}: No documents modified", 
-                                extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-                    raise ValueError(f"Failed to save grocery list {list_id}")
+                                 extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                    return jsonify({'error': trans('grocery_list_error', default='Error saving grocery list. No changes applied.')}), 500
                 if current_user.is_authenticated and not is_admin():
                     if not deduct_ficore_credits(db, current_user.id, 0.1, 'save_grocery_list', list_id, mongo_session):
                         logger.error(f"Failed to deduct 0.1 Ficore Credits for saving list {list_id} by user {current_user.id}", 
-                                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                         raise ValueError(f"Failed to deduct Ficore Credits for saving list {list_id}")
         logger.info(f"Saved grocery list {list_id} for user {current_user.id}", 
-                   extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
         return jsonify({'message': trans('grocery_list_saved', default='Grocery list saved successfully')}), 200
     except ValueError as e:
         logger.error(f"Transaction aborted for saving list {list_id} by user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
-        return jsonify({'error': trans('grocery_list_error', default='Error saving grocery list. Please try again.')}), 500
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+        return jsonify({'error': trans('grocery_credit_deduction_failed', default='Failed to deduct Ficore Credits for saving list. Please try again.')}), 500
     except errors.PyMongoError as e:
         logger.error(f"MongoDB error during saving of list {list_id} by user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_list_error', default='Error saving grocery list due to database issue. Please try again later.')}), 500
     except Exception as e:
         logger.error(f"Unexpected error saving grocery list {list_id} for user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_list_error', default='Error saving grocery list. Please try again later.')}), 500
 
 @grocery_bp.route('/lists/<list_id>/export_pdf', methods=['GET'])
@@ -329,7 +337,7 @@ def export_list_pdf(list_id):
     try:
         if not ObjectId.is_valid(list_id):
             logger.error(f"Invalid list_id {list_id}: not a valid ObjectId", 
-                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
             return jsonify({'error': trans('grocery_invalid_list_id', default='Invalid list ID format.')}), 400
         grocery_list = db.grocery_lists.find_one({'_id': ObjectId(list_id), 'user_id': str(current_user.id)})
         if not grocery_list:
@@ -339,7 +347,7 @@ def export_list_pdf(list_id):
         if current_user.is_authenticated and not is_admin():
             if not check_ficore_credit_balance(required_amount=0.1, user_id=current_user.id):
                 logger.warning(f"Insufficient Ficore Credits for exporting list {list_id} to PDF by user {current_user.id}", 
-                             extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                              extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                 return jsonify({'error': trans('grocery_insufficient_credits', default='Insufficient Ficore Credits to export list to PDF. Please purchase more credits.')}), 403
         items = db.grocery_items.find({'list_id': list_id}).sort('created_at', -1)
         grocery_data = {
@@ -450,22 +458,22 @@ def export_list_pdf(list_id):
                 if current_user.is_authenticated and not is_admin():
                     if not deduct_ficore_credits(db, current_user.id, 0.1, 'export_grocery_list_pdf', list_id, mongo_session):
                         logger.error(f"Failed to deduct 0.1 Ficore Credits for exporting list {list_id} to PDF by user {current_user.id}", 
-                                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                         raise ValueError(f"Failed to deduct Ficore Credits for exporting list {list_id} to PDF")
         logger.info(f"Exported grocery list {list_id} to PDF for user {current_user.id}", 
-                   extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
         return Response(buffer, mimetype='application/pdf', headers={'Content-Disposition': f'attachment;filename=grocery_list_{list_id}.pdf'})
     except ValueError as e:
         logger.error(f"Transaction aborted for exporting list {list_id} to PDF by user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_export_error', default='Error exporting grocery list to PDF. Please try again.')}), 500
     except errors.PyMongoError as e:
         logger.error(f"MongoDB error exporting list {list_id} to PDF by user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_export_error', default='Error exporting grocery list to PDF due to database issue. Please try again later.')}), 500
     except Exception as e:
         logger.error(f"Unexpected error exporting grocery list {list_id} to PDF: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_export_error', default='Error exporting grocery list to PDF. Please try again later.')}), 500
 
 @grocery_bp.route('/lists/<list_id>/pending_delete', methods=['POST'])
@@ -476,7 +484,7 @@ def initiate_delete_list(list_id):
     try:
         if not ObjectId.is_valid(list_id):
             logger.error(f"Invalid list_id {list_id}: not a valid ObjectId", 
-                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
             return jsonify({'error': trans('grocery_invalid_list_id', default='Invalid list ID format.')}), 400
         grocery_list = db.grocery_lists.find_one({'_id': ObjectId(list_id), 'user_id': str(current_user.id)})
         if not grocery_list:
@@ -484,7 +492,7 @@ def initiate_delete_list(list_id):
         if current_user.is_authenticated and not is_admin():
             if not check_ficore_credit_balance(required_amount=0.5, user_id=current_user.id):
                 logger.warning(f"Insufficient Ficore Credits for initiating deletion of list {list_id} by user {current_user.id}", 
-                             extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                              extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                 return jsonify({'error': trans('grocery_insufficient_credits', default='Insufficient Ficore Credits to delete a list. Please purchase more credits.')}), 403
         existing_pending = db.pending_deletions.find_one({'list_id': list_id})
         if existing_pending:
@@ -500,15 +508,15 @@ def initiate_delete_list(list_id):
                 db.pending_deletions.insert_one(deletion_data, session=mongo_session)
         threading.Thread(target=process_delayed_deletion, args=(list_id, current_user.id)).start()
         logger.info(f"Initiated delayed deletion for grocery list {list_id} by user {current_user.id}", 
-                   extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
         return jsonify({'message': trans('grocery_list_deletion_initiated', default='Grocery list deletion initiated. Will delete in 20 seconds.')}), 200
     except errors.PyMongoError as e:
         logger.error(f"MongoDB error initiating deletion of list {list_id} by user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_list_error', default='Error initiating deletion due to database issue. Please try again later.')}), 500
     except Exception as e:
         logger.error(f"Unexpected error initiating deletion of grocery list {list_id} for user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_list_error', default='Error initiating deletion. Please try again later.')}), 500
 
 @grocery_bp.route('/lists/<list_id>/pending_delete/status', methods=['GET'])
@@ -519,7 +527,7 @@ def check_pending_delete_status(list_id):
     try:
         if not ObjectId.is_valid(list_id):
             logger.error(f"Invalid list_id {list_id}: not a valid ObjectId", 
-                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
             return jsonify({'error': trans('grocery_invalid_list_id', default='Invalid list ID format.')}), 400
         pending = db.pending_deletions.find_one({'list_id': list_id, 'user_id': str(current_user.id)})
         if not pending:
@@ -531,11 +539,11 @@ def check_pending_delete_status(list_id):
         return jsonify({'pending': True, 'remaining_seconds': max(0, int(remaining))}), 200
     except errors.PyMongoError as e:
         logger.error(f"MongoDB error checking deletion status for list {list_id} by user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_list_error', default='Error checking deletion status due to database issue. Please try again later.')}), 500
     except Exception as e:
         logger.error(f"Unexpected error checking deletion status for list {list_id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_list_error', default='Error checking deletion status. Please try again later.')}), 500
 
 @grocery_bp.route('/lists/<list_id>', methods=['GET'])
@@ -546,7 +554,7 @@ def get_list_details(list_id):
     try:
         if not ObjectId.is_valid(list_id):
             logger.error(f"Invalid list_id {list_id}: not a valid ObjectId", 
-                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
             return jsonify({'error': trans('grocery_invalid_list_id', default='Invalid list ID format.')}), 400
         grocery_list = db.grocery_lists.find_one({'_id': ObjectId(list_id), 'user_id': str(current_user.id)})
         if not grocery_list:
@@ -572,15 +580,15 @@ def get_list_details(list_id):
             } for i in items]
         }
         logger.info(f"Fetched details for grocery list {list_id} for user {current_user.id}", 
-                   extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
         return jsonify(list_data), 200
     except errors.PyMongoError as e:
         logger.error(f"MongoDB error fetching details for list {list_id} by user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_list_error', default='Error fetching list details due to database issue. Please try again later.')}), 500
     except Exception as e:
         logger.error(f"Unexpected error fetching details for grocery list {list_id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_list_error', default='Error fetching list details. Please try again later.')}), 500
 
 @grocery_bp.route('/lists/<list_id>/items', methods=['GET', 'POST', 'PUT'])
@@ -591,7 +599,7 @@ def manage_items(list_id):
     try:
         if not ObjectId.is_valid(list_id):
             logger.error(f"Invalid list_id {list_id}: not a valid ObjectId", 
-                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
             return jsonify({'error': trans('grocery_invalid_list_id', default='Invalid list ID format.')}), 400
         grocery_list = db.grocery_lists.find_one({'_id': ObjectId(list_id), 'user_id': str(current_user.id)})
         if not grocery_list:
@@ -607,7 +615,7 @@ def manage_items(list_id):
             if current_user.is_authenticated and not is_admin():
                 if not check_ficore_credit_balance(required_amount=0.1, user_id=current_user.id):
                     logger.warning(f"Insufficient Ficore Credits for adding item to list {list_id} by user {current_user.id}", 
-                                 extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                                  extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                     return jsonify({'error': trans('grocery_insufficient_credits', default='Insufficient Ficore Credits to add an item. Please purchase more credits.')}), 403
             item_data = {
                 'list_id': list_id,
@@ -633,10 +641,10 @@ def manage_items(list_id):
                     if current_user.is_authenticated and not is_admin():
                         if not deduct_ficore_credits(db, current_user.id, 0.1, 'add_grocery_item', str(result.inserted_id), mongo_session):
                             logger.error(f"Failed to deduct 0.1 Ficore Credits for adding item {result.inserted_id} to list {list_id} by user {current_user.id}", 
-                                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                             raise ValueError(f"Failed to deduct Ficore Credits for adding item {result.inserted_id}")
             logger.info(f"Added item {result.inserted_id} to list {list_id} for user {current_user.id}", 
-                       extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
             return jsonify({'item_id': str(result.inserted_id), 'message': trans('grocery_item_added', default='Item added to list successfully')}), 201
         if request.method == 'PUT':
             data = request.get_json()
@@ -647,7 +655,7 @@ def manage_items(list_id):
             if current_user.is_authenticated and not is_admin():
                 if not check_ficore_credit_balance(required_amount=0.1, user_id=current_user.id):
                     logger.warning(f"Insufficient Ficore Credits for updating item {item_id} in list {list_id} by user {current_user.id}", 
-                                 extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                                  extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                     return jsonify({'error': trans('grocery_insufficient_credits', default='Insufficient Ficore Credits to update an item. Please purchase more credits.')}), 403
             updates = {}
             if 'status' in data:
@@ -671,10 +679,10 @@ def manage_items(list_id):
                         if current_user.is_authenticated and not is_admin():
                             if not deduct_ficore_credits(db, current_user.id, 0.1, 'update_grocery_item', item_id, mongo_session):
                                 logger.error(f"Failed to deduct 0.1 Ficore Credits for updating item {item_id} in list {list_id} by user {current_user.id}", 
-                                            extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                                             extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                                 raise ValueError(f"Failed to deduct Ficore Credits for updating item {item_id}")
             logger.info(f"Updated item {item_id} in list {list_id} for user {current_user.id}", 
-                       extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
             return jsonify({'message': trans('grocery_item_updated', default='Item updated successfully')}), 200
         items = db.grocery_items.find({'list_id': list_id}).sort('created_at', -1)
         return jsonify([{
@@ -689,15 +697,15 @@ def manage_items(list_id):
         } for i in items]), 200
     except ValueError as e:
         logger.error(f"Transaction aborted for managing items in list {list_id} by user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_item_error', default='Error managing items. Please try again.')}), 500
     except errors.PyMongoError as e:
         logger.error(f"MongoDB error managing items for list {list_id} by user {current_user.id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_item_error', default='Error managing items due to database issue. Please try again later.')}), 500
     except Exception as e:
         logger.error(f"Unexpected error managing items for list {list_id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_item_error', default='Error managing items. Please try again later.')}), 500
 
 @grocery_bp.route('/lists/<list_id>/share', methods=['POST'])
@@ -708,7 +716,7 @@ def share_list(list_id):
     try:
         if not ObjectId.is_valid(list_id):
             logger.error(f"Invalid list_id {list_id}: not a valid ObjectId", 
-                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
             return jsonify({'error': trans('grocery_invalid_list_id', default='Invalid list ID format.')}), 400
         grocery_list = db.grocery_lists.find_one({'_id': ObjectId(list_id), 'user_id': str(current_user.id)})
         if not grocery_list:
@@ -725,11 +733,11 @@ def share_list(list_id):
             {'$addToSet': {'collaborators': collaborator_email}, '$set': {'updated_at': datetime.utcnow()}}
         )
         logger.info(f"Shared list {list_id} with {collaborator_email} by user {current_user.id}", 
-                   extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
         return jsonify({'message': trans('grocery_list_shared', default='List shared successfully')}), 200
     except Exception as e:
         logger.error(f"Error sharing list {list_id}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_share_error', default='Error sharing list. Please try again later.')}), 500
 
 @grocery_bp.route('/price_history/<item_name>', methods=['GET'])
@@ -750,7 +758,7 @@ def price_history(item_name):
         return jsonify({'prices': [], 'average_price': 0.0}), 200
     except Exception as e:
         logger.error(f"Error fetching price history for item {item_name}: {str(e)}", 
-                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         return jsonify({'error': trans('grocery_price_history_error', default='Error fetching price history. Please try again later.')}), 500
 
 def init_app(app):
@@ -764,5 +772,5 @@ def init_app(app):
         current_app.logger.info("Initialized grocery blueprint", extra={'session_id': 'no-request-context'})
     except Exception as e:
         current_app.logger.error(f"Error initializing grocery blueprint: {str(e)}", 
-                                extra={'session_id': 'no-request-context', 'stack_trace': traceback.format_exc()})
+                                 extra={'session_id': 'no-request-context', 'stack_trace': traceback.format_exc()})
         raise
