@@ -28,6 +28,9 @@ function initGroceryPlanner() {
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="suggestions-tab" data-bs-toggle="tab" data-bs-target="#suggestions" type="button" role="tab">${window.groceryTranslations.grocery_suggestions}</button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="manage-list-tab" data-bs-toggle="tab" data-bs-target="#manage-list" type="button" role="tab">${window.groceryTranslations.grocery_manage_list}</button>
+            </li>
         </ul>
         <div class="tab-content" id="groceryTabContent">
             <div class="tab-pane fade show active" id="lists" role="tabpanel" aria-labelledby="lists-tab">
@@ -103,11 +106,18 @@ function initGroceryPlanner() {
                     </div>
                 </div>
             </div>
+            <div class="tab-pane fade" id="manage-list" role="tabpanel" aria-labelledby="manage-list-tab">
+                <div class="mb-3">
+                    <h6>${window.groceryTranslations.grocery_manage_list}</h6>
+                    <div id="manageGroceryLists"></div>
+                </div>
+            </div>
         </div>
     `;
 
     loadGroceryLists();
     loadPredictiveSuggestions();
+    loadManageLists();
 }
 
 // Fetch with CSRF token
@@ -150,16 +160,87 @@ function renderGroceryLists(lists) {
                 <div>
                     <span class="text-muted">Budget: ${format_currency(list.budget)}</span>
                     <span class="ms-2">Spent: ${format_currency(list.total_spent)}</span>
-                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadGroceryItems('${list - list.id}')">${window.groceryTranslations.general_view_all}</button>
+                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadGroceryItems('${list.id}')">${window.groceryTranslations.general_view_all}</button>
                 </div>
             </div>
         `).join('');
-        if (!currentListId && lists[0]) {
+        if (!currentListId-test && lists[0]) {
             loadGroceryItems(lists[0].id);
         }
     } else {
         groceryListsEl.innerHTML = `<div class="text-muted">${window.groceryTranslations.no_lists}</div>`;
     }
+}
+
+function loadManageLists() {
+    fetchWithCSRF(window.apiUrls.manageGroceryLists)
+        .then(response => {
+            if (response.status === 403) {
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
+        .then(lists => {
+            offlineData.lists = lists;
+            localStorage.setItem('groceryLists', JSON.stringify(lists));
+            renderManageLists(lists);
+        })
+        .catch(error => {
+            console.error('Error loading grocery lists for management:', error);
+            renderManageLists([]);
+        });
+}
+
+function renderManageLists(lists) {
+    const manageListsEl = document.getElementById('manageGroceryLists');
+    if (lists && lists.length > 0) {
+        manageListsEl.innerHTML = lists.map(list => `
+            <div class="grocery-item">
+                <span class="fw-semibold">${list.name}</span>
+                <div>
+                    <span class="text-muted">Budget: ${format_currency(list.budget)}</span>
+                    <button class="btn btn-sm btn-outline-danger ms-2" onclick="deleteGroceryList('${list.id}', '${list.name}')">${window.groceryTranslations.grocery_delete}</button>
+                </div>
+            </div>
+        `).join('');
+    } else {
+        manageListsEl.innerHTML = `<div class="text-muted">${window.groceryTranslations.no_lists}</div>`;
+    }
+}
+
+function deleteGroceryList(listId, listName) {
+    if (!confirm(`${window.groceryTranslations.grocery_confirm_delete} "${listName}"? ${window.groceryTranslations.grocery_delete_cost}`)) {
+        return;
+    }
+    fetchWithCSRF(window.apiUrls.deleteGroceryList.replace('{list_id}', listId), {
+        method: 'DELETE'
+    })
+        .then(response => {
+            if (response.status === 403) {
+                showToast(window.groceryTranslations.insufficient_credits, 'error');
+                return Promise.reject(new Error('Unauthorized'));
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast(window.groceryTranslations.grocery_list_deleted, 'success');
+                if (currentListId === listId) {
+                    currentListId = null;
+                    document.getElementById('groceryItems').innerHTML = '';
+                }
+                loadGroceryLists();
+                loadManageLists();
+                loadFinancialSummary();
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting grocery list:', error);
+            showToast(window.groceryTranslations.general_error, 'danger');
+        });
 }
 
 function loadGroceryItems(listId) {
@@ -233,6 +314,7 @@ function createGroceryList() {
                 document.getElementById('newListName').value = '';
                 document.getElementById('newListBudget').value = '';
                 loadGroceryLists();
+                loadManageLists();
                 loadFinancialSummary();
             }
         })
@@ -341,6 +423,7 @@ function shareGroceryList() {
                 showToast(window.groceryTranslations.grocery_list_shared, 'success');
                 document.getElementById('shareListEmail').value = '';
                 loadGroceryLists();
+                loadManageLists();
             }
         })
         .catch(error => {
@@ -536,6 +619,7 @@ function generateGroceryListFromMealPlan(mealPlanId) {
                         } else {
                             showToast(window.groceryTranslations.grocery_list_created, 'success');
                             loadGroceryLists();
+                            loadManageLists();
                             loadFinancialSummary();
                         }
                     })
@@ -765,6 +849,7 @@ function loadOfflineData() {
     if (cachedLists) {
         offlineData.lists = JSON.parse(cachedLists);
         renderGroceryLists(offlineData.lists);
+        renderManageLists(offlineData.lists);
     }
     if (cachedItems) {
         offlineData.items = JSON.parse(cachedItems);
