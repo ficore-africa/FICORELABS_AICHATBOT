@@ -11,7 +11,7 @@ import uuid
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
-food_order_bp = Blueprint('food_order', __name__, url_prefix='/personal/food_order')
+food_order_bp = Blueprint('food_order', __name__, url_prefix='/food_order')
 
 def deduct_ficore_credits(db, user_id, amount, action, order_id=None):
     """Deduct Ficore Credits from user balance and log the transaction using MongoDB transaction."""
