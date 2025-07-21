@@ -1,6 +1,6 @@
-from flask import Blueprint, jsonify, current_app, request, session
+from flask import Blueprint, jsonify, current_app, request, session, redirect, url_for
 from flask_login import current_user, login_required
-from utils import requires_role, get_mongo_db
+from utils import requires_role, get_mongo_db, check_ficore_credit_balance, deduct_ficore_credits
 from translations import trans
 import logging
 from datetime import datetime
@@ -40,6 +40,13 @@ def manage_orders():
                 current_app.logger.warning(f"Invalid order data: {data}", extra={'session_id': session.get('sid', 'unknown')})
                 return jsonify({'error': trans('food_order_invalid_data', default='Invalid order data')}), 400
 
+            # Check Ficore Credits for authenticated non-admin users
+            if current_user.is_authenticated and not is_admin():
+                if not check_ficore_credit_balance(required_amount=0.5, user_id=current_user.id):
+                    current_app.logger.warning(f"Insufficient Ficore Credits for creating order by user {user_id}", extra={'session_id': session.get('sid', 'unknown')})
+                    return jsonify({'error': trans('food_order_insufficient_credits', default='Insufficient Ficore Credits to create an order. Please purchase more credits.')}), 403
+                    # Redirect option: return redirect(url_for('agents_bp.manage_credits'))
+
             order = {
                 'id': str(uuid.uuid4()),
                 'user_id': user_id,
@@ -51,7 +58,15 @@ def manage_orders():
                 'shared_with': [],  # For future sharing functionality
                 'items': []
             }
-            collection.insert_one(order)
+            result = collection.insert_one(order)
+
+            # Deduct Ficore Credits
+            if current_user.is_authenticated and not is_admin():
+                if not deduct_ficore_credits(db, current_user.id, 0.5, 'create_food_order', order['id']):
+                    collection.delete_one({'id': order['id']})
+                    current_app.logger.error(f"Failed to deduct 0.5 Ficore Credits for creating order {order['id']} by user {user_id}", extra={'session_id': session.get('sid', 'unknown')})
+                    return jsonify({'error': trans('food_order_credit_deduction_failed', default='Failed to deduct Ficore Credits for creating order.')}), 500
+
             current_app.logger.info(f"Created food order {order['id']} for user {user_id}", extra={'session_id': session.get('sid', 'unknown')})
             return jsonify({k: v for k, v in order.items() if k != '_id'})
 
@@ -86,6 +101,13 @@ def manage_items(order_id):
                 current_app.logger.warning(f"Invalid item data: {data}", extra={'session_id': session.get('sid', 'unknown')})
                 return jsonify({'error': trans('food_order_invalid_item_data', default='Invalid item data')}), 400
 
+            # Check Ficore Credits for authenticated non-admin users
+            if current_user.is_authenticated and not is_admin():
+                if not check_ficore_credit_balance(required_amount=0.5, user_id=current_user.id):
+                    current_app.logger.warning(f"Insufficient Ficore Credits for adding item to order {order_id} by user {user_id}", extra={'session_id': session.get('sid', 'unknown')})
+                    return jsonify({'error': trans('food_order_insufficient_credits', default='Insufficient Ficore Credits to add an item. Please purchase more credits.')}), 403
+                    # Redirect option: return redirect(url_for('agents_bp.manage_credits'))
+
             item = {
                 'item_id': str(uuid.uuid4()),
                 'name': data['name'],
@@ -93,7 +115,7 @@ def manage_items(order_id):
                 'price': float(data['price']),
                 'category': data.get('category', 'Uncategorized')
             }
-            collection.update_one(
+            result = collection.update_one(
                 {'id': order_id},
                 {
                     '$push': {'items': item},
@@ -103,6 +125,21 @@ def manage_items(order_id):
                     }
                 }
             )
+
+            # Deduct Ficore Credits
+            if current_user.is_authenticated and not is_admin():
+                if not deduct_ficore_credits(db, current_user.id, 0.5, 'add_food_order_item', item['item_id']):
+                    # Roll back by removing the item
+                    collection.update_one(
+                        {'id': order_id},
+                        {
+                            '$pull': {'items': {'item_id': item['item_id']}},
+                            '$set': {'updated_at': datetime.utcnow()}
+                        }
+                    )
+                    current_app.logger.error(f"Failed to deduct 0.5 Ficore Credits for adding item {item['item_id']} to order {order_id} by user {user_id}", extra={'session_id': session.get('sid', 'unknown')})
+                    return jsonify({'error': trans('food_order_credit_deduction_failed', default='Failed to deduct Ficore Credits for adding item.')}), 500
+
             current_app.logger.info(f"Added item {item['item_id']} to order {order_id}", extra={'session_id': session.get('sid', 'unknown')})
             return jsonify(item)
 
@@ -119,6 +156,13 @@ def manage_items(order_id):
             if field not in ['quantity', 'price']:
                 return jsonify({'error': trans('food_order_invalid_field', default='Invalid field')}), 400
 
+            # Check Ficore Credits for authenticated non-admin users
+            if current_user.is_authenticated and not is_admin():
+                if not check_ficore_credit_balance(required_amount=0.5, user_id=current_user.id):
+                    current_app.logger.warning(f"Insufficient Ficore Credits for updating item {item_id} in order {order_id} by user {user_id}", extra={'session_id': session.get('sid', 'unknown')})
+                    return jsonify({'error': trans('food_order_insufficient_credits', default='Insufficient Ficore Credits to update an item. Please purchase more credits.')}), 403
+                    # Redirect option: return redirect(url_for('agents_bp.manage_credits'))
+
             # Find the item
             items = order.get('items', [])
             item_index = next((i for i, item in enumerate(items) if item['item_id'] == item_id), None)
@@ -126,10 +170,13 @@ def manage_items(order_id):
                 current_app.logger.warning(f"Item {item_id} not found in order {order_id}", extra={'session_id': session.get('sid', 'unknown')})
                 return jsonify({'error': trans('food_order_item_not_found', default='Item not found')}), 404
 
+            # Store original item for potential rollback
+            original_item = items[item_index].copy()
+
             # Update item
             items[item_index][field] = int(value) if field == 'quantity' else float(value)
             total_cost = sum(item['quantity'] * item['price'] for item in items)
-            collection.update_one(
+            result = collection.update_one(
                 {'id': order_id},
                 {
                     '$set': {
@@ -139,6 +186,26 @@ def manage_items(order_id):
                     }
                 }
             )
+
+            # Deduct Ficore Credits
+            if current_user.is_authenticated and not is_admin():
+                if not deduct_ficore_credits(db, current_user.id, 0.5, 'update_food_order_item', item_id):
+                    # Roll back by restoring the original item
+                    items[item_index] = original_item
+                    total_cost = sum(item['quantity'] * item['price'] for item in items)
+                    collection.update_one(
+                        {'id': order_id},
+                        {
+                            '$set': {
+                                'items': items,
+                                'total_cost': total_cost,
+                                'updated_at': datetime.utcnow()
+                            }
+                        }
+                    )
+                    current_app.logger.error(f"Failed to deduct 0.5 Ficore Credits for updating item {item_id} in order {order_id} by user {user_id}", extra={'session_id': session.get('sid', 'unknown')})
+                    return jsonify({'error': trans('food_order_credit_deduction_failed', default='Failed to deduct Ficore Credits for updating item.')}), 500
+
             current_app.logger.info(f"Updated item {item_id} in order {order_id}", extra={'session_id': session.get('sid', 'unknown')})
             return jsonify({'success': True})
 
