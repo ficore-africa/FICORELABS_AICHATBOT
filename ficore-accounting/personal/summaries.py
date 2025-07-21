@@ -226,17 +226,25 @@ def grocery_summary():
     try:
         db = get_mongo_db()
         grocery_lists = db.grocery_lists.find({'user_id': str(current_user.id), 'status': 'active'}).sort('updated_at', -1)
-        total_budget = 0
-        total_spent = 0
+        total_budget = 0.0
+        total_spent = 0.0
+        active_lists = 0
         for grocery_list in grocery_lists:
-            total_budget += float(grocery_list.get('budget', 0))
-            total_spent += float(grocery_list.get('total_spent', 0))
+            try:
+                total_budget += float(grocery_list.get('budget', 0))
+                total_spent += float(grocery_list.get('total_spent', 0))
+                active_lists += 1
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Invalid grocery list data for list {grocery_list.get('_id')}: {str(e)}", 
+                              extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                continue
         
-        logger.info(f"Fetched grocery summary for user {current_user.id}: budget={total_budget}, spent={total_spent}", 
+        logger.info(f"Fetched grocery summary for user {current_user.id}: budget={total_budget}, spent={total_spent}, active_lists={active_lists}", 
                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
         return jsonify({
             'total_grocery_budget': float(total_budget),
-            'total_grocery_spent': float(total_spent)
+            'total_grocery_spent': float(total_spent),
+            'active_lists': active_lists
         }), 200
     except Exception as e:
         logger.error(f"Error fetching grocery summary for user {current_user.id}: {str(e)}", 
@@ -244,6 +252,7 @@ def grocery_summary():
         return jsonify({
             'total_grocery_budget': 0.0,
             'total_grocery_spent': 0.0,
+            'active_lists': 0,
             'error': trans('grocery_summary_error', default='Error fetching grocery summary')
         }), 500
 
