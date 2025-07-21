@@ -1,5 +1,7 @@
 from flask import Blueprint, jsonify, current_app, request, session, redirect, url_for
 from flask_login import current_user, login_required
+from pymongo import errors
+from bson import ObjectId
 from utils import requires_role, get_mongo_db, check_ficore_credit_balance, is_admin
 from translations import trans
 import logging
@@ -11,13 +13,59 @@ logging.basicConfig(level=logging.DEBUG)
 
 food_order_bp = Blueprint('food_order', __name__, url_prefix='/personal/food_order')
 
-def init_app(app):
-    """Initialize the food order blueprint."""
+def deduct_ficore_credits(db, user_id, amount, action, order_id=None):
+    """Deduct Ficore Credits from user balance and log the transaction using MongoDB transaction."""
     try:
-        current_app.logger.info("Food order blueprint initialized successfully", extra={'session_id': 'no-request-context'})
+        if amount <= 0:
+            current_app.logger.error(f"Invalid deduction amount {amount} for user {user_id}, action: {action}")
+            return False
+
+        client = db.client
+        user = db.users.find_one({'_id': user_id})
+        if not user:
+            current_app.logger.error(f"User {user_id} not found for credit deduction, action: {action}", extra={'session_id': session.get('sid', 'unknown')})
+            return False
+        current_balance = user.get('ficore_credit_balance', 0)
+        if current_balance < amount:
+            current_app.logger.warning(f"Insufficient credits for user {user_id}: required {amount}, available {current_balance}, action: {action}", extra={'session_id': session.get('sid', 'unknown')})
+            return False
+
+        with client.start_session() as mongo_session:
+            with mongo_session.start_transaction():
+                result = db.users.update_one(
+                    {'_id': user_id},
+                    {'$inc': {'ficore_credit_balance': -amount}},
+                    session=mongo_session
+                )
+                if result.modified_count == 0:
+                    current_app.logger.error(f"Failed to deduct {amount} credits for user {user_id}, action: {action}", extra={'session_id': session.get('sid', 'unknown')})
+                    raise ValueError(f"Failed to update user balance for {user_id}")
+
+                transaction = {
+                    '_id': ObjectId(),
+                    'user_id': user_id,
+                    'action': action,
+                    'amount': -amount,
+                    'order_id': str(order_id) if order_id else None,
+                    'timestamp': datetime.utcnow(),
+                    'session_id': session.get('sid', 'unknown'),
+                    'status': 'completed'
+                }
+                db.ficore_credit_transactions.insert_one(transaction, session=mongo_session)
+        
+        current_app.logger.info(f"Deducted {amount} Ficore Credits for {action} by user {user_id}", extra={'session_id': session.get('sid', 'unknown')})
+        return True
+    except ValueError as e:
+        current_app.logger.error(f"Transaction aborted for user {user_id}, action: {action}: {str(e)}", extra={'session_id': session.get('sid', 'unknown')})
+        mongo_session.abort_transaction()
+        return False
+    except errors.PyMongoError as e:
+        current_app.logger.error(f"MongoDB error during Ficore Credit deduction for user {user_id}, action: {action}: {str(e)}", extra={'session_id': session.get('sid', 'unknown')})
+        mongo_session.abort_transaction()
+        return False
     except Exception as e:
-        current_app.logger.error(f"Error initializing food order blueprint: {str(e)}", extra={'session_id': 'no-request-context'})
-        raise
+        current_app.logger.error(f"Error deducting {amount} Ficore Credits for {action} by user {user_id}: {str(e)}", extra={'session_id': session.get('sid', 'unknown')})
+        return False
 
 @food_order_bp.route('/manage_orders', methods=['GET', 'POST'])
 @login_required
@@ -45,7 +93,6 @@ def manage_orders():
                 if not check_ficore_credit_balance(required_amount=0.5, user_id=current_user.id):
                     current_app.logger.warning(f"Insufficient Ficore Credits for creating order by user {user_id}", extra={'session_id': session.get('sid', 'unknown')})
                     return jsonify({'error': trans('food_order_insufficient_credits', default='Insufficient Ficore Credits to create an order. Please purchase more credits.')}), 403
-                    # Redirect option: return redirect(url_for('agents_bp.manage_credits'))
 
             order = {
                 'id': str(uuid.uuid4()),
@@ -106,7 +153,6 @@ def manage_items(order_id):
                 if not check_ficore_credit_balance(required_amount=0.5, user_id=current_user.id):
                     current_app.logger.warning(f"Insufficient Ficore Credits for adding item to order {order_id} by user {user_id}", extra={'session_id': session.get('sid', 'unknown')})
                     return jsonify({'error': trans('food_order_insufficient_credits', default='Insufficient Ficore Credits to add an item. Please purchase more credits.')}), 403
-                    # Redirect option: return redirect(url_for('agents_bp.manage_credits'))
 
             item = {
                 'item_id': str(uuid.uuid4()),
@@ -161,7 +207,6 @@ def manage_items(order_id):
                 if not check_ficore_credit_balance(required_amount=0.5, user_id=current_user.id):
                     current_app.logger.warning(f"Insufficient Ficore Credits for updating item {item_id} in order {order_id} by user {user_id}", extra={'session_id': session.get('sid', 'unknown')})
                     return jsonify({'error': trans('food_order_insufficient_credits', default='Insufficient Ficore Credits to update an item. Please purchase more credits.')}), 403
-                    # Redirect option: return redirect(url_for('agents_bp.manage_credits'))
 
             # Find the item
             items = order.get('items', [])
@@ -212,3 +257,11 @@ def manage_items(order_id):
     except Exception as e:
         current_app.logger.error(f"Error in manage_items: {str(e)}", extra={'session_id': session.get('sid', 'unknown')})
         return jsonify({'error': trans('general_error', default='An error occurred')}), 500
+
+def init_app(app):
+    """Initialize the food order blueprint."""
+    try:
+        current_app.logger.info("Food order blueprint initialized successfully", extra={'session_id': 'no-request-context'})
+    except Exception as e:
+        current_app.logger.error(f"Error initializing food order blueprint: {str(e)}", extra={'session_id': 'no-request-context'})
+        raise
