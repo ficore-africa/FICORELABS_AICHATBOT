@@ -40,7 +40,7 @@
                     </div>
                     <div class="status-label" id="budgetStatusLabel"></div>
                 </div>
-                <div class="summary-card bills-card AFTER">
+                <div class="summary-card bills-card">
                     <div class="card-header d-flex align-items-center gap-3">
                         <i class="bi bi-receipt card-icon text-warning"></i>
                         <span class="fw-bold">Upcoming Bills</span>
@@ -50,6 +50,17 @@
                         <span class="amount-value" data-amount="0">0.00</span>
                     </div>
                     <div class="status-label" id="billsStatusLabel"></div>
+                </div>
+                <div class="summary-card grocery-card">
+                    <div class="card-header d-flex align-items-center gap-3">
+                        <i class="bi bi-cart card-icon text-info"></i>
+                        <span class="fw-bold">Grocery Spending</span>
+                    </div>
+                    <div class="card-amount mt-3" id="grocerySpending">
+                        <span class="currency-symbol">₦</span>
+                        <span class="amount-value" data-amount="0">0.00</span>
+                    </div>
+                    <div class="status-label" id="groceryStatusLabel"></div>
                 </div>
             </div>
             <div class="mt-3 text-end">
@@ -259,7 +270,8 @@ window.groceryTranslations = {
     general_please_provide_email: "Please provide an email",
     general_error: "An error occurred",
     insufficient_credits: "Insufficient credits",
-    friday_reminder: "It's Friday! Time to prep your weekend grocery list."
+    friday_reminder: "It's Friday! Time to prep your weekend grocery list.",
+    not_found: "Resource not found"
 };
 
 window.foodOrderTranslations = {
@@ -280,24 +292,25 @@ window.foodOrderTranslations = {
     general_select_order: "Please select an order",
     general_please_provide: "Please provide all required fields",
     general_error: "An error occurred",
-    insufficient_credits: "Insufficient credits"
+    insufficient_credits: "Insufficient credits",
+    not_found: "Resource not found"
 };
 
 window.apiUrls = {
-    budgetSummary: "/summaries/budget_summary",
-    billSummary: "/summaries/bill_summary",
-    grocerySummary: "/summaries/grocery_summary",
-    ficoreBalance: "/summaries/ficore_balance",
-    recentActivity: "/summaries/recent_activity",
-    notifications: "/summaries/notifications",
-    manageGroceryLists: "/grocery/lists",
-    manageGroceryItems: "/grocery/lists/{list_id}/items",
-    shareGroceryList: "/grocery/lists/{list_id}/share",
-    manageGrocerySuggestions: "/grocery/lists/{list_id}/suggestions",
-    approveGrocerySuggestion: "/grocery/lists/{list_id}/suggestions/{suggestion_id}/approve",
-    manageMealPlans: "/grocery/meal_plans",
-    groceryPriceHistory: "/grocery/price_history/{item_name}",
-    predictiveSuggestions: "/grocery/predictive_suggestions",
+    budgetSummary: "/personal/summaries/budget/summary",
+    billSummary: "/personal/summaries/bill/summary",
+    grocerySummary: "/personal/summaries/grocery/summary",
+    ficoreBalance: "/personal/summaries/ficore_balance",
+    recentActivity: "/personal/summaries/recent_activity",
+    notifications: "/personal/summaries/notifications",
+    manageGroceryLists: "/personal/grocery/lists",
+    manageGroceryItems: "/personal/grocery/lists/{list_id}/items",
+    shareGroceryList: "/personal/grocery/lists/{list_id}/share",
+    manageGrocerySuggestions: "/personal/grocery/lists/{list_id}/suggestions",
+    approveGrocerySuggestion: "/personal/grocery/lists/{list_id}/suggestions/{suggestion_id}/approve",
+    manageMealPlans: "/personal/grocery/meal_plans",
+    groceryPriceHistory: "/personal/grocery/price_history/{item_name}",
+    predictiveSuggestions: "/personal/grocery/suggestions",
     manageFoodOrders: "/personal/food_order/manage_orders",
     manageFoodOrderItems: "/personal/food_order/manage_items/{order_id}"
 };
@@ -335,31 +348,73 @@ function loadFinancialSummary() {
     fetch(window.apiUrls.budgetSummary)
         .then(response => response.json())
         .then(data => {
+            if (data.error) {
+                console.error('Budget summary error:', data.error);
+                showToast(window.groceryTranslations.not_found, 'danger');
+                return;
+            }
             const budgetStatus = document.getElementById('budgetStatus');
             budgetStatus.querySelector('.amount-value').dataset.amount = data.totalBudget;
             budgetStatus.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.totalBudget) : '****';
             document.getElementById('budgetStatusLabel').textContent = data.totalBudget >= 0 ? 'On Track' : 'Over Budget';
         })
-        .catch(error => console.error('Error loading budget summary:', error));
+        .catch(error => {
+            console.error('Error loading budget summary:', error);
+            showToast(window.groceryTranslations.not_found, 'danger');
+        });
 
     fetch(window.apiUrls.billSummary)
         .then(response => response.json())
         .then(data => {
+            if (data.error) {
+                console.error('Bill summary error:', data.error);
+                showToast(window.groceryTranslations.not_found, 'danger');
+                return;
+            }
             const upcomingBills = document.getElementById('upcomingBills');
             upcomingBills.querySelector('.amount-value').dataset.amount = data.pending_amount;
             upcomingBills.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.pending_amount) : '****';
             document.getElementById('billsStatusLabel').textContent = data.overdue_amount > 0 ? 'Overdue' : 'On Time';
         })
-        .catch(error => console.error('Error loading bill summary:', error));
+        .catch(error => {
+            console.error('Error loading bill summary:', error);
+            showToast(window.groceryTranslations.not_found, 'danger');
+        });
+
+    fetch(window.apiUrls.grocerySummary)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Grocery summary error:', data.error);
+                showToast(window.groceryTranslations.not_found, 'danger');
+                return;
+            }
+            const grocerySpending = document.getElementById('grocerySpending');
+            grocerySpending.querySelector('.amount-value').dataset.amount = data.total_grocery_spent;
+            grocerySpending.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.total_grocery_spent) : '****';
+            document.getElementById('groceryStatusLabel').textContent = data.total_grocery_spent <= data.total_grocery_budget ? 'Within Budget' : 'Over Budget';
+        })
+        .catch(error => {
+            console.error('Error loading grocery summary:', error);
+            showToast(window.groceryTranslations.not_found, 'danger');
+        });
 
     fetch(window.apiUrls.ficoreBalance)
         .then(response => response.json())
         .then(data => {
+            if (data.error) {
+                console.error('Ficore balance error:', data.error);
+                showToast(window.groceryTranslations.not_found, 'danger');
+                return;
+            }
             const walletBalance = document.getElementById('walletBalance');
             walletBalance.querySelector('.amount-value').dataset.amount = data.balance;
             walletBalance.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.balance) : '****';
         })
-        .catch(error => console.error('Error loading ficore balance:', error));
+        .catch(error => {
+            console.error('Error loading ficore balance:', error);
+            showToast(window.groceryTranslations.not_found, 'danger');
+        });
 }
 
 function loadRecentActivity() {
