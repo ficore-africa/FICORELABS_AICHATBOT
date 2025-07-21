@@ -123,22 +123,24 @@ for module_name, translations in translation_modules.items():
         lang_dict = translations.get(lang, {})
         logger.info(f"Loaded {len(lang_dict)} translations for module '{module_name}', lang='{lang}'")
 
-def trans(key: str, lang: Optional[str] = None, **kwargs: str) -> str:
+def trans(key: str, lang: Optional[str] = None, default: Optional[str] = None, **kwargs: str) -> str:
     """
     Translate a key using the appropriate module's translation dictionary.
     
     Args:
         key: The translation key (e.g., 'bill_submit', 'general_welcome').
         lang: Language code ('en', 'ha'). Defaults to session['lang'] or 'en'.
+        default: Default string to use if translation is missing. Defaults to None (returns key).
         **kwargs: String formatting parameters for the translated string.
     
     Returns:
-        The translated string, falling back to English or the key itself if missing.
-        Applies string formatting with kwargs if provided.
+        The translated string, falling back to English, default, or the key itself if missing.
+        Applies string formatting with kwargs if provided, with fallback for missing keys.
     
     Notes:
         - Uses session['lang'] if lang is None and request context exists.
         - Logs warnings for missing translations only once per key.
+        - Logs errors for formatting failures but returns unformatted string as fallback.
         - Uses g.logger if available, else the default logger.
         - Checks general translations for common UI elements without prefixes.
     """
@@ -174,11 +176,11 @@ def trans(key: str, lang: Optional[str] = None, **kwargs: str) -> str:
     # Get translation
     translation = lang_dict.get(key)
 
-    # Fallback to English, then key
+    # Fallback to English, then default, then key
     if translation is None:
         en_dict = module.get('en', {})
-        translation = en_dict.get(key, key)
-        if translation == key:
+        translation = en_dict.get(key, default or key)
+        if translation == default or translation == key:
             with lock:
                 if key not in logged_missing_keys:
                     logged_missing_keys.add(key)
@@ -187,15 +189,31 @@ def trans(key: str, lang: Optional[str] = None, **kwargs: str) -> str:
                         extra={'session_id': session_id}
                     )
 
-    # Apply string formatting
-    try:
-        return translation.format(**kwargs) if kwargs else translation
-    except (KeyError, ValueError) as e:
-        current_logger.error(
-            f"Formatting failed for key '{key}', lang='{lang}', kwargs={kwargs}, error={str(e)}",
-            extra={'session_id': session_id}
-        )
-        return translation
+    # Apply string formatting with fallback for missing kwargs
+    if kwargs:
+        try:
+            return translation.format(**kwargs)
+        except KeyError as e:
+            with lock:
+                error_key = f"formatting_error_{key}_{lang}"
+                if error_key not in logged_missing_keys:
+                    logged_missing_keys.add(error_key)
+                    current_logger.error(
+                        f"Formatting energetic for key='{key}', lang='{lang}', kwargs={kwargs}, error='Missing key: {str(e)}'",
+                        extra={'session_id': session_id}
+                    )
+            return translation  # Return unformatted string as fallback
+        except ValueError as e:
+            with lock:
+                error_key = f"formatting_error_{key}_{lang}"
+                if error_key not in logged_missing_keys:
+                    logged_missing_keys.add(error_key)
+                    current_logger.error(
+                        f"Formatting failed for key='{key}', lang='{lang}', kwargs={kwargs}, error='Invalid format: {str(e)}'",
+                        extra={'session_id': session_id}
+                    )
+            return translation  # Return unformatted string as fallback
+    return translation
 
 def get_translations(lang: Optional[str] = None) -> Dict[str, callable]:
     """
@@ -210,10 +228,10 @@ def get_translations(lang: Optional[str] = None) -> Dict[str, callable]:
     if lang is None:
         lang = session.get('lang', 'en') if has_request_context() else 'en'
     if lang not in ['en', 'ha']:
-        logger.warning(f"Invalid language '{lang}', falling back to 'en'")
+        logger.warning(f"Invalid language '{lang}', falling back to 'en'", extra={'session_id': session.get('sid', 'no-session-id')})
         lang = 'en'
     return {
-        'trans': lambda key, **kwargs: trans(key, lang=lang, **kwargs)
+        'trans': lambda key, default=None, **kwargs: trans(key, lang=lang, default=default, **kwargs)
     }
 
 def get_all_translations() -> Dict[str, Dict[str, Dict[str, str]]]:
@@ -238,7 +256,9 @@ def get_module_translations(module_name: str, lang: Optional[str] = None) -> Dic
     """
     if lang is None:
         lang = session.get('lang', 'en') if has_request_context() else 'en'
-    
+    if lang not in ['en', 'ha']:
+        logger.warning(f"Invalid language '{lang}', falling back to 'en'", extra={'session_id': session.get('sid', 'no-session-id')})
+        lang = 'en'
     module = translation_modules.get(module_name, {})
     return module.get(lang, {})
 
