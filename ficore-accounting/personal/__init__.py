@@ -122,15 +122,6 @@ def index():
                 "url": url_for("credits.history", _external=True)
             },
             {
-                "endpoint": "taxation_bp.calculate_tax",
-                "label": "Taxation",
-                "label_key": "taxation_calculator",
-                "description_key": "taxation_calculator_desc",
-                "tooltip_key": "taxation_tooltip",
-                "icon": "bi-calculator",
-                "url": url_for("taxation_bp.calculate_tax", _external=True)
-            },
-            {
                 "endpoint": "reports.index",
                 "label": "Reports",
                 "label_key": "personal_reports",
