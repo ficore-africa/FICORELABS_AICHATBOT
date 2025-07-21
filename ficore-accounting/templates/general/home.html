@@ -3,7 +3,7 @@
 {% block content %}
 <div class="page-container">
     {% if current_user.is_authenticated %}
-        <!-- Financial Summary -->
+        <!-- Financial Snapshots -->
         <div class="section-card financial-snapshots">
             <h3 class="section-title">{{ t('general_snapshots', default='Financial Snapshots') | e }}</h3>
             <div class="summary-cards">
@@ -38,6 +38,10 @@
                     {{ t('general_details', default='Details') | e }}
                 </a>
             </div>
+        </div>
+
+        <!-- Balances Overview -->
+        <div class="section-card balances-overview">
             <p class="spacer">{{ t('general_balances_overview', default='Balances Overview') | e }}</p>
             <div class="stat-cards-container">
                 <div class="stat-card wallet-balance">
@@ -45,7 +49,7 @@
                         <i class="bi bi-wallet2 text-primary"></i>
                     </div>
                     <div class="snapshot-info">
-                        <div class="snapshot-label fw-bold ">{{ t('general_ficore_credits', default='Ficore Credits') | e }}</div>
+                        <div class="snapshot-label fw-bold">{{ t('general_ficore_credits', default='Ficore Credits') | e }}</div>
                         <div class="stat-card-value" id="walletBalance">0</div>
                     </div>
                 </div>
@@ -54,7 +58,7 @@
                         <i class="bi bi-graph-up text-success"></i>
                     </div>
                     <div class="snapshot-info">
-                        <div class="snapshot-label fw-bold ">{{ t('general_net_cashflow_mtd', default='Net Flow') | e }}</div>
+                        <div class="snapshot-label fw-bold">{{ t('general_net_cashflow_mtd', default='Net Flow') | e }}</div>
                         <div class="stat-card-value" id="netCashflow">₦0</div>
                     </div>
                 </div>
@@ -65,6 +69,7 @@
                 </button>
             </div>
         </div>
+
         <!-- Recent Activity -->
         <div class="section-card recent-activity">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -87,6 +92,7 @@
                 </div>
             </div>
         </div>
+
         <!-- Notifications -->
         <div class="section-card notifications">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -107,6 +113,7 @@
                 </div>
             </div>
         </div>
+
         <!-- Quick Actions -->
         <section class="quick-actions-section">
             <h3 class="quick-actions-heading">{{ t('general_quick_actions', default='Quick Actions') | e }}</h3>
@@ -122,6 +129,7 @@
                 {% endfor %}
             </div>
         </section>
+
         <!-- Explore Features -->
         <div class="section-card explore-section">
             <h3 class="section-title">{{ t('general_explore_features', default='Explore Features') | e }}</h3>
@@ -170,8 +178,8 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize tooltips
@@ -347,9 +355,8 @@ function loadNotifications() {
                                 <div class="notification-time text-muted">${translations.check_back_later}</div>
                             </div>
                         </div>
-                    </div>
-                `;
-            }
+                    `;
+            });
         })
         .catch(error => {
             console.error('Error loading notifications:', error);
