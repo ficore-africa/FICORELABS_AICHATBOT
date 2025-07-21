@@ -7,57 +7,79 @@ function setupCSRF() {
     const metaTag = document.querySelector('meta[name="csrf-token"]');
     if (metaTag) {
         csrfToken = metaTag.getAttribute('content');
+    } else {
+        console.warn('CSRF token not found in meta tag');
     }
 }
 
 // Initialize Food Order
 function initFoodOrder() {
-    setupCSRF();
-    const root = document.getElementById('food-order-root');
-    if (!root) return;
+    try {
+        if (!window.foodOrderTranslations || !window.apiUrls) {
+            console.error('Food order translations or API URLs not defined');
+            showToast('Configuration error: Translations or APIs missing', 'danger');
+            return;
+        }
 
-    root.innerHTML = `
-        <ul class="nav nav-tabs mb-3" id="foodOrderTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab">${window.foodOrderTranslations.food_order_create}</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="manage-orders-tab" data-bs-toggle="tab" data-bs-target="#manage-orders" type="button" role="tab">${window.foodOrderTranslations.general_view_all}</button>
-            </li>
-        </ul>
-        <div class="tab-content" id="foodOrderTabContent">
-            <div class="tab-pane fade show active" id="orders" role="tabpanel" aria-labelledby="orders-tab">
-                <div class="mb-3">
-                    <h6>${window.foodOrderTranslations.food_order_create}</h6>
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="newOrderName" placeholder="${window.foodOrderTranslations.food_order_name}">
-                        <input type="text" class="form-control" id="newOrderVendor" placeholder="${window.foodOrderTranslations.food_order_vendor}">
-                        <button class="btn btn-primary" onclick="createFoodOrder()">${window.foodOrderTranslations.food_order_create}</button>
+        const root = document.getElementById('food-order-root');
+        if (!root) {
+            console.error('Food order root element not found');
+            showToast('Error: Food order container not found', 'danger');
+            return;
+        }
+
+        root.innerHTML = `
+            <ul class="nav nav-tabs mb-3" id="foodOrderTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab">${window.foodOrderTranslations.food_order_create}</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="manage-orders-tab" data-bs-toggle="tab" data-bs-target="#manage-orders" type="button" role="tab">${window.foodOrderTranslations.general_view_all}</button>
+                </li>
+            </ul>
+            <div class="tab-content" id="foodOrderTabContent">
+                <div class="tab-pane fade show active" id="orders" role="tabpanel" aria-labelledby="orders-tab">
+                    <div class="mb-3">
+                        <h6>${window.foodOrderTranslations.food_order_create}</h6>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="newOrderName" placeholder="${window.foodOrderTranslations.food_order_name}">
+                            <input type="text" class="form-control" id="newOrderVendor" placeholder="${window.foodOrderTranslations.food_order_vendor}">
+                            <button class="btn btn-primary" onclick="createFoodOrder()">${window.foodOrderTranslations.food_order_create}</button>
+                        </div>
+                    </div>
+                    <div id="foodOrders"></div>
+                    <div id="foodOrderItems" class="mt-3"></div>
+                    <div class="mt-3">
+                        <h6>${window.foodOrderTranslations.food_order_add_item}</h6>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="newOrderItemName" placeholder="${window.foodOrderTranslations.food_order_item_name}">
+                            <input type="number" class="form-control" id="newOrderItemQuantity" placeholder="${window.foodOrderTranslations.food_order_quantity}" min="1">
+                            <input type="number" class="form-control" id="newOrderItemPrice" placeholder="${window.foodOrderTranslations.food_order_price}" min="0" step="0.01">
+                            <button class="btn btn-primary" onclick="addFoodOrderItem()">${window.foodOrderTranslations.food_order_add}</button>
+                        </div>
                     </div>
                 </div>
-                <div id="foodOrders"></div>
-                <div id="foodOrderItems" class="mt-3"></div>
-                <div class="mt-3">
-                    <h6>${window.foodOrderTranslations.food_order_add_item}</h6>
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="newOrderItemName" placeholder="${window.foodOrderTranslations.food_order_item_name}">
-                        <input type="number" class="form-control" id="newOrderItemQuantity" placeholder="${window.foodOrderTranslations.food_order_quantity}" min="1">
-                        <input type="number" class="form-control" id="newOrderItemPrice" placeholder="${window.foodOrderTranslations.food_order_price}" min="0" step="0.01">
-                        <button class="btn btn-primary" onclick="addFoodOrderItem()">${window.foodOrderTranslations.food_order_add}</button>
+                <div class="tab-pane fade" id="manage-orders" role="tabpanel" aria-labelledby="manage-orders-tab">
+                    <div class="mb-3">
+                        <h6>${window.foodOrderTranslations.general_view_all}</h6>
+                        <div id="manageFoodOrders"></div>
                     </div>
                 </div>
             </div>
-            <div class="tab-pane fade" id="manage-orders" role="tabpanel" aria-labelledby="manage-orders-tab">
-                <div class="mb-3">
-                    <h6>${window.foodOrderTranslations.general_view_all}</h6>
-                    <div id="manageFoodOrders"></div>
-                </div>
-            </div>
-        </div>
-    `;
+        `;
 
-    loadFoodOrders();
-    loadManageOrders();
+        loadFoodOrders();
+        loadManageOrders();
+
+        // Initialize Bootstrap tabs
+        const tabEl = document.querySelector('#foodOrderTabs');
+        if (tabEl) {
+            new bootstrap.Tab(tabEl.querySelector('.nav-link.active')).show();
+        }
+    } catch (error) {
+        console.error('Error initializing food order:', error);
+        showToast(window.foodOrderTranslations.general_error, 'danger');
+    }
 }
 
 // Fetch with CSRF token
@@ -98,7 +120,7 @@ function renderFoodOrders(orders) {
             <div class="food-order-item">
                 <span class="fw-semibold">${order.name} (${order.vendor})</span>
                 <div>
-                    <span class="text-muted">Total: ${format_currency(order.total_spent)}</span>
+                    <span class="text-muted">Total: ${format_currency(order.total_cost)}</span>
                     <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadFoodOrderItems('${order.id}')">${window.foodOrderTranslations.general_view_all}</button>
                 </div>
             </div>
@@ -138,7 +160,7 @@ function renderManageOrders(orders) {
             <div class="food-order-item">
                 <span class="fw-semibold">${order.name} (${order.vendor})</span>
                 <div>
-                    <span class="text-muted">Total: ${format_currency(order.total_spent)}</span>
+                    <span class="text-muted">Total: ${format_currency(order.total_cost)}</span>
                     <button class="btn btn-sm btn-outline-danger ms-2" onclick="deleteFoodOrder('${order.id}', '${order.name}')">Delete</button>
                 </div>
             </div>
@@ -210,8 +232,8 @@ function renderFoodOrderItems(items) {
             <div class="food-order-item">
                 <span class="fw-semibold">${item.name}</span>
                 <div class="d-flex align-items-center gap-2">
-                    <input type="number" class="form-control" value="${item.quantity}" min="1" onchange="updateFoodOrderItem('${item.id}', 'quantity', this.value)">
-                    <input type="number" class="form-control" value="${item.price}" min="0" step="0.01" onchange="updateFoodOrderItem('${item.id}', 'price', this.value)">
+                    <input type="number" class="form-control" value="${item.quantity}" min="1" onchange="updateFoodOrderItem('${item.item_id}', 'quantity', this.value)">
+                    <input type="number" class="form-control" value="${item.price}" min="0" step="0.01" onchange="updateFoodOrderItem('${item.item_id}', 'price', this.value)">
                 </div>
             </div>
         `).join('');
