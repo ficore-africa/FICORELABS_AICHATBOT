@@ -3,6 +3,8 @@
     let currentOrderId = null;
     let offlineData = { orders: [], items: {} };
     let modalElement = null; // Track modal element for cleanup
+    const FC_COST = 0.1; // FC cost for creating/submitting order
+    const ORDER_COOLDOWN_MINUTES = 5; // Prevent duplicate orders within 5 minutes
 
     // CSRF Token Setup
     let csrfToken = null;
@@ -44,20 +46,29 @@
                     <div class="tab-pane fade show active" id="orders" role="tabpanel" aria-labelledby="orders-tab">
                         <div class="mb-3">
                             <h6>${window.foodOrderTranslations.food_order_create}</h6>
-                            <div class="input-group">
+                            <div class="input-group mb-2">
                                 <input type="text" class="form-control" id="newOrderName" placeholder="${window.foodOrderTranslations.food_order_name}">
                                 <input type="text" class="form-control" id="newOrderVendor" placeholder="${window.foodOrderTranslations.food_order_vendor}">
-                                <button class="btn btn-primary" onclick="foodOrderModule.createFoodOrder()">${window.foodOrderTranslations.food_order_create}</button>
                             </div>
+                            <div class="input-group mb-2">
+                                <input type="tel" class="form-control" id="newOrderPhone" placeholder="${window.foodOrderTranslations.food_order_phone}">
+                                <input type="text" class="form-control" id="newOrderLocation" placeholder="${window.foodOrderTranslations.food_order_location}">
+                                <button class="btn btn-outline-secondary" onclick="foodOrderModule.getUserLocation()">Auto-detect Location</button>
+                            </div>
+                            <div class="alert alert-info">Note: Creating and submitting this order will deduct ${FC_COST} FC from your balance.</div>
+                            <button class="btn btn-primary" onclick="foodOrderModule.createFoodOrder()">${window.foodOrderTranslations.food_order_create}</button>
                         </div>
                         <div id="foodOrders"></div>
                         <div id="foodOrderItems" class="mt-3"></div>
                         <div class="mt-3">
                             <h6>${window.foodOrderTranslations.food_order_add_item}</h6>
-                            <div class="input-group">
+                            <div class="input-group mb-2">
                                 <input type="text" class="form-control" id="newOrderItemName" placeholder="${window.foodOrderTranslations.food_order_item_name}">
                                 <input type="number" class="form-control" id="newOrderItemQuantity" placeholder="${window.foodOrderTranslations.food_order_quantity}" min="1">
                                 <input type="number" class="form-control" id="newOrderItemPrice" placeholder="${window.foodOrderTranslations.food_order_price}" min="0" step="0.01">
+                            </div>
+                            <div class="input-group mb-2">
+                                <input type="text" class="form-control" id="newOrderItemNotes" placeholder="${window.foodOrderTranslations.food_order_item_notes}">
                                 <button class="btn btn-primary" onclick="foodOrderModule.addFoodOrderItem()">${window.foodOrderTranslations.food_order_add}</button>
                             </div>
                         </div>
@@ -66,6 +77,22 @@
                         <div class="mb-3">
                             <h6>${window.foodOrderTranslations.general_view_all}</h6>
                             <div id="manageFoodOrders"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="successModalLabel">Order Submitted</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                Your order has been sent. Vendor will call you shortly.
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -138,6 +165,46 @@
         }
     }
 
+    // Get user location
+    async function getUserLocation() {
+        try {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        const { latitude, longitude } = position.coords;
+                        const location = `${latitude},${longitude}`;
+                        document.getElementById('newOrderLocation').value = location;
+                        // Fetch nearest vendor based on location
+                        const response = await fetchWithCSRF(`${window.apiUrls.getNearestVendor}?location=${location}`);
+                        const data = await response.json();
+                        if (data.vendor) {
+                            document.getElementById('newOrderVendor').value = data.vendor;
+                        }
+                    },
+                    (error) => {
+                        console.error('Error getting location:', error);
+                        showToast('Unable to auto-detect location. Please enter manually.', 'warning');
+                    }
+                );
+            } else {
+                showToast('Geolocation is not supported by this browser.', 'warning');
+            }
+        } catch (error) {
+            console.error('Error in getUserLocation:', error);
+            showToast(window.foodOrderTranslations.general_error, 'danger');
+        }
+    }
+
+    // Check for recent orders to prevent duplicates
+    function canCreateOrder() {
+        const lastOrderTime = localStorage.getItem('lastOrderTime');
+        if (!lastOrderTime) return true;
+        const lastTime = new Date(lastOrderTime);
+        const now = new Date();
+        const diffMinutes = (now - lastTime) / 1000 / 60;
+        return diffMinutes >= ORDER_COOLDOWN_MINUTES;
+    }
+
     // Food Order Functions
     async function loadFoodOrders() {
         try {
@@ -166,6 +233,7 @@
                     <div>
                         <span class="text-muted">Total: ${format_currency(order.total_cost)}</span>
                         <button class="btn btn-sm btn-outline-primary ms-2" onclick="foodOrderModule.loadFoodOrderItems('${order.id}')">${window.foodOrderTranslations.general_view_all}</button>
+                        <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('${order.id}')">Reorder</button>
                     </div>
                 </div>
             `).join('');
@@ -204,6 +272,7 @@
                     <div>
                         <span class="text-muted">Total: ${format_currency(order.total_cost)}</span>
                         <button class="btn btn-sm btn-outline-danger ms-2" onclick="foodOrderModule.deleteFoodOrder('${order.id}', '${order.name}')">Delete</button>
+                        <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('${order.id}')">Reorder</button>
                     </div>
                 </div>
             `).join('');
@@ -232,7 +301,7 @@
                 if (currentOrderId === orderId) {
                     currentOrderId = null;
                     const foodOrderItemsEl = document.getElementById('foodOrderItems');
-                    if (foodOrderItemsEl) foodOrderItemsEl.innerHTML = '';
+                    if (foodOrderItems miscellaneousEl) foodOrderItemsEl.innerHTML = '';
                 }
                 loadFoodOrders();
                 loadManageOrders();
@@ -272,6 +341,7 @@
                     <div class="d-flex align-items-center gap-2">
                         <input type="number" class="form-control" value="${item.quantity}" min="1" onchange="foodOrderModule.updateFoodOrderItem('${item.item_id}', 'quantity', this.value)">
                         <input type="number" class="form-control" value="${item.price}" min="0" step="0.01" onchange="foodOrderModule.updateFoodOrderItem('${item.item_id}', 'price', this.value)">
+                        <input type="text" class="form-control" value="${item.notes || ''}" placeholder="Notes" onchange="foodOrderModule.updateFoodOrderItem('${item.item_id}', 'notes', this.value)">
                     </div>
                 </div>
             `).join('');
@@ -281,16 +351,22 @@
     }
 
     async function createFoodOrder() {
+        if (!canCreateOrder()) {
+            showToast(`Please wait ${ORDER_COOLDOWN_MINUTES} minutes before creating another order.`, 'warning');
+            return;
+        }
         const name = document.getElementById('newOrderName').value;
         const vendor = document.getElementById('newOrderVendor').value;
-        if (!name || !vendor) {
+        const phone = document.getElementById('newOrderPhone').value;
+        const location = document.getElementById('newOrderLocation').value;
+        if (!name || !vendor || !phone || !location) {
             showToast(window.foodOrderTranslations.general_please_provide, 'warning');
             return;
         }
         try {
             const response = await fetchWithCSRF(window.apiUrls.manageFoodOrders, {
                 method: 'POST',
-                body: JSON.stringify({ name, vendor })
+                body: JSON.stringify({ name, vendor, phone, location })
             });
             if (response.status === 403) {
                 showToast(window.foodOrderTranslations.insufficient_credits, 'error');
@@ -300,9 +376,12 @@
             if (data.error) {
                 showToast(data.error, 'danger');
             } else {
-                showToast(window.foodOrderTranslations.order_created, 'success');
+                localStorage.setItem('lastOrderTime', new Date().toISOString());
+                showSuccessModal();
                 document.getElementById('newOrderName').value = '';
                 document.getElementById('newOrderVendor').value = '';
+                document.getElementById('newOrderPhone').value = '';
+                document.getElementById('newOrderLocation').value = '';
                 loadFoodOrders();
                 loadManageOrders();
                 loadFinancialSummary();
@@ -321,6 +400,7 @@
         const name = document.getElementById('newOrderItemName').value;
         const quantity = document.getElementById('newOrderItemQuantity').value;
         const price = document.getElementById('newOrderItemPrice').value;
+        const notes = document.getElementById('newOrderItemNotes').value;
         if (!name || !quantity || !price) {
             showToast(window.foodOrderTranslations.general_please_provide, 'warning');
             return;
@@ -328,7 +408,7 @@
         try {
             const response = await fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', currentOrderId), {
                 method: 'POST',
-                body: JSON.stringify({ name, quantity, price })
+                body: JSON.stringify({ name, quantity, price, notes })
             });
             if (response.status === 403) {
                 showToast(window.foodOrderTranslations.insufficient_credits, 'error');
@@ -342,6 +422,7 @@
                 document.getElementById('newOrderItemName').value = '';
                 document.getElementById('newOrderItemQuantity').value = '';
                 document.getElementById('newOrderItemPrice').value = '';
+                document.getElementById('newOrderItemNotes').value = '';
                 loadFoodOrderItems(currentOrderId);
                 loadFinancialSummary();
             }
@@ -373,6 +454,36 @@
             console.error('Error updating food order item:', error);
             showToast(window.foodOrderTranslations.general_error, 'danger');
         }
+    }
+
+    async function reorder(orderId) {
+        try {
+            const response = await fetchWithCSRF(window.apiUrls.reorderFoodOrder.replace('{order_id}', orderId), {
+                method: 'POST'
+            });
+            if (response.status === 403) {
+                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                throw new Error('Unauthorized');
+            }
+            const data = await response.json();
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                localStorage.setItem('lastOrderTime', new Date().toISOString());
+                showSuccessModal();
+                loadFoodOrders();
+                loadManageOrders();
+                loadFinancialSummary();
+            }
+        } catch (error) {
+            console.error('Error reordering food order:', error);
+            showToast(window.foodOrderTranslations.general_error, 'danger');
+        }
+    }
+
+    function showSuccessModal() {
+        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+        successModal.show();
     }
 
     function loadOfflineData() {
@@ -419,7 +530,9 @@
         addFoodOrderItem,
         updateFoodOrderItem,
         loadFoodOrderItems,
-        deleteFoodOrder
+        deleteFoodOrder,
+        getUserLocation,
+        reorder
     };
 
     // Initialize CSRF token
