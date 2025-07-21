@@ -3,7 +3,7 @@ from flask_login import current_user, login_required
 from datetime import datetime, date, timedelta
 from bson import ObjectId
 from models import get_bills, get_budgets
-from utils import get_mongo_db, requires_role, logger, format_currency, clean_currency, check_ficore_credit_balance
+from utils import get_mongo_db, requires_role, logger, format_currency, clean_currency, check_ficore_credit_balance, is_admin
 from translations import trans
 from decimal import Decimal
 import re
