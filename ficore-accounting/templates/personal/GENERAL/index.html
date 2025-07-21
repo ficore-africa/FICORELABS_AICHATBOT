@@ -1,38 +1,38 @@
 {% extends 'base.html' %}
-{% block title %}{{ t('general_personal_finance_home', default='Personal Finance Home') | e }}{% endblock %}
+{% block title %}Personal Finance Home{% endblock %}
 
 {% block content %}
 <div class="page-container">
     <noscript>
         <div style="padding: 1rem; background: #ffebee; border: 1px solid #ef5350; margin-bottom: 1rem;">
-            {{ t('general_js_required', default='JavaScript is required to use this dashboard. Please enable it in your browser.') | e }}
+            JavaScript is required to use this dashboard. Please enable it in your browser.
         </div>
     </noscript>
 
     {% if current_user.is_authenticated %}
         <!-- Daily Tools -->
         <section class="section-card daily-tools">
-            <h3 class="section-title">{{ t('general_daily_tools', default='Daily Tools') | e }}</h3>
+            <h3 class="section-title">Daily Tools</h3>
             <div class="quick-actions">
-                <a href="#" class="quick-action-card grocery-management text-decoration-none" data-bs-toggle="modal" data-bs-target="#groceryModal" aria-label="{{ t('grocery_management', default='Smart Grocery Planner') | e }}">
+                <a href="#" class="quick-action-card grocery-management text-decoration-none" data-bs-toggle="modal" data-bs-target="#groceryModal" aria-label="Smart Grocery Planner">
                     <i class="bi bi-cart action-icon text-info"></i>
-                    <div class="action-label">{{ t('grocery_management', default='Smart Grocery Planner') | e }}</div>
+                    <div class="action-label">Smart Grocery Planner</div>
                 </a>
-                <a href="#" class="quick-action-card food-order text-decoration-none" data-bs-toggle="modal" data-bs-target="#foodOrderModal" aria-label="{{ t('food_order', default='Food Order') | e }}">
+                <a href="#" class="quick-action-card food-order text-decoration-none" data-bs-toggle="modal" data-bs-target="#foodOrderModal" aria-label="Food Order">
                     <i class="bi bi-box-seam action-icon text-primary"></i>
-                    <div class="action-label">{{ t('food_order', default='Food Order') | e }}</div>
+                    <div class="action-label">Food Order</div>
                 </a>
             </div>
         </section>
 
         <!-- Financial Snapshots -->
         <div class="section-card financial-snapshots">
-            <h3 class="section-title">{{ t('general_snapshots', default='Financial Snapshots') | e }}</h3>
+            <h3 class="section-title">Financial Snapshots</h3>
             <div class="summary-cards">
                 <div class="summary-card budget-card">
                     <div class="card-header d-flex align-items-center gap-3">
                         <i class="bi bi-pie-chart card-icon text-primary"></i>
-                        <span class="fw-bold">{{ t('budget_budget_status', default='Budget Status') | e }}</span>
+                        <span class="fw-bold">Budget Status</span>
                     </div>
                     <div class="card-amount mt-3" id="budgetStatus">
                         <span class="currency-symbol">₦</span>
@@ -43,7 +43,7 @@
                 <div class="summary-card bills-card AFTER">
                     <div class="card-header d-flex align-items-center gap-3">
                         <i class="bi bi-receipt card-icon text-warning"></i>
-                        <span class="fw-bold">{{ t('bill_upcoming_bills', default='Upcoming Bills') | e }}</span>
+                        <span class="fw-bold">Upcoming Bills</span>
                     </div>
                     <div class="card-amount mt-3" id="upcomingBills">
                         <span class="currency-symbol">₦</span>
@@ -53,8 +53,7 @@
                 </div>
             </div>
             <div class="mt-3 text-end">
-                <button class="btn btn-link" onclick="toggleAmountVisibility()" data-bs-toggle="tooltip" data-bs-title="{{ t('general_toggle_visibility', default='Toggle amount visibility') | e }}">
-                    <i id="visibility modulo
+                <button class="btn btn-link" onclick="toggleAmountVisibility()" data-bs-toggle="tooltip" data-bs-title="Toggle amount visibility">
                     <i id="visibilityIcon" class="bi bi-eye"></i>
                 </button>
             </div>
@@ -62,12 +61,12 @@
 
         <!-- Balance Overview -->
         <div class="section-card balance-overview">
-            <h3 class="section-title">{{ t('general_balance_overview', default='Balance Overview') | e }}</h3>
+            <h3 class="section-title">Balance Overview</h3>
             <div class="summary-cards">
                 <div class="summary-card wallet-balance">
                     <div class="card-header d-flex align-items-center gap-3">
                         <i class="bi bi-wallet2 card-icon text-success"></i>
-                        <span class="fw-bold">{{ t('general_ficore_credits', default='Ficore Credits') | e }}</span>
+                        <span class="fw-bold">Ficore Credits</span>
                     </div>
                     <div class="card-amount text-success mt-3" id="walletBalance">
                         <span class="currency-symbol">₦</span>
@@ -80,9 +79,9 @@
         <!-- Recent Activity -->
         <div class="section-card recent-activity">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="section-title mb-0">{{ t('general_recent_activity', default='Recent Activity') | e }}</h3>
+                <h3 class="section-title mb-0">Recent Activity</h3>
                 <a href="#" class="btn btn-link btn-sm p-0 text-decoration-none" id="viewAllActivities" onclick="toggleRecentActivities()">
-                    {{ t('general_view_all', default='View All') | e }}
+                    View All
                 </a>
             </div>
             <div id="recentActivityList">
@@ -92,8 +91,8 @@
                             <i class="bi bi-info-circle text-muted"></i>
                         </div>
                         <div class="activity-content">
-                            <div class="activity-description fw-semibold">{{ t('general_no_recent_activity', default='No recent activity') | e }}</div>
-                            <div class="activity-time text-muted">{{ t('general_start_by_adding', default='Start by adding a budget or bill') | e }}</div>
+                            <div class="activity-description fw-semibold">No recent activity</div>
+                            <div class="activity-time text-muted">Start by adding a budget or bill</div>
                         </div>
                     </div>
                 </div>
@@ -103,7 +102,7 @@
         <!-- Notifications -->
         <div class="section-card notifications">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="section-title mb-0">{{ t('general_notifications', default='Notifications') | e }}</h3>
+                <h3 class="section-title mb-0">Notifications</h3>
                 <span class="badge bg-primary rounded-pill" id="notificationCount">0</span>
             </div>
             <div id="notificationList">
@@ -113,8 +112,8 @@
                             <i class="bi bi-info-circle text-muted"></i>
                         </div>
                         <div class="notification-content">
-                            <div class="notification-description fw-semibold">{{ t('general_no_notifications', default='No notifications') | e }}</div>
-                            <div class="notification-time text-muted">{{ t('general_check_back_later', default='Check back later') | e }}</div>
+                            <div class="notification-description fw-semibold">No notifications</div>
+                            <div class="notification-time text-muted">Check back later</div>
                         </div>
                     </div>
                 </div>
@@ -123,7 +122,7 @@
 
         <!-- Explore Features -->
         <div class="section-card explore-section">
-            <h3 class="section-title">{{ t('general_explore_features', default='Explore Features') | e }}</h3>
+            <h3 class="section-title">Explore Features</h3>
             {% for feature in explore_features_for_template %}
             <a href="{{ feature.get('url', '#') | e }}" class="explore-card text-decoration-none" aria-label="{{ t(feature.get('label_key', ''), default=feature.get('label', 'Feature')) | e }}">
                 <div class="explore-card-icon">
@@ -142,19 +141,19 @@
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="groceryModalLabel">{{ t('grocery_shopping_planner', default='Smart Grocery Planner') | e }}</h5>
+                        <h5 class="modal-title" id="groceryModalLabel">Smart Grocery Planner</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <noscript>
                             <div style="padding: 1rem; background: #ffebee; border: 1px solid #ef5350;">
-                                {{ t('grocery_js_required', default='JavaScript is required to use the Grocery Planner. Please enable it in your browser.') | e }}
+                                JavaScript is required to use the Grocery Planner. Please enable it in your browser.
                             </div>
                         </noscript>
                         <div id="grocery-planner-root"></div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('general_close', default='Close') | e }}</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>
@@ -165,19 +164,19 @@
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="foodOrderModalLabel">{{ t('food_order', default='Food Order') | e }}</h5>
+                        <h5 class="modal-title" id="foodOrderModalLabel">Food Order</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <noscript>
                             <div style="padding: 1rem; background: #ffebee; border: 1px solid #ef5350;">
-                                {{ t('food_order_js_required', default='JavaScript is required to use the Food Order feature. Please enable it in your browser.') | e }}
+                                JavaScript is required to use the Food Order feature. Please enable it in your browser.
                             </div>
                         </noscript>
                         <div id="food-order-root"></div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('general_close', default='Close') | e }}</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
                 </div>
             </div>
@@ -207,50 +206,100 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 window.groceryTranslations = {
-    just_now: '{{ t("general_just_now", default="Just now") | e }}',
-    minutes_ago: '{{ t("general_minutes_ago", default="m ago") | e }}',
-    hours_ago: '{{ t("general_hours_ago", default="h ago") | e }}',
-    days_ago: '{{ t("general_days_ago", default="d ago") | e }}',
-    no_lists: '{{ t("grocery_no_lists", default="No grocery lists found") | e }}',
-    no_items: '{{ t("grocery_no_items", default="No items in this list") | e }}',
-    no_meal_plans: '{{ t("grocery_no_meal_plans", default="No meal plans found") | e }}',
-    no_suggestions: '{{ t("grocery_no_suggestions", default="No suggestions available") | e }}',
-    no_price_history: '{{ t("grocery_no_price_history", default="No price history available") | e }}',
-    grocery_list_created: '{{ t("grocery_list_created", default="Grocery list created") | e }}',
-    grocery_item_added: '{{ t("grocery_item_added", default="Item added to list") | e }}',
-    grocery_item_updated: '{{ t("grocery_item_updated", default="Item updated") | e }}',
-    grocery_list_shared: '{{ t("grocery_list_shared", default="List shared successfully") | e }}',
-    grocery_suggestion_added: '{{ t("grocery_suggestion_added", default="Suggestion added") | e }}',
-    grocery_suggestion_approved: '{{ t("grocery_suggestion_approved", default="Suggestion approved") | e }}',
-    grocery_meal_plan_created: '{{ t("grocery_meal_plan_created", default="Meal plan created") | e }}',
-    friday_reminder: '{{ t("grocery_friday_reminder", default="It\'s Friday! Time to prep your weekend grocery list.") | e }}'
+    just_now: "Just now",
+    minutes_ago: "m ago",
+    hours_ago: "h ago",
+    days_ago: "d ago",
+    no_lists: "No grocery lists found",
+    no_items: "No items in this list",
+    no_meal_plans: "No meal plans found",
+    no_suggestions: "No suggestions available",
+    no_price_history: "No price history available",
+    grocery_lists: "Grocery Lists",
+    grocery_meal_plans: "Meal Plans",
+    grocery_suggestions: "Suggestions",
+    grocery_create_list: "Create Grocery List",
+    grocery_list_name: "List Name",
+    grocery_budget: "Budget",
+    grocery_create: "Create",
+    grocery_add_item: "Add Item",
+    grocery_item_name: "Item Name",
+    grocery_quantity: "Quantity",
+    grocery_price: "Price",
+    grocery_to_buy: "To Buy",
+    grocery_in_pantry: "In Pantry",
+    grocery_bought: "Bought",
+    grocery_store: "Store",
+    grocery_add: "Add",
+    grocery_share_list: "Share List",
+    grocery_collaborator_email: "Collaborator Email",
+    grocery_share: "Share",
+    grocery_create_meal_plan: "Create Meal Plan",
+    grocery_meal_name: "Meal Plan Name",
+    grocery_add_ingredient: "Add Ingredient",
+    grocery_ingredient_name: "Ingredient Name",
+    grocery_suggested_items: "Suggested Items",
+    grocery_collaborator_suggestions: "Collaborator Suggestions",
+    grocery_suggest_item: "Suggest Item",
+    grocery_suggest: "Suggest",
+    grocery_list_created: "Grocery list created",
+    grocery_item_added: "Item added to list",
+    grocery_item_updated: "Item updated",
+    grocery_list_shared: "List shared successfully",
+    grocery_suggestion_added: "Suggestion added",
+    grocery_suggestion_approved: "Suggestion approved",
+    grocery_suggestion_approve: "Approve",
+    grocery_meal_plan_created: "Meal plan created",
+    grocery_price_history: "Price History",
+    grocery_price_history_for: "Price History for",
+    general_view_all: "View All",
+    general_select_list: "Please select a list",
+    general_select_meal_plan: "Please select a meal plan",
+    general_please_provide: "Please provide all required fields",
+    general_please_provide_email: "Please provide an email",
+    general_error: "An error occurred",
+    insufficient_credits: "Insufficient credits",
+    friday_reminder: "It's Friday! Time to prep your weekend grocery list."
 };
 
 window.foodOrderTranslations = {
-    no_orders: '{{ t("food_order_no_orders", default="No food orders found") | e }}',
-    no_items: '{{ t("food_order_no_items", default="No items in this order") | e }}',
-    order_created: '{{ t("food_order_created", default="Food order created") | e }}',
-    item_added: '{{ t("food_order_item_added", default="Item added to order") | e }}',
-    item_updated: '{{ t("food_order_item_updated", default="Item updated") | e }}'
+    no_orders: "No food orders found",
+    no_items: "No items in this order",
+    order_created: "Food order created",
+    item_added: "Item added to order",
+    item_updated: "Item updated",
+    food_order_create: "Create Food Order",
+    food_order_name: "Order Name",
+    food_order_vendor: "Vendor",
+    food_order_add_item: "Add Item",
+    food_order_item_name: "Item Name",
+    food_order_quantity: "Quantity",
+    food_order_price: "Price",
+    food_order_add: "Add",
+    general_view_all: "View All",
+    general_select_order: "Please select an order",
+    general_please_provide: "Please provide all required fields",
+    general_error: "An error occurred",
+    insufficient_credits: "Insufficient credits"
 };
 
 window.apiUrls = {
-    budgetSummary: '{{ url_for("summaries.budget_summary") | e }}',
-    billSummary: '{{ url_for("summaries.bill_summary") | e }}',
-    grocerySummary: '{{ url_for("summaries.grocery_summary") | e }}',
-    ficoreBalance: '{{ url_for("summaries.ficore_balance") | e }}',
-    recentActivity: '{{ url_for("summaries.recent_activity") | e }}',
-    notifications: '{{ url_for("summaries.notifications") | e }}',
-    manageGroceryLists: '{{ url_for("personal.grocery.manage_lists") | e }}',
-    manageGroceryItems: '{{ url_for("personal.grocery.manage_items", list_id="{list_id}") | e }}',
-    shareGroceryList: '{{ url_for("personal.grocery.share_list", list_id="{list_id}") | e }}',
-    manageGrocerySuggestions: '{{ url_for("personal.grocery.manage_suggestions", list_id="{list_id}") | e }}',
-    approveGrocerySuggestion: '{{ url_for("personal.grocery.approve_suggestion", list_id="{list_id}", suggestion_id="{suggestion_id}") | e }}',
-    manageMealPlans: '{{ url_for("personal.grocery.manage_meal_plans") | e }}',
-    groceryPriceHistory: '{{ url_for("personal.grocery.price_history", item_name="{item_name}") | e }}',
-    predictiveSuggestions: '{{ url_for("personal.grocery.predictive_suggestions") | e }}',
-    manageFoodOrders: '{{ url_for("personal.food_order.manage_orders") | e }}',
-    manageFoodOrderItems: '{{ url_for("personal.food_order.manage_items", order_id="{order_id}") | e }}'
+    budgetSummary: "/summaries/budget_summary",
+    billSummary: "/summaries/bill_summary",
+    grocerySummary: "/summaries/grocery_summary",
+    ficoreBalance: "/summaries/ficore_balance",
+    recentActivity: "/summaries/recent_activity",
+    notifications: "/summaries/notifications",
+    manageGroceryLists: "/grocery/lists",
+    manageGroceryItems: "/grocery/lists/{list_id}/items",
+    shareGroceryList: "/grocery/lists/{list_id}/share",
+    manageGrocerySuggestions: "/grocery/lists/{list_id}/suggestions",
+    approveGrocerySuggestion: "/grocery/lists/{list_id}/suggestions/{suggestion_id}/approve",
+    manageMealPlans: "/grocery/meal_plans",
+    groceryPriceHistory: "/grocery/price_history/{item_name}",
+    predictiveSuggestions: "/grocery/predictive_suggestions",
+    manageFoodOrders: "/personal/food_order/manage_orders",
+    manageFoodOrderItems: "/personal/food_order/manage_items/{order_id}"
 };
 
 let amountsVisible = true;
@@ -265,11 +314,11 @@ function formatTimeAgo(timestamp) {
     const diff = now - time;
     const minutes = Math.floor(diff / 60000);
     if (minutes < 1) return window.groceryTranslations.just_now;
-    if (minutes < 60) return minutes + window.groceryTranslations.minutes_ago;
+    if (minutes < 60) return minutes + " " + window.groceryTranslations.minutes_ago;
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return hours + window.groceryTranslations.hours_ago;
+    if (hours < 24) return hours + " " + window.groceryTranslations.hours_ago;
     const days = Math.floor(hours / 24);
-    return days + window.groceryTranslations.days_ago;
+    return days + " " + window.groceryTranslations.days_ago;
 }
 
 function toggleAmountVisibility() {
@@ -337,8 +386,8 @@ function loadRecentActivity() {
                             <i class="bi bi-info-circle text-muted"></i>
                         </div>
                         <div class="activity-content">
-                            <div class="activity-description fw-semibold">{{ t('general_no_recent_activity', default='No recent activity') | e }}</div>
-                            <div class="activity-time text-muted">{{ t('general_start_by_adding', default='Start by adding a budget or bill') | e }}</div>
+                            <div class="activity-description fw-semibold">No recent activity</div>
+                            <div class="activity-time text-muted">Start by adding a budget or bill</div>
                         </div>
                     </div>
                 </div>
@@ -371,8 +420,8 @@ function loadNotifications() {
                             <i class="bi bi-info-circle text-muted"></i>
                         </div>
                         <div class="notification-content">
-                            <div class="notification-description fw-semibold">{{ t('general_no_notifications', default='No notifications') | e }}</div>
-                            <div class="notification-time text-muted">{{ t('general_check_back_later', default='Check back later') | e }}</div>
+                            <div class="notification-description fw-semibold">No notifications</div>
+                            <div class="notification-time text-muted">Check back later</div>
                         </div>
                     </div>
                 </div>
@@ -419,7 +468,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    {% if current_user.is_authenticated %}
     loadFinancialSummary();
     loadRecentActivity();
     loadNotifications();
@@ -430,9 +478,8 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => showToast(window.groceryTranslations.friday_reminder, 'info'), 2000);
     }
     loadOfflineData();
-    {% endif %}
 });
 </script>
-<script src="{{ url_for('static', filename='js/grocery.js') }}"></script>
-<script src="{{ url_for('static', filename='js/food-order.js') }}"></script>
+<script src="/static/js/grocery.js"></script>
+<script src="/static/js/food-order.js"></script>
 {% endblock %}
