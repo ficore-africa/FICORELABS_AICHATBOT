@@ -40,7 +40,7 @@
                     </div>
                     <div class="status-label" id="budgetStatusLabel"></div>
                 </div>
-                <div class="summary-card bills-card">
+                <div class="summary-card bills-card AFTER">
                     <div class="card-header d-flex align-items-center gap-3">
                         <i class="bi bi-receipt card-icon text-warning"></i>
                         <span class="fw-bold">{{ t('bill_upcoming_bills', default='Upcoming Bills') | e }}</span>
@@ -54,6 +54,7 @@
             </div>
             <div class="mt-3 text-end">
                 <button class="btn btn-link" onclick="toggleAmountVisibility()" data-bs-toggle="tooltip" data-bs-title="{{ t('general_toggle_visibility', default='Toggle amount visibility') | e }}">
+                    <i id="visibility modulo
                     <i id="visibilityIcon" class="bi bi-eye"></i>
                 </button>
             </div>
@@ -185,82 +186,230 @@
 </div>
 
 <style>
-.spacer {
-    margin: 1.5rem 0;
-}
-.notification-card, .recent-activity-card {
-    border-bottom: 1px solid #e9ecef;
-    padding: 0.75rem 0;
-}
-.notification-item, .activity-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-.notification-icon, .activity-icon {
-    font-size: 1.25rem;
-}
-.notification-content, .activity-content {
-    flex-grow: 1;
-}
-.notification-description, .activity-description {
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-.notification-time, .activity-time {
-    font-size: 0.8rem;
-}
-.summary-card {
-    padding: 0.75rem;
-    border: 1px solid #e9ecef;
-    border-radius: 0.25rem;
-    margin-bottom: 0.5rem;
-}
-.card-header {
-    font-size: 1rem;
-}
-.card-amount {
-    font-size: 1.25rem;
-    font-weight: 500;
-}
-.status-label {
-    font-size: 0.8rem;
-    font-weight: 500;
-    margin-top: 0.25rem;
-}
-.grocery-item, .meal-plan-item, .suggestion-item, .food-order-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #e9ecef;
-}
-.grocery-item select, .grocery-item input, .meal-plan-item input, .suggestion-item input, .food-order-item input {
-    max-width: 100px;
-}
+.spacer { margin: 1.5rem 0; }
+.notification-card, .recent-activity-card { border-bottom: 1px solid #e9ecef; padding: 0.75rem 0; }
+.notification-item, .activity-item { display: flex; align-items: center; gap: 0.75rem; }
+.notification-icon, .activity-icon { font-size: 1.25rem; }
+.notification-content, .activity-content { flex-grow: 1; }
+.notification-description, .activity-description { font-size: 0.9rem; font-weight: 500; }
+.notification-time, .activity-time { font-size: 0.8rem; }
+.summary-card { padding: 0.75rem; border: 1px solid #e9ecef; border-radius: 0.25rem; margin-bottom: 0.5rem; }
+.card-header { font-size: 1rem; }
+.card-amount { font-size: 1.25rem; font-weight: 500; }
+.status-label { font-size: 0.8rem; font-weight: 500; margin-top: 0.25rem; }
+.grocery-item, .meal-plan-item, .suggestion-item, .food-order-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef; }
+.grocery-item select, .grocery-item input, .meal-plan-item input, .suggestion-item input, .food-order-item input { max-width: 100px; }
 </style>
 {% endblock %}
 
 {% block extra_scripts %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ url_for('static', filename='js/grocery.js') }}"></script>
-<script src="{{ url_for('static', filename='js/food-order.js') }}"></script>
 <script>
+window.groceryTranslations = {
+    just_now: '{{ t("general_just_now", default="Just now") | e }}',
+    minutes_ago: '{{ t("general_minutes_ago", default="m ago") | e }}',
+    hours_ago: '{{ t("general_hours_ago", default="h ago") | e }}',
+    days_ago: '{{ t("general_days_ago", default="d ago") | e }}',
+    no_lists: '{{ t("grocery_no_lists", default="No grocery lists found") | e }}',
+    no_items: '{{ t("grocery_no_items", default="No items in this list") | e }}',
+    no_meal_plans: '{{ t("grocery_no_meal_plans", default="No meal plans found") | e }}',
+    no_suggestions: '{{ t("grocery_no_suggestions", default="No suggestions available") | e }}',
+    no_price_history: '{{ t("grocery_no_price_history", default="No price history available") | e }}',
+    grocery_list_created: '{{ t("grocery_list_created", default="Grocery list created") | e }}',
+    grocery_item_added: '{{ t("grocery_item_added", default="Item added to list") | e }}',
+    grocery_item_updated: '{{ t("grocery_item_updated", default="Item updated") | e }}',
+    grocery_list_shared: '{{ t("grocery_list_shared", default="List shared successfully") | e }}',
+    grocery_suggestion_added: '{{ t("grocery_suggestion_added", default="Suggestion added") | e }}',
+    grocery_suggestion_approved: '{{ t("grocery_suggestion_approved", default="Suggestion approved") | e }}',
+    grocery_meal_plan_created: '{{ t("grocery_meal_plan_created", default="Meal plan created") | e }}',
+    friday_reminder: '{{ t("grocery_friday_reminder", default="It\'s Friday! Time to prep your weekend grocery list.") | e }}'
+};
+
+window.foodOrderTranslations = {
+    no_orders: '{{ t("food_order_no_orders", default="No food orders found") | e }}',
+    no_items: '{{ t("food_order_no_items", default="No items in this order") | e }}',
+    order_created: '{{ t("food_order_created", default="Food order created") | e }}',
+    item_added: '{{ t("food_order_item_added", default="Item added to order") | e }}',
+    item_updated: '{{ t("food_order_item_updated", default="Item updated") | e }}'
+};
+
+window.apiUrls = {
+    budgetSummary: '{{ url_for("summaries.budget_summary") | e }}',
+    billSummary: '{{ url_for("summaries.bill_summary") | e }}',
+    grocerySummary: '{{ url_for("summaries.grocery_summary") | e }}',
+    ficoreBalance: '{{ url_for("summaries.ficore_balance") | e }}',
+    recentActivity: '{{ url_for("summaries.recent_activity") | e }}',
+    notifications: '{{ url_for("summaries.notifications") | e }}',
+    manageGroceryLists: '{{ url_for("personal.grocery.manage_lists") | e }}',
+    manageGroceryItems: '{{ url_for("personal.grocery.manage_items", list_id="{list_id}") | e }}',
+    shareGroceryList: '{{ url_for("personal.grocery.share_list", list_id="{list_id}") | e }}',
+    manageGrocerySuggestions: '{{ url_for("personal.grocery.manage_suggestions", list_id="{list_id}") | e }}',
+    approveGrocerySuggestion: '{{ url_for("personal.grocery.approve_suggestion", list_id="{list_id}", suggestion_id="{suggestion_id}") | e }}',
+    manageMealPlans: '{{ url_for("personal.grocery.manage_meal_plans") | e }}',
+    groceryPriceHistory: '{{ url_for("personal.grocery.price_history", item_name="{item_name}") | e }}',
+    predictiveSuggestions: '{{ url_for("personal.grocery.predictive_suggestions") | e }}',
+    manageFoodOrders: '{{ url_for("personal.food_order.manage_orders") | e }}',
+    manageFoodOrderItems: '{{ url_for("personal.food_order.manage_items", order_id="{order_id}") | e }}'
+};
+
+let amountsVisible = true;
+
+function formatCurrency(value) {
+    return parseFloat(value).toFixed(2);
+}
+
+function formatTimeAgo(timestamp) {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diff = now - time;
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return window.groceryTranslations.just_now;
+    if (minutes < 60) return minutes + window.groceryTranslations.minutes_ago;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return hours + window.groceryTranslations.hours_ago;
+    const days = Math.floor(hours / 24);
+    return days + window.groceryTranslations.days_ago;
+}
+
+function toggleAmountVisibility() {
+    amountsVisible = !amountsVisible;
+    const visibilityIcon = document.getElementById('visibilityIcon');
+    visibilityIcon.classList.toggle('bi-eye', amountsVisible);
+    visibilityIcon.classList.toggle('bi-eye-slash', !amountsVisible);
+    document.querySelectorAll('.amount-value').forEach(el => {
+        el.textContent = amountsVisible ? formatCurrency(el.dataset.amount) : '****';
+    });
+}
+
+function loadFinancialSummary() {
+    fetch(window.apiUrls.budgetSummary)
+        .then(response => response.json())
+        .then(data => {
+            const budgetStatus = document.getElementById('budgetStatus');
+            budgetStatus.querySelector('.amount-value').dataset.amount = data.totalBudget;
+            budgetStatus.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.totalBudget) : '****';
+            document.getElementById('budgetStatusLabel').textContent = data.totalBudget >= 0 ? 'On Track' : 'Over Budget';
+        })
+        .catch(error => console.error('Error loading budget summary:', error));
+
+    fetch(window.apiUrls.billSummary)
+        .then(response => response.json())
+        .then(data => {
+            const upcomingBills = document.getElementById('upcomingBills');
+            upcomingBills.querySelector('.amount-value').dataset.amount = data.pending_amount;
+            upcomingBills.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.pending_amount) : '****';
+            document.getElementById('billsStatusLabel').textContent = data.overdue_amount > 0 ? 'Overdue' : 'On Time';
+        })
+        .catch(error => console.error('Error loading bill summary:', error));
+
+    fetch(window.apiUrls.ficoreBalance)
+        .then(response => response.json())
+        .then(data => {
+            const walletBalance = document.getElementById('walletBalance');
+            walletBalance.querySelector('.amount-value').dataset.amount = data.balance;
+            walletBalance.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.balance) : '****';
+        })
+        .catch(error => console.error('Error loading ficore balance:', error));
+}
+
+function loadRecentActivity() {
+    fetch(window.apiUrls.recentActivity)
+        .then(response => response.json())
+        .then(activities => {
+            const activityList = document.getElementById('recentActivityList');
+            activityList.innerHTML = activities.length > 0 ? activities.map(activity => `
+                <div class="recent-activity-card">
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="${activity.icon} text-${activity.type}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-description fw-semibold">${activity.description}</div>
+                            <div class="activity-time text-muted">${formatTimeAgo(activity.timestamp)}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('') : `
+                <div class="recent-activity-card">
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="bi bi-info-circle text-muted"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-description fw-semibold">{{ t('general_no_recent_activity', default='No recent activity') | e }}</div>
+                            <div class="activity-time text-muted">{{ t('general_start_by_adding', default='Start by adding a budget or bill') | e }}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        })
+        .catch(error => console.error('Error loading recent activity:', error));
+}
+
+function loadNotifications() {
+    fetch(window.apiUrls.notifications)
+        .then(response => response.json())
+        .then(notifications => {
+            const notificationList = document.getElementById('notificationList');
+            notificationList.innerHTML = notifications.length > 0 ? notifications.map(notification => `
+                <div class="notification-card">
+                    <div class="notification-item">
+                        <div class="notification-icon">
+                            <i class="${notification.icon} text-${notification.type}"></i>
+                        </div>
+                        <div class="notification-content">
+                            <div class="notification-description fw-semibold">${notification.message}</div>
+                            <div class="notification-time text-muted">${formatTimeAgo(notification.timestamp)}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('') : `
+                <div class="notification-card">
+                    <div class="notification-item">
+                        <div class="notification-icon">
+                            <i class="bi bi-info-circle text-muted"></i>
+                        </div>
+                        <div class="notification-content">
+                            <div class="notification-description fw-semibold">{{ t('general_no_notifications', default='No notifications') | e }}</div>
+                            <div class="notification-time text-muted">{{ t('general_check_back_later', default='Check back later') | e }}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('notificationCount').textContent = notifications.filter(n => !n.read).length;
+        })
+        .catch(error => console.error('Error loading notifications:', error));
+}
+
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-bg-${type} border-0`;
+    toast.role = 'alert';
+    toast.ariaLive = 'assertive';
+    toast.ariaAtomic = 'true';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
+    document.getElementById('toastContainer')?.appendChild(toast) || document.body.appendChild(toast);
+    new bootstrap.Toast(toast).show();
+    setTimeout(() => toast.remove(), 5000);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize tooltips
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(tooltipTriggerEl => {
         new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
-    // Debug icons
     document.querySelectorAll('.bi').forEach(icon => {
         if (!icon.className.includes('bi-')) {
             console.warn('Invalid or missing Bootstrap Icon class:', icon.className);
         }
     });
 
-    // Debug navigation duplication
     const topNav = document.querySelector('.top-header');
     const bottomNav = document.querySelector('.bottom-nav');
     if (topNav && bottomNav) {
@@ -271,28 +420,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     {% if current_user.is_authenticated %}
-    // Load financial data, notifications, recent activity
     loadFinancialSummary();
     loadRecentActivity();
     loadNotifications();
-
-    // Initialize grocery planner
     initGroceryPlanner();
-
-    // Initialize food order
     initFoodOrder();
-
-    // Check for Friday reminder
     const today = new Date();
-    if (today.getDay() === 5) { // Friday
-        setTimeout(() => {
-            showToast(translations.friday_reminder, 'info');
-        }, 2000);
+    if (today.getDay() === 5) {
+        setTimeout(() => showToast(window.groceryTranslations.friday_reminder, 'info'), 2000);
     }
-
-    // Offline support: Load cached data
     loadOfflineData();
     {% endif %}
 });
 </script>
+<script src="{{ url_for('static', filename='js/grocery.js') }}"></script>
+<script src="{{ url_for('static', filename='js/food-order.js') }}"></script>
 {% endblock %}
