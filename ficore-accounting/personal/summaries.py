@@ -108,6 +108,24 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None):
             'icon': 'bi-wallet2'
         })
 
+    # Fetch recent food orders
+    food_orders = db.food_orders.find(query).sort('created_at', -1).limit(5)
+    for order in food_orders:
+        if not order.get('created_at') or not order.get('name'):
+            logger.warning(f"Skipping invalid food order record: {order.get('_id')}", 
+                           extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+            continue
+        activities.append({
+            'type': 'food_order',
+            'description': trans('recent_activity_food_order_created', default='Created food order: {name}', name=order.get('name', 'Unknown')),
+            'timestamp': order.get('created_at', datetime.utcnow()).isoformat(),
+            'details': {
+                'vendor': order.get('vendor', 'Unknown'),
+                'total_cost': order.get('total_cost', 0)
+            },
+            'icon': 'bi-box-seam'
+        })
+
     activities.sort(key=lambda x: x['timestamp'], reverse=True)
     return activities[:10]
 
@@ -254,6 +272,40 @@ def grocery_summary():
             'total_grocery_spent': 0.0,
             'active_lists': 0,
             'error': trans('grocery_summary_error', default='Error fetching grocery summary')
+        }), 500
+
+@summaries_bp.route('/food_order/summary')
+@login_required
+@requires_role(['personal', 'admin'])
+def food_order_summary():
+    """Fetch the summary of active food orders for the authenticated user."""
+    try:
+        db = get_mongo_db()
+        food_orders = db.food_orders.find({'user_id': str(current_user.id)}).sort('updated_at', -1)
+        total_spent = 0.0
+        active_orders = 0
+        for order in food_orders:
+            try:
+                total_spent += float(order.get('total_cost', 0))
+                active_orders += 1
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Invalid food order data for order {order.get('_id')}: {str(e)}", 
+                              extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                continue
+        
+        logger.info(f"Fetched food order summary for user {current_user.id}: spent={total_spent}, active_orders={active_orders}", 
+                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+        return jsonify({
+            'total_food_order_spent': float(total_spent),
+            'active_orders': active_orders
+        }), 200
+    except Exception as e:
+        logger.error(f"Error fetching food order summary for user {current_user.id}: {str(e)}", 
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+        return jsonify({
+            'total_food_order_spent': 0.0,
+            'active_orders': 0,
+            'error': trans('food_order_summary_error', default='Error fetching food order summary')
         }), 500
 
 @summaries_bp.route('/ficore_balance')
