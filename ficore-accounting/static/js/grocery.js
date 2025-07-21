@@ -15,6 +15,15 @@
         }
     }
 
+    // Debounce utility to prevent rapid API calls
+    function debounce(func, delay) {
+        let timeoutId;
+        return function (...args) {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
     // Initialize Grocery Planner
     function initGroceryPlanner() {
         setupCSRF();
@@ -141,6 +150,9 @@
             'X-CSRF-Token': csrfToken,
             ...options.headers
         };
+        if (options.responseType === 'blob') {
+            delete headers['Content-Type'];
+        }
         return fetch(url, { ...options, headers });
     }
 
@@ -171,10 +183,13 @@
             groceryListsEl.innerHTML = lists.map(list => `
                 <div class="grocery-item">
                     <span class="fw-semibold">${list.name}</span>
-                    <div>
+                    <div class="d-flex align-items-center gap-2">
                         <span class="text-muted">Budget: ${format_currency(list.budget)}</span>
                         <span class="ms-2">Spent: ${format_currency(list.total_spent)}</span>
+                        <span class="ms-2">Status: ${list.status}</span>
                         <button class="btn btn-sm btn-outline-primary ms-2" onclick="groceryModule.loadGroceryItems('${list.id}')">${window.groceryTranslations.general_view_all}</button>
+                        <button class="btn btn-sm btn-outline-success ms-2" onclick="groceryModule.saveGroceryList('${list.id}')" ${list.status === 'saved' ? 'disabled' : ''}>Save</button>
+                        <button class="btn btn-sm btn-outline-info ms-2" onclick="groceryModule.exportGroceryListToPDF('${list.id}')" ${list.status !== 'saved' ? 'disabled' : ''}>Export to PDF</button>
                     </div>
                 </div>
             `).join('');
@@ -212,8 +227,11 @@
             manageListsEl.innerHTML = lists.map(list => `
                 <div class="grocery-item">
                     <span class="fw-semibold">${list.name}</span>
-                    <div>
+                    <div class="d-flex align-items-center gap-2">
                         <span class="text-muted">Budget: ${format_currency(list.budget)}</span>
+                        <span class="ms-2">Status: ${list.status}</span>
+                        <button class="btn btn-sm btn-outline-success ms-2" onclick="groceryModule.saveGroceryList('${list.id}')" ${list.status === 'saved' ? 'disabled' : ''}>Save</button>
+                        <button class="btn btn-sm btn-outline-info ms-2" onclick="groceryModule.exportGroceryListToPDF('${list.id}')" ${list.status !== 'saved' ? 'disabled' : ''}>Export to PDF</button>
                         <button class="btn btn-sm btn-outline-danger ms-2" onclick="groceryModule.deleteGroceryList('${list.id}', '${list.name}')">Delete</button>
                     </div>
                 </div>
@@ -222,6 +240,61 @@
             manageListsEl.innerHTML = `<div class="text-muted">${window.groceryTranslations.no_lists}</div>`;
         }
     }
+
+    const saveGroceryList = debounce(function (listId) {
+        fetchWithCSRF(window.apiUrls.manageGroceryLists + `/${listId}/save`, {
+            method: 'PUT'
+        })
+            .then(response => {
+                if (response.status === 403) {
+                    showToast(window.groceryTranslations.insufficient_credits, 'error');
+                    return Promise.reject(new Error('Unauthorized'));
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    showToast(data.error, 'danger');
+                } else {
+                    showToast('Grocery list saved', 'success');
+                    loadGroceryLists();
+                    loadManageLists();
+                }
+            })
+            .catch(error => {
+                console.error('Error saving grocery list:', error);
+                showToast(window.groceryTranslations.general_error, 'danger');
+            });
+    }, 500);
+
+    const exportGroceryListToPDF = debounce(function (listId) {
+        fetchWithCSRF(window.apiUrls.manageGroceryLists + `/${listId}/export_pdf`, {
+            method: 'GET',
+            responseType: 'blob'
+        })
+            .then(response => {
+                if (response.status === 403) {
+                    showToast(window.groceryTranslations.insufficient_credits, 'error');
+                    return Promise.reject(new Error('Unauthorized'));
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `grocery_list_${listId}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                showToast('Grocery list exported to PDF', 'success');
+            })
+            .catch(error => {
+                console.error('Error exporting grocery list to PDF:', error);
+                showToast(window.groceryTranslations.general_error, 'danger');
+            });
+    }, 500);
 
     function deleteGroceryList(listId, listName) {
         if (!confirm(`Delete grocery list "${listName}"?`)) {
@@ -302,7 +375,7 @@
         }
     }
 
-    function createGroceryList() {
+    const createGroceryList = debounce(function () {
         const name = document.getElementById('newListName').value;
         const budget = document.getElementById('newListBudget').value;
         if (!name || !budget) {
@@ -336,9 +409,9 @@
                 console.error('Error creating grocery list:', error);
                 showToast(window.groceryTranslations.general_error, 'danger');
             });
-    }
+    }, 500);
 
-    function addGroceryItem() {
+    const addGroceryItem = debounce(function () {
         if (!currentListId) {
             showToast(window.groceryTranslations.general_select_list, 'warning');
             return;
@@ -380,9 +453,9 @@
                 console.error('Error adding grocery item:', error);
                 showToast(window.groceryTranslations.general_error, 'danger');
             });
-    }
+    }, 500);
 
-    function updateGroceryItem(itemId, field, value) {
+    const updateGroceryItem = debounce(function (itemId, field, value) {
         fetchWithCSRF(window.apiUrls.manageGroceryItems.replace('{list_id}', currentListId), {
             method: 'PUT',
             body: JSON.stringify({ item_id: itemId, [field]: value })
@@ -407,9 +480,9 @@
                 console.error('Error updating grocery item:', error);
                 showToast(window.groceryTranslations.general_error, 'danger');
             });
-    }
+    }, 500);
 
-    function shareGroceryList() {
+    const shareGroceryList = debounce(function () {
         if (!currentListId) {
             showToast(window.groceryTranslations.general_select_list, 'warning');
             return;
@@ -444,7 +517,7 @@
                 console.error('Error sharing grocery list:', error);
                 showToast(window.groceryTranslations.general_error, 'danger');
             });
-    }
+    }, 500);
 
     function loadMealPlans() {
         fetchWithCSRF(window.apiUrls.manageMealPlans)
@@ -521,7 +594,7 @@
         }
     }
 
-    function createMealPlan() {
+    const createMealPlan = debounce(function () {
         const name = document.getElementById('newMealPlanName').value;
         const budget = document.getElementById('newMealPlanBudget').value;
         if (!name) {
@@ -554,9 +627,9 @@
                 console.error('Error creating meal plan:', error);
                 showToast(window.groceryTranslations.general_error, 'danger');
             });
-    }
+    }, 500);
 
-    function addIngredient() {
+    const addIngredient = debounce(function () {
         if (!currentMealPlanId) {
             showToast(window.groceryTranslations.general_select_meal_plan, 'warning');
             return;
@@ -598,9 +671,9 @@
                 console.error('Error adding ingredient:', error);
                 showToast(window.groceryTranslations.general_error, 'danger');
             });
-    }
+    }, 500);
 
-    function generateGroceryListFromMealPlan(mealPlanId) {
+    const generateGroceryListFromMealPlan = debounce(function (mealPlanId) {
         fetchWithCSRF(window.apiUrls.manageMealPlans)
             .then(response => {
                 if (response.status === 403) {
@@ -647,7 +720,7 @@
                 console.error('Error fetching meal plan:', error);
                 showToast(window.groceryTranslations.general_error, 'danger');
             });
-    }
+    }, 500);
 
     function loadPredictiveSuggestions() {
         fetchWithCSRF(window.apiUrls.predictiveSuggestions)
@@ -687,7 +760,7 @@
         }
     }
 
-    function addSuggestedItem(name, quantity, price) {
+    const addSuggestedItem = debounce(function (name, quantity, price) {
         if (!currentListId) {
             showToast(window.groceryTranslations.general_select_list, 'warning');
             return;
@@ -716,7 +789,7 @@
                 console.error('Error adding suggested item:', error);
                 showToast(window.groceryTranslations.general_error, 'danger');
             });
-    }
+    }, 500);
 
     function loadCollaboratorSuggestions(listId) {
         fetchWithCSRF(window.apiUrls.manageGrocerySuggestions.replace('{list_id}', listId))
@@ -756,7 +829,7 @@
         }
     }
 
-    function suggestItem() {
+    const suggestItem = debounce(function () {
         if (!currentListId) {
             showToast(window.groceryTranslations.general_select_list, 'warning');
             return;
@@ -794,9 +867,9 @@
                 console.error('Error suggesting item:', error);
                 showToast(window.groceryTranslations.general_error, 'danger');
             });
-    }
+    }, 500);
 
-    function approveSuggestion(suggestionId, listId) {
+    const approveSuggestion = debounce(function (suggestionId, listId) {
         fetchWithCSRF(window.apiUrls.approveGrocerySuggestion.replace('{list_id}', listId).replace('{suggestion_id}', suggestionId), {
             method: 'POST'
         })
@@ -821,7 +894,7 @@
                 console.error('Error approving suggestion:', error);
                 showToast(window.groceryTranslations.general_error, 'danger');
             });
-    }
+    }, 500);
 
     function showPriceHistory(itemName) {
         fetchWithCSRF(window.apiUrls.groceryPriceHistory.replace('{item_name}', encodeURIComponent(itemName)))
@@ -911,6 +984,8 @@
         shareGroceryList,
         loadGroceryItems,
         deleteGroceryList,
+        saveGroceryList,
+        exportGroceryListToPDF,
         loadMealPlanIngredients,
         createMealPlan,
         addIngredient,
