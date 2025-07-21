@@ -77,7 +77,7 @@ translation_modules = {
     'reports': REPORTS_TRANSLATIONS,
     
     # General Tools
-    'general': GENERAL_TRANSATIONS,
+    'general': GENERAL_TRANSLATIONS,
     'tax': TAX_TRANSLATIONS,
 }
 
