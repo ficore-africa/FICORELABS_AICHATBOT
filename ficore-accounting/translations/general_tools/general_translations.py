@@ -16,7 +16,7 @@ GENERAL_TRANSLATIONS = {
         'general_bank_transfer': 'Bank Transfer',
         'general_payment_method_required': 'Payment method is required',
         # General module
-        'general_daily_tools': 'Daily Tools',
+        'general_daily_tools': 'Popular Tools',
         'food_order': 'Food Order',
         'food_order_desc': 'Order food from your favorite vendors',
         'food_order_tooltip': 'Manage your food orders',
@@ -1724,7 +1724,7 @@ GENERAL_TRANSLATIONS = {
         'general_payment_method': 'Hanyar Biya',
         'general_card': 'Katin Kiredit/Katin Zama',
         # General module
-        'general_daily_tools': 'Kayan Aikin Yau da Kullum',
+        'general_daily_tools': 'Na Yau da Kullum',
         'food_order': 'Odar Abinci',
         'food_order_desc': 'Oda abinci daga masu sayar da kuka fi so',
         'food_order_tooltip': 'Sarrafa odar abincinku',
