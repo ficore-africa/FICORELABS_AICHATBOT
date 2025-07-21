@@ -328,17 +328,30 @@ window.foodOrderTranslations = {
     food_order_create: "Create Food Order",
     food_order_name: "Order Name",
     food_order_vendor: "Vendor",
+    food_order_phone: "Phone Number",
+    food_order_location: "Location",
+    food_order_item_notes: "Item Notes (e.g., No pepper)",
     food_order_add_item: "Add Item",
     food_order_item_name: "Item Name",
     food_order_quantity: "Quantity",
     food_order_price: "Price",
     food_order_add: "Add",
+    food_order_duplicate: "Please wait 5 minutes before creating another order",
     general_view_all: "View All",
     general_select_order: "Please select an order",
     general_please_provide: "Please provide all required fields",
     general_error: "An error occurred",
     insufficient_credits: "Insufficient credits",
-    not_found: "Order or item not found"
+    not_found: "Order or item not found",
+    food_order_invalid_data: "Invalid order data",
+    food_order_invalid_item_data: "Invalid item data",
+    food_order_invalid_update_data: "Invalid update data",
+    food_order_invalid_field: "Invalid field",
+    food_order_invalid_order_id: "Invalid order ID",
+    food_order_credit_deduction_failed: "Failed to deduct Ficore Credits",
+    food_order_missing_location: "Location required",
+    food_order_invalid_location: "Invalid location format",
+    food_order_no_vendors: "No vendors found nearby"
 };
 
 window.apiUrls = {
@@ -358,7 +371,9 @@ window.apiUrls = {
     groceryPriceHistory: "/personal/grocery/price_history/{item_name}",
     predictiveSuggestions: "/personal/grocery/suggestions",
     manageFoodOrders: "/personal/food_order/manage_orders",
-    manageFoodOrderItems: "/personal/food_order/manage_items/{order_id}"
+    manageFoodOrderItems: "/personal/food_order/manage_items/{order_id}",
+    getNearestVendor: "/food_order/get_nearest_vendor",
+    reorderFoodOrder: "/food_order/reorder/{order_id}"
 };
 
 let amountsVisible = true;
