@@ -1,3 +1,6 @@
+"""
+Translation system for the FiCore application
+"""
 import logging
 from flask import session, has_request_context, g, request
 from typing import Dict, Optional, Union
@@ -35,6 +38,7 @@ try:
     from .personal_finance.bill_translations import BILL_TRANSLATIONS
     from .personal_finance.budget_translations import BUDGET_TRANSLATIONS
     from .personal_finance.grocery_translations import GROCERY_TRANSLATIONS
+    from .personal_finance.food_order_translations import FOOD_ORDER_TRANSLATIONS
     
     # Accounting Tools
     from .accounting_tools.admin_translations import ADMIN_TRANSLATIONS
@@ -60,6 +64,7 @@ translation_modules = {
     'bill': BILL_TRANSLATIONS,
     'budget': BUDGET_TRANSLATIONS,
     'grocery': GROCERY_TRANSLATIONS,
+    'food_order': FOOD_ORDER_TRANSLATIONS,
     
     # Accounting Tools
     'admin': ADMIN_TRANSLATIONS,
@@ -72,7 +77,7 @@ translation_modules = {
     'reports': REPORTS_TRANSLATIONS,
     
     # General Tools
-    'general': GENERAL_TRANSLATIONS,
+    'general': GENERAL_TRANSATIONS,
     'tax': TAX_TRANSLATIONS,
 }
 
@@ -82,6 +87,7 @@ KEY_PREFIX_TO_MODULE = {
     'bill_': 'bill',
     'budget_': 'budget',
     'grocery_': 'grocery',
+    'food_order_': 'food_order',
     
     # Accounting Tools prefixes
     'admin_': 'admin',
@@ -199,7 +205,7 @@ def trans(key: str, lang: Optional[str] = None, default: Optional[str] = None, *
                 if error_key not in logged_missing_keys:
                     logged_missing_keys.add(error_key)
                     current_logger.error(
-                        f"Formatting energetic for key='{key}', lang='{lang}', kwargs={kwargs}, error='Missing key: {str(e)}'",
+                        f"Formatting error for key='{key}', lang='{lang}', kwargs={kwargs}, error='Missing key: {str(e)}'",
                         extra={'session_id': session_id}
                     )
             return translation  # Return unformatted string as fallback
