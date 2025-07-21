@@ -203,6 +203,12 @@ def manage_items(list_id):
     """Manage items in a grocery list."""
     db = get_mongo_db()
     try:
+        # Validate list_id as a valid ObjectId
+        if not ObjectId.is_valid(list_id):
+            logger.error(f"Invalid list_id {list_id}: not a valid ObjectId", 
+                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+            return jsonify({'error': trans('grocery_invalid_list_id', default='Invalid list ID')}), 400
+
         grocery_list = db.grocery_lists.find_one({'_id': ObjectId(list_id), 'user_id': str(current_user.id)})
         if not grocery_list:
             return jsonify({'error': trans('grocery_list_not_found', default='Grocery list not found')}), 404
@@ -252,7 +258,7 @@ def manage_items(list_id):
                     db.grocery_items.delete_one({'_id': result.inserted_id})
                     db.grocery_lists.update_one(
                         {'_id': ObjectId(list_id)},
-                        {'$inc': {'total_spent': -float(price * quantity)}, '$set': {'updated_at': datetime.utcnow()}}
+                        {'$inc': {'total_spent': -float(price * quantity)}, '$set': {'updated personally_at': datetime.utcnow()}}
                     )
                     logger.error(f"Failed to deduct 0.5 Ficore Credits for adding item {result.inserted_id} to list {list_id} by user {current_user.id}", 
                                  extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
@@ -342,6 +348,12 @@ def share_list(list_id):
     """Share a grocery list with collaborators."""
     db = get_mongo_db()
     try:
+        # Validate list_id as a valid ObjectId
+        if not ObjectId.is_valid(list_id):
+            logger.error(f"Invalid list_id {list_id}: not a valid ObjectId", 
+                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+            return jsonify({'error': trans('grocery_invalid_list_id', default='Invalid list ID')}), 400
+
         grocery_list = db.grocery_lists.find_one({'_id': ObjectId(list_id), 'user_id': str(current_user.id)})
         if not grocery_list:
             return jsonify({'error': trans('grocery_list_not_found', default='Grocery list not found')}), 404
@@ -376,6 +388,12 @@ def manage_suggestions(list_id):
     """Manage item suggestions for shared lists."""
     db = get_mongo_db()
     try:
+        # Validate list_id as a valid ObjectId
+        if not ObjectId.is_valid(list_id):
+            logger.error(f"Invalid list_id {list_id}: not a valid ObjectId", 
+                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+            return jsonify({'error': trans('grocery_invalid_list_id', default='Invalid list ID')}), 400
+
         grocery_list = db.grocery_lists.find_one({'_id': ObjectId(list_id)})
         if not grocery_list or (str(current_user.id) not in [grocery_list['user_id']] + grocery_list.get('collaborators', [])):
             return jsonify({'error': trans('grocery_list_not_found', default='Grocery list not found or access denied')}), 404
@@ -425,6 +443,12 @@ def approve_suggestion(list_id, suggestion_id):
     """Approve a suggested item and add it to the list."""
     db = get_mongo_db()
     try:
+        # Validate list_id as a valid ObjectId
+        if not ObjectId.is_valid(list_id):
+            logger.error(f"Invalid list_id {list_id}: not a valid ObjectId", 
+                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+            return jsonify({'error': trans('grocery_invalid_list_id', default='Invalid list ID')}), 400
+
         grocery_list = db.grocery_lists.find_one({'_id': ObjectId(list_id), 'user_id': str(current_user.id)})
         if not grocery_list:
             return jsonify({'error': trans('grocery_list_not_found', default='Grocery list not found or not owner')}), 404
@@ -645,7 +669,7 @@ def predictive_suggestions():
         return jsonify(suggestions), 200
     except Exception as e:
         logger.error(f"Error fetching predictive suggestions for user {current_user.id}: {str(e)}", 
-                     extra={'ession_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
         return jsonify({'error': trans('grocery_suggestions_error', default='Error fetching suggestions')}), 500
 
 def init_app(app):
