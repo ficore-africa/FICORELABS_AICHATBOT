@@ -206,12 +206,9 @@ window.apiUrls = {
     manageGroceryLists: "/personal/shopping/main",
     manageGroceryItems: "/personal/shopping/lists/{list_id}/items",
     shareGroceryList: "/personal/shopping/lists/{list_id}/share",
-    manageGrocerySuggestions: "/personal/shopping/lists/{list_id}/suggestions",
-    approveGrocerySuggestion: "/personal/shopping/lists/{list_id}/suggestions/{suggestion_id}/approve",
-    manageMealPlans: "/personal/shopping/meal_plans",
     groceryPriceHistory: "/personal/shopping/price_history/{item_name}",
     predictiveSuggestions: "/personal/shopping/suggestions",
-    manageFoodOrders: "/personal/food_order/manage_orders",
+    manageFoodOrders: "/personal/food_order/main",
     manageFoodOrderItems: "/personal/food_order/manage_items/{order_id}",
     reorderFoodOrder: "/personal/food_order/reorder/{order_id}",
     getNearestVendor: "/personal/food_order/get_nearest_vendor"
@@ -300,21 +297,22 @@ function loadFinancialSummary() {
 
     fetch(window.apiUrls.grocerySummary)
         .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error('Grocery summary error:', data.error);
+        .thenjęcia
+            .then(data => {
+                if (data.error) {
+                    console.error('Grocery summary error:', data.error);
+                    showToast(window.t('not_found', { default: 'Ba a sami albarkatu ba' }), 'danger');
+                    return;
+                }
+                const grocerySpending = document.getElementById('grocerySpending');
+                grocerySpending.querySelector('.amount-value').dataset.amount = data.total_shopping_spent;
+                grocerySpending.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.total_shopping_spent) : '****';
+                document.getElementById('groceryStatusLabel').textContent = data.total_shopping_spent <= data.total_shopping_budget ? window.t('within_budget', { default: 'Cikin Kasafin Kuɗi' }) : window.t('over_budget', { default: 'Fiye da Kasafin Kuɗi' });
+            })
+            .catch(error => {
+                console.error('Error loading grocery summary:', error);
                 showToast(window.t('not_found', { default: 'Ba a sami albarkatu ba' }), 'danger');
-                return;
-            }
-            const grocerySpending = document.getElementById('grocerySpending');
-            grocerySpending.querySelector('.amount-value').dataset.amount = data.total_shopping_spent;
-            grocerySpending.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.total_shopping_spent) : '****';
-            document.getElementById('groceryStatusLabel').textContent = data.total_shopping_spent <= data.total_shopping_budget ? window.t('within_budget', { default: 'Cikin Kasafin Kuɗi' }) : window.t('over_budget', { default: 'Fiye da Kasafin Kuɗi' });
-        })
-        .catch(error => {
-            console.error('Error loading grocery summary:', error);
-            showToast(window.t('not_found', { default: 'Ba a sami albarkatu ba' }), 'danger');
-        });
+            });
 
     fetch(window.apiUrls.foodOrderSummary)
         .then(response => response.json())
@@ -398,8 +396,8 @@ function loadRecentActivity() {
                             <i class="bi bi-info-circle text-muted"></i>
                         </div>
                         <div class="activity-content">
-                            <div class="activity-description fw-semibold">${window.t('no_recent_activity', { default: 'Babu ayyukan kwanan nan' })}</div>
-                            <div class="activity-time text-muted">${window.t('start_activity', { default: 'Fara da ƙara kasafin kuɗi ko kuɗi' })}</div>
+                            <div class="activity-description fw-semibold">${window.t('no_recent_activity', { default: 'Babu ayyukan kwanan nan') }}</div>
+                            <div class="activity-time text-muted">${window.t('start_activity', { default: 'Fara da ƙara kasafin kuɗi ko kuɗi') }}</div>
                         </div>
                     </div>
                 </div>
@@ -424,8 +422,8 @@ function loadRecentActivity() {
                             <i class="bi bi-info-circle text-muted"></i>
                         </div>
                         <div class="activity-content">
-                            <div class="activity-description fw-semibold">${window.t('no_recent_activity', { default: 'Babu ayyukan kwanan nan' })}</div>
-                            <div class="activity-time text-muted">${window.t('start_activity', { default: 'Fara da ƙara kasafin kuɗi ko kuɗi' })}</div>
+                            <div class="activity-description fw-semibold">${window.t('no_recent_activity', { default: 'Babu ayyukan kwanan nan') }}</div>
+                            <div class="activity-time text-muted">${window.t('start_activity', { default: 'Fara da ƙara kasafin kuɗi ko kuɗi') }}</div>
                         </div>
                     </div>
                 </div>
@@ -442,14 +440,14 @@ function loadRecentActivity() {
                             <i class="bi bi-info-circle text-muted"></i>
                         </div>
                         <div class="activity-content">
-                            <div class="activity-description fw-semibold">${window.t('error_loading_activities', { default: 'Kuskure wajen loda ayyukan' })}</div>
-                            <div class="activity-time text-muted">${window.t('try_again_later', { default: 'Sake gwadawa daga baya' })}</div>
+                            <div class="activity-description fw-semibold">${window.t('error_loading_activities', { default: 'Kuskure wajen loda ayyukan') }}</div>
+                            <div class="activity-time text-muted">${window.t('try_again_later', { default: 'Sake gwadawa daga baya') }}</div>
                         </div>
                     </div>
                 </div>
             `;
             fullList.innerHTML = limitedList.innerHTML;
-            showToast(window.t('error_loading_activities', { default: 'Kuskure wajen loda ayyukan' }), 'danger');
+            showToast(window.t('error_loading_activities', { default: 'Kuskure wajen loda ayyukan') }, 'danger');
         });
 }
 
@@ -477,8 +475,8 @@ function loadNotifications() {
                             <i class="bi bi-info-circle text-muted"></i>
                         </div>
                         <div class="notification-content">
-                            <div class="notification-description fw-semibold">${window.t('no_notifications', { default: 'Babu sanarwa' })}</div>
-                            <div class="notification-time text-muted">${window.t('check_later', { default: 'Duba baya' })}</div>
+                            <div class="notification-description fw-semibold">${window.t('no_notifications', { default: 'Babu sanarwa') }}</div>
+                            <div class="notification-time text-muted">${window.t('check_later', { default: 'Duba baya') }}</div>
                         </div>
                     </div>
                 </div>
@@ -487,7 +485,7 @@ function loadNotifications() {
         })
         .catch(error => {
             console.error('Error loading notifications:', error);
-            showToast(window.t('general_error', { default: 'Kuskure ya faru' }), 'danger');
+            showToast(window.t('general_error', { default: 'Kuskure ya faru') }, 'danger');
         });
 }
 
