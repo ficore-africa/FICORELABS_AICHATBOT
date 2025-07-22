@@ -43,7 +43,7 @@ def index():
     try:
         current_app.logger.info(f"Accessing personal.index - User: {current_user.id}, Authenticated: {current_user.is_authenticated}, Session: {dict(session)}")
         
-        # Hardcoded PERSONAL_TOOLS
+        # Define PERSONAL_TOOLS with dynamic URLs
         hardcoded_tools = [
             {
                 "endpoint": "personal.grocery.index",
@@ -52,7 +52,7 @@ def index():
                 "description_key": "grocery_management_desc",
                 "tooltip_key": "grocery_tooltip",
                 "icon": "bi-cart",
-                "url": "#"  # Modal trigger, no server-side endpoint
+                "url": url_for("personal.grocery.index", _external=True)
             },
             {
                 "endpoint": "personal.food_order.index",
@@ -61,11 +61,11 @@ def index():
                 "description_key": "food_order_desc",
                 "tooltip_key": "food_order_tooltip",
                 "icon": "bi-box-seam",
-                "url": "#"  # Modal trigger, no server-side endpoint
+                "url": url_for("personal.food_order.index", _external=True)
             },
         ]
 
-        # Hardcoded PERSONAL_EXPLORE_FEATURES
+        # Define PERSONAL_EXPLORE_FEATURES with dynamic URLs
         hardcoded_features = [
             {
                 "endpoint": "personal.budget.main",
@@ -92,7 +92,7 @@ def index():
                 "description_key": "grocery_management_desc",
                 "tooltip_key": "grocery_tooltip",
                 "icon": "bi-cart",
-                "url": "#"  # Modal trigger, no server-side endpoint
+                "url": url_for("personal.grocery.index", _external=True)
             },
             {
                 "endpoint": "personal.food_order.index",
@@ -101,7 +101,7 @@ def index():
                 "description_key": "food_order_desc",
                 "tooltip_key": "food_order_tooltip",
                 "icon": "bi-box-seam",
-                "url": "#"  # Modal trigger, no server-side endpoint
+                "url": url_for("personal.food_order.index", _external=True)
             },
             {
                 "endpoint": "credits.request_credits",
