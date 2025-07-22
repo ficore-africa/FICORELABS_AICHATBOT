@@ -4,6 +4,13 @@ Ficore Credits management translations for accounting tools
 
 FICORE_CREDITS_TRANSLATIONS = {
     'en': {
+         # Credits module
+        'credits_request_status_filter': 'Filter by Status',
+        'credits_all_statuses': 'All Statuses',
+        'credits_pending': 'Pending',
+        'credits_approved': 'Approved',
+        'credits_denied': 'Denied',
+        'credits_filter': 'Filter',
         # Credits module
         'credits_dashboard': 'Request Ficore Credits',
         'credits_dashboard_desc': 'Request for your Ficore Credits and view history and balance.',
@@ -156,5 +163,12 @@ FICORE_CREDITS_TRANSLATIONS = {
         'general_actions': 'Ayyuka',
         'general_note': 'Bayanan Kula',
         'card': 'Kati',
+        # Credits module
+        'credits_request_status_filter': 'Tace ta Halin',
+        'credits_all_statuses': 'Duk Halaye',
+        'credits_pending': 'A Jiran Aiki',
+        'credits_approved': 'An Amince',
+        'credits_denied': 'An Ƙi',
+        'credits_filter': 'Tace',
     }
 }
