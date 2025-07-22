@@ -594,7 +594,7 @@ def get_explore_features():
             ]
             for feature in features:
                 if 'title_key' not in feature:
-                    feature['title_key'] = feature.get('label', 'default_feature').lower().replace(' ', '_') + '_title'
+                    feature['label_key'] = feature.get('label', 'default_feature').lower().replace(' ', '_') + '_title'
                     logger.warning(
                         f"Missing title_key for feature {feature.get('label', 'unknown')}, assigned default: {feature['title_key']}",
                         extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr if has_request_context() else 'unknown'}
