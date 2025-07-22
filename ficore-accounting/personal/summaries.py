@@ -14,6 +14,10 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None):
     query = {} if is_admin_user else {'user_id': str(user_id)}
     activities = []
 
+    # Log the user_id and is_admin_user for debugging
+    logger.info(f"Fetching recent activities for user_id={user_id}, is_admin_user={is_admin_user}, query={query}", 
+                extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+
     # Define required fields for each activity type
     activity_configs = {
         'bills': {
@@ -131,7 +135,8 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None):
                             'amount': abs(record.get('amount', record.get('income', 0))),
                             'action': record.get('action', 'Transaction'),
                             'course_id': record.get('course_id', 'N/A')
-                        })
+                        }),
+                        module=config['collection']
                     ),
                     'timestamp': record.get(config.get('sort_field', 'created_at'), datetime.utcnow()).isoformat(),
                     'details': config['details'](record),
@@ -201,7 +206,7 @@ def budget_summary():
     except Exception as e:
         logger.error(f"Error fetching budget summary for user {current_user.id}: {str(e)}", 
                      extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-        return jsonify({'totalBudget': 0.0, 'error': trans('budget_summary_error', default='Error fetching budget summary')}), 500
+        return jsonify({'totalBudget': 0.0, 'error': trans('budget_summary_error', default='Error fetching budget summary', module='budget')}), 500
 
 @summaries_bp.route('/bill/summary')
 @login_required
@@ -253,7 +258,7 @@ def bill_summary():
             'overdue_amount': 0.0,
             'pending_amount': 0.0,
             'unpaid_amount': 0.0,
-            'error': trans('bill_summary_error', default='Error fetching bill summary')
+            'error': trans('bill_summary_error', default='Error fetching bill summary', module='budget')
         }), 500
 
 @summaries_bp.route('/grocery/summary')
@@ -291,7 +296,7 @@ def grocery_summary():
             'total_grocery_budget': 0.0,
             'total_grocery_spent': 0.0,
             'active_lists': 0,
-            'error': trans('grocery_summary_error', default='Error fetching grocery summary')
+            'error': trans('grocery_summary_error', default='Error fetching grocery summary', module='grocery')
         }), 500
 
 @summaries_bp.route('/food_order/summary')
@@ -325,7 +330,7 @@ def food_order_summary():
         return jsonify({
             'total_food_order_spent': 0.0,
             'active_orders': 0,
-            'error': trans('food_order_summary_error', default='Error fetching food order summary')
+            'error': trans('food_order_summary_error', default='Error fetching food order summary', module='food_order')
         }), 500
 
 @summaries_bp.route('/ficore_balance')
@@ -343,7 +348,7 @@ def ficore_balance():
     except Exception as e:
         logger.error(f"Error fetching Ficore Credits balance for user {current_user.id}: {str(e)}", 
                      extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-        return jsonify({'balance': 0.0, 'error': trans('ficore_balance_error', default='Error fetching Ficore Credits balance')}), 500
+        return jsonify({'balance': 0.0, 'error': trans('ficore_balance_error', default='Error fetching Ficore Credits balance', module='general')}), 500
 
 @summaries_bp.route('/recent_activity')
 @login_required
@@ -351,7 +356,10 @@ def ficore_balance():
 def recent_activity():
     """Return recent activity across all personal finance tools for the current user."""
     try:
-        activities = _get_recent_activities_data(user_id=current_user.id, is_admin_user=current_user.role == 'admin')
+        # Log current_user details for debugging
+        logger.info(f"Accessing recent_activity for user_id={current_user.id}, role={getattr(current_user, 'role', 'unknown')}", 
+                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+        activities = _get_recent_activities_data(user_id=current_user.id, is_admin_user=getattr(current_user, 'role', None) == 'admin')
         logger.info(f"Fetched {len(activities)} recent activities for user {current_user.id}", 
                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
         return jsonify(activities), 200
@@ -367,7 +375,7 @@ def notification_count():
     """Return the count of unread notifications for the current user."""
     try:
         db = get_mongo_db()
-        query = {} if current_user.role == 'admin' else {'user_id': str(current_user.id), 'read_status': False}
+        query = {} if getattr(current_user, 'role', None) == 'admin' else {'user_id': str(current_user.id), 'read_status': False}
         count = db.bill_reminders.count_documents(query)
         logger.info(f"Fetched notification count {count} for user {current_user.id}", 
                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
@@ -375,7 +383,7 @@ def notification_count():
     except Exception as e:
         logger.error(f"Error fetching notification count: {str(e)}", 
                      extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-        return jsonify({'count': 0, 'error': trans('general_something_went_wrong', default='Failed to fetch notification count')}), 500
+        return jsonify({'count': 0, 'error': trans('general_something_went_wrong', default='Failed to fetch notification count', module='general')}), 500
 
 @summaries_bp.route('/notifications')
 @login_required
@@ -384,7 +392,7 @@ def notifications():
     """Return the list of recent notifications for the current user."""
     try:
         db = get_mongo_db()
-        query = {} if current_user.role == 'admin' else {'user_id': str(current_user.id)}
+        query = {} if getattr(current_user, 'role', None) == 'admin' else {'user_id': str(current_user.id)}
         notifications = list(db.bill_reminders.find(query).sort('sent_at', -1).limit(10))
 
         # Handle cases where notification_id or sent_at might be missing
