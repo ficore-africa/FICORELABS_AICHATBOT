@@ -1,7 +1,3 @@
-"""
-Translations for the Food Order feature in the FiCore application
-"""
-
 FOOD_ORDER_TRANSLATIONS = {
     'en': {
         # Food Order module
@@ -11,7 +7,9 @@ FOOD_ORDER_TRANSLATIONS = {
         'food_order_invalid_field': 'Invalid field',
         'food_order_item_not_found': 'Item not found',
         'food_order': 'Food Order',
+        'food_order_modal_label': 'Food Order',
         'food_order_desc': 'Order food from your favorite vendors',
+        'food_order_description': 'Place and manage food orders from vendors.',
         'food_order_tooltip': 'Manage your food orders',
         'food_order_js_required': 'JavaScript is required to use the Food Order feature. Please enable it in your browser.',
         'food_order_no_orders': 'No food orders found',
@@ -28,7 +26,9 @@ FOOD_ORDER_TRANSLATIONS = {
         'food_order_invalid_field': 'Filin ba daidai ba ne',
         'food_order_item_not_found': 'Ba a sami abu ba',
         'food_order': 'Odar Abinci',
+        'food_order_modal_label': 'Odar Abinci',
         'food_order_desc': 'Oda abinci daga masu sayar da kuka fi so',
+        'food_order_description': 'Sanya da sarrafa umurnin abinci daga masu sayarwa.',
         'food_order_tooltip': 'Sarrafa odar abincinku',
         'food_order_js_required': 'Ana buƙatar JavaScript don amfani da fasalin Odar Abinci. Da fatan za a kunna shi a cikin burauzarku.',
         'food_order_no_orders': 'Ba a sami odar abinci ba',
