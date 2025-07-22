@@ -8,6 +8,8 @@ BUDGET_TRANSLATIONS = {
         'budget_planner_title': 'Budget',
         'budget_completed_success': 'Budget completed successfully!',
         'budget_income_max': 'Maximum income limit reached.',
+        # Budget module
+        'budget_status': 'Budget Status',
         'budget_create_first': 'Create Your First Budget',
         'budget_insight_budget_surplus': 'Budget Surplus',
         'budget_history': 'Budget History',
@@ -266,6 +268,7 @@ BUDGET_TRANSLATIONS = {
         'budget_food_invalid': 'Adadin Kuɗin Abinci Ba Daidai Ba',
         'budget_food_help': 'Shigar da kuɗin abinci na kowane wata.',
         'budget_transport_invalid': 'Adadin Kuɗin Sufuri Ba Daidai Ba',
+        'budget_status': 'Halin Kasafin Kuɗi',
         'budget_transport_help': 'Shigar da kuɗin sufuri na kowane wata.',
         'budget_dependents_invalid': 'Adadin Masu Dogara Ba Daidai Ba',
         'budget_dependents_help': 'Shigar da adadin masu dogara da kuke tallafawa.',
