@@ -83,7 +83,7 @@ _PERSONAL_TOOLS = [
         "icon": "bi-receipt"
     },
     {
-        "endpoint": "personal.grocery.index",
+        "endpoint": "personal.shopping.main",
         "label": "Grocery Planner",
         "label_key": "grocery_management",
         "description_key": "grocery_management_desc",
@@ -126,7 +126,7 @@ _PERSONAL_NAV = [
         "icon": "bi-receipt"
     },   
     {
-        "endpoint": "personal.grocery.index",
+        "endpoint": "personal.shopping.main",
         "label": "Grocery Planner",
         "label_key": "grocery_management",
         "description_key": "grocery_management_desc",
@@ -161,7 +161,7 @@ _PERSONAL_EXPLORE_FEATURES = [
         "icon": "bi-receipt"
     },
     {
-        "endpoint": "personal.grocery.index",
+        "endpoint": "personal.shopping.main",
         "label": "Grocery Planner",
         "label_key": "grocery_management",
         "description_key": "grocery_management_desc",
@@ -540,7 +540,7 @@ def get_explore_features():
                     "icon": "bi-receipt"
                 },
                 {
-                    "endpoint": "personal.grocery.index",
+                    "endpoint": "personal.shopping.main",
                     "label": "Grocery Planner",
                     "label_key": "grocery_management",
                     "description_key": "grocery_management_desc",
