@@ -15,16 +15,14 @@
 
         <!-- Daily Tools -->
         <section class="section-card daily-tools">
-            <h3 class="section-title">{{ t('popular_tools', default='Kayan Aiki na Yau da Kullum') }}</h3>
+            <h3 class="section-title">{{ t('popular_tools', default='Na Yau da Kullum') }}</h3>
             <div class="quick-actions">
-                <a href="javascript:void(0)" class="quick-action-card grocery-management text-decoration-none" data-bs-toggle="modal" data-bs-target="#groceryModal" aria-label="{{ t('grocery_modal_label', default='Mai Shirya Kayan Miya Mai Wayo') }}">
-                    <i class="bi bi-cart action-icon text-info"></i>
-                    <div class="action-label">{{ t('grocery_modal_label', default='Mai Shirya Kayan Miya Mai Wayo') }}</div>
+                {% for tool in tools_for_template %}
+                <a href="{{ tool.url | e }}" class="quick-action-card {{ tool.label_key }}-management text-decoration-none" aria-label="{{ t(tool.label_key, default=tool.label) | e }}">
+                    <i class="bi {{ tool.icon | e }} action-icon text-{{ 'info' if tool.icon == 'bi-cart' else 'primary' }}"></i>
+                    <div class="action-label">{{ t(tool.label_key, default=tool.label) | e }}</div>
                 </a>
-                <a href="javascript:void(0)" class="quick-action-card food-order text-decoration-none" data-bs-toggle="modal" data-bs-target="#foodOrderModal" aria-label="{{ t('food_order_modal_label', default='Umurnin Abinci') }}">
-                    <i class="bi bi-box-seam action-icon text-primary"></i>
-                    <div class="action-label">{{ t('food_order_modal_label', default='Umurnin Abinci') }}</div>
-                </a>
+                {% endfor %}
             </div>
         </section>
 
@@ -55,9 +53,9 @@
                     <div class="status-label" id="billsStatusLabel"></div>
                 </div>
                 <div class="summary-card grocery-card">
-                    <div card-header d-flex align-items-center gap-3">
+                    <div class="card-header d-flex align-items-center gap-3">
                         <i class="bi bi-cart card-icon text-info"></i>
-                        <span class="fw-bold">{{ t('grocery_spending', default='Kashe Kayan Miya') }}</span>
+                        <span class="fw-bold">{{ t('grocery_spending', default='Kashe Siyayya') }}</span>
                     </div>
                     <div class="card-amount mt-3" id="grocerySpending">
                         <span class="currency-symbol">₦</span>
@@ -162,70 +160,24 @@
         <div class="section-card explore-section">
             <h3 class="section-title">{{ t('explore_features', default='Bincika Abubuwan Haɗin') }}</h3>
             {% for feature in explore_features_for_template %}
-            <a href="{{ feature.get('url', '#') | e }}" class="explore-card text-decoration-none" aria-label="{{ t(feature.get('label_key', ''), default=feature.get('label', 'Abun Haɗi')) | e }}">
+            <a href="{{ feature.url | e }}" class="explore-card text-decoration-none" aria-label="{{ t(feature.label_key, default=feature.label) | e }}">
                 <div class="explore-card-icon">
-                    <i class="bi {{ feature.get('icon', 'bi-circle') | e }} text-primary"></i>
+                    <i class="bi {{ feature.icon | e }} text-primary"></i>
                 </div>
                 <div class="explore-card-text">
-                    <h4>{{ t(feature.get('label_key', ''), default=feature.get('label', 'Abun Haɗi')) | e }}</h4>
-                    <p class="text-muted">{{ t(feature.get('description_key', ''), default=feature.get('description', 'Bayanin ba ya samuwa')) | e }}</p>
+                    <h4>{{ t(feature.label_key, default=feature.label) | e }}</h4>
+                    <p class="text-muted">{{ t(feature.description_key, default=feature.description) | e }}</p>
                 </div>
             </a>
             {% endfor %}
-        </div>
-
-        <!-- Grocery Planner Modal -->
-        <div class="modal fade" id="groceryModal" tabindex="-1" aria-labelledby="groceryModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="groceryModalLabel">{{ t('grocery_modal_label', default='Mai Shirya Kayan Miya Mai Wayo') }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t('close', default='Rufe') }}"></button>
-                    </div>
-                    <div class="modal-body">
-                        <noscript>
-                            <div style="padding: 1rem; background: #ffebee; border: 1px solid #ef5350;">
-                                {{ t('javascript_required_grocery', default='Ana buƙatar JavaScript don amfani da Mai Shirya Kayan Miya. Da fatan za a kunna shi a cikin burauzarka.') }}
-                            </div>
-                        </noscript>
-                        <div id="grocery-planner-root"></div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('close', default='Rufe') }}</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Food Order Modal -->
-        <div class="modal fade" id="foodOrderModal" tabindex="-1" aria-labelledby="foodOrderModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="foodOrderModalLabel">{{ t('food_order_modal_label', default='Umurnin Abinci') }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t('close', default='Rufe') }}"></button>
-                    </div>
-                    <div class="modal-body">
-                        <noscript>
-                            <div style="padding: 1rem; background: #ffebee; border: 1px solid #ef5350;">
-                                {{ t('javascript_required_food_order', default='Ana buƙatar JavaScript don amfani da fasalin Umurnin Abinci. Da fatan za a kunna shi a cikin burauzarka.') }}
-                            </div>
-                        </noscript>
-                        <div id="food-order-root"></div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('close', default='Rufe') }}</button>
-                    </div>
-                </div>
-            </div>
         </div>
     {% endif %}
 </div>
 
 <style>
 .spacer { margin: 1.5rem 0; }
-.notification-card, .recent-activity-card, .food-order-item { border-bottom: 1px solid #e9ecef; padding: 0.75rem 0; }
-.notification-item, .activity-item, .food-order-item { display: flex; align-items: center; gap: 0.75rem; }
+.notification-card, .recent-activity-card { border-bottom: 1px solid #e9ecef; padding: 0.75rem 0; }
+.notification-item, .activity-item { display: flex; align-items: center; gap: 0.75rem; }
 .notification-icon, .activity-icon { font-size: 1.25rem; }
 .notification-content, .activity-content { flex-grow: 1; }
 .notification-description, .activity-description { font-size: 0.9rem; font-weight: 500; }
@@ -234,8 +186,6 @@
 .card-header { font-size: 1rem; }
 .card-amount { font-size: 1.25rem; font-weight: 500; }
 .status-label { font-size: 0.8rem; font-weight: 500; margin-top: 0.25rem; }
-.grocery-item, .meal-plan-item, .suggestion-item, .food-order-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #e9ecef; }
-.grocery-item select, .grocery-item input, .meal-plan-item input, .suggestion-item input, .food-order-item input { max-width: 100px; }
 </style>
 {% endblock %}
 
@@ -244,8 +194,6 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/static/js/translations.js"></script>
-<script src="/static/js/grocery.js"></script>
-<script src="/static/js/food-order.js"></script>
 <script>
 window.apiUrls = {
     budgetSummary: "/personal/summaries/budget/summary",
@@ -411,7 +359,6 @@ function loadRecentActivity() {
             const limitedList = document.getElementById('recentActivityListLimited');
             const fullList = document.getElementById('recentActivityListFull');
             
-            // Validate activities data
             if (!Array.isArray(activities)) {
                 console.error('Recent activities is not an array:', activities);
                 throw new Error('Invalid activities data');
@@ -426,14 +373,12 @@ function loadRecentActivity() {
                 activity.timestamp
             );
 
-            // Log warning if some activities are invalid
             if (validActivities.length < activities.length) {
                 console.warn(`Filtered out ${activities.length - validActivities.length} invalid activities`);
             }
 
-            const limitedActivities = validActivities.slice(0, 2); // Show only the two most recent activities
+            const limitedActivities = validActivities.slice(0, 2);
 
-            // Render limited view (top 2 activities)
             limitedList.innerHTML = limitedActivities.length > 0 ? limitedActivities.map(activity => `
                 <div class="recent-activity-card">
                     <div class="activity-item">
@@ -460,7 +405,6 @@ function loadRecentActivity() {
                 </div>
             `;
 
-            // Render full view (all activities)
             fullList.innerHTML = validActivities.length > 0 ? validActivities.map(activity => `
                 <div class="recent-activity-card">
                     <div class="activity-item">
@@ -565,7 +509,6 @@ function showToast(message, type) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Verify Bootstrap is loaded
     if (typeof bootstrap === 'undefined') {
         console.error('Bootstrap JavaScript is not loaded');
         showToast(window.t('bootstrap_failed', { default: 'Ba a loda Bootstrap JavaScript ba' }), 'danger');
@@ -573,36 +516,16 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Bootstrap JavaScript loaded successfully');
     }
 
-    // Initialize modals explicitly
-    const foodOrderModal = document.getElementById('foodOrderModal');
-    if (foodOrderModal) {
-        new bootstrap.Modal(foodOrderModal);
-        console.log('Food Order Modal initialized');
-    } else {
-        console.error('Food Order Modal element not found');
-    }
-
-    const groceryModal = document.getElementById('groceryModal');
-    if (groceryModal) {
-        new bootstrap.Modal(groceryModal);
-        console.log('Grocery Modal initialized');
-    } else {
-        console.error('Grocery Modal element not found');
-    }
-
-    // Initialize tooltips
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(tooltipTriggerEl => {
         new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
-    // Validate Bootstrap Icons
     document.querySelectorAll('.bi').forEach(icon => {
         if (!icon.className.includes('bi-')) {
             console.warn('Invalid or missing Bootstrap Icon class:', icon.className);
         }
     });
 
-    // Check navigation items
     const topNav = document.querySelector('.top-header');
     const bottomNav = document.querySelector('.bottom-nav');
     if (topNav && bottomNav) {
@@ -612,60 +535,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Load static data
     loadFinancialSummary();
     loadRecentActivity();
     loadNotifications();
-
-    // Initialize modules after scripts are loaded
-    function initializeModules() {
-        try {
-            if (typeof groceryModule !== 'undefined' && typeof groceryModule.initGroceryPlanner === 'function') {
-                console.log('Initializing groceryModule...');
-                groceryModule.initGroceryPlanner();
-                console.log('groceryModule initialized successfully');
-            } else {
-                console.warn('groceryModule.initGroceryPlanner is not defined');
-            }
-            if (typeof foodOrderModule !== 'undefined' && typeof foodOrderModule.initFoodOrder === 'function') {
-                console.log('Initializing foodOrderModule...');
-                foodOrderModule.initFoodOrder();
-                console.log('foodOrderModule initialized successfully');
-            } else {
-                console.error('foodOrderModule.initFoodOrder is not defined');
-                showToast(window.t('food_order_init_failed', { default: 'Ba a iya fara fasalin Umurnin Abinci ba' }), 'danger');
-            }
-        } catch (error) {
-            console.error('Error initializing modules:', error);
-            showToast(window.t('app_init_error', { default: 'Kuskure wajen fara aikace-aikace' }), 'danger');
-        }
-    }
-
-    // Check if food-order.js is included and load it dynamically if needed
-    const foodOrderScript = document.querySelector('script[src="/static/js/food-order.js"]');
-    if (foodOrderScript) {
-        // If script is already in the DOM, wait for it to load
-        if (foodOrderScript.complete || foodOrderScript.readyState === 'loaded' || foodOrderScript.readyState === 'complete') {
-            initializeModules();
-        } else {
-            foodOrderScript.onload = initializeModules;
-            foodOrderScript.onerror = () => {
-                console.error('Failed to load food-order.js');
-                showToast(window.t('food_order_script_failed', { default: 'Ba a iya loda rubutun Umurnin Abinci ba' }), 'danger');
-            };
-        }
-    } else {
-        // Dynamically load food-order.js
-        const script = document.createElement('script');
-        script.src = '/static/js/food-order.js';
-        script.async = true;
-        script.onload = initializeModules;
-        script.onerror = () => {
-            console.error('Failed to load food-order.js');
-            showToast(window.t('food_order_script_failed', { default: 'Ba a iya loda rubutun Umurnin Abinci ba' }), 'danger');
-        };
-        document.body.appendChild(script);
-    }
 });
 </script>
 {% endblock %}
