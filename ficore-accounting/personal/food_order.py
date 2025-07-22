@@ -90,6 +90,8 @@ def index():
         # Format order data for template
         orders_data = []
         for order in orders:
+            # Ensure items is a list
+            items = order.get('items', []) if isinstance(order.get('items'), list) else []
             order_data = {
                 'id': order['id'],
                 'name': order.get('name', ''),
@@ -100,9 +102,12 @@ def index():
                 'total_cost_raw': float(order.get('total_cost', 0.0)),
                 'created_at': order.get('created_at').strftime('%Y-%m-%d %H:%M:%S'),
                 'status': order.get('status', 'submitted'),
-                'items': order.get('items', [])
+                'items': items
             }
             orders_data.append(order_data)
+        
+        # Log the type and content of orders_data for debugging
+        current_app.logger.debug(f"orders_data type: {type(orders_data)}, value: {orders_data}", extra={'session_id': session.get('sid', 'unknown')})
         
         # Calculate summary statistics
         total_orders = len(orders_data)
@@ -122,10 +127,10 @@ def index():
             is_anonymous=False
         )
     except Exception as e:
-        current_app.logger.error(f"Error rendering food order index: {str(e)}", extra={'session_id': session.get('sid', 'unknown')})
+        current_app.logger.error(f"Error rendering food order index: {str(e)}, orders_data type: {type(orders_data) if 'orders_data' in locals() else 'undefined'}", extra={'session_id': session.get('sid', 'unknown')})
         flash(trans('general_error', default='An error occurred while loading the food order dashboard'), 'danger')
         return render_template(
-            'personal/FOOD_ORDER/error.html',
+            'personal/GENERAL/error.html',
             title=trans('food_order_title', default='Food Order Manager'),
             error_message=trans('general_error', default='An error occurred while loading the food order dashboard'),
             is_admin=is_admin()
