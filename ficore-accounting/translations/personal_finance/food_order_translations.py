@@ -9,6 +9,11 @@ FOOD_ORDER_TRANSLATIONS = {
         'food_order_modal_label': 'Food Order',
         'food_order_desc': 'Order food from your favorite vendors',
         'food_order_description': 'Place and manage food orders from vendors.',
+        # Food Order module
+        'food_order_spending': 'Food Order Spending',
+        'food_order_items': 'Order Items',
+        'food_order_notes': 'Order Notes',
+        'food_order_category': 'Category',
         'food_order_tooltip': 'Manage your food orders',
         'food_order_js_required': 'JavaScript is required to use the Food Order feature. Please enable it in your browser.',
         'food_order_no_orders': 'No food orders found',
@@ -166,6 +171,11 @@ FOOD_ORDER_TRANSLATIONS = {
         'food_order_submit': 'Ƙirƙiri Oda',
         'food_order_item_name_required': 'Ana buƙatar sunan abu',
         'food_order_quantity_required': 'Ana buƙatar yawa',
+        # Food Order module
+        'food_order_spending': 'Kashe Kuɗi na Odar Abinci',
+        'food_order_items': 'Abubuwan Oda',
+        'food_order_notes': 'Bayanan Oda',
+        'food_order_category': 'Rukuni',
         'food_order_quantity_range': 'Yawan ya kamata ya kasance tsakanin 1 da 1000',
         'food_order_price_required': 'Ana buƙatar farashin',
         'food_order_price_range': 'Farashin ya kamata ya kasance tsakanin 0 da miliyan 1',
