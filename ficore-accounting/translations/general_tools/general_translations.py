@@ -15,7 +15,7 @@ GENERAL_TRANSLATIONS = {
         'Your session has expired. Please log in again.': 'Your session has expired. Please log in again.',
         'javascript_required': 'JavaScript is required to use this feature. Please enable it in your browser.',
         'popular_tools': 'Popular Tools',
-        'financial_snapshots': 'Financial Snapshots',
+        'finance_snapshots': 'Financial Snapshots',
         'upcoming_bills': 'Upcoming Bills',
         'toggle_amount_visibility': 'Toggle Amount Visibility',
         'balance_overview': 'Balance Overview',
