@@ -1,11 +1,9 @@
-"""
-Translations for the grocery management module in the FiCore application
-"""
-
 GROCERY_TRANSLATIONS = {
     'en': {
         'grocery_management': 'Groceries',
         'grocery_management_desc': 'Plan and manage your grocery shopping',
+        'grocery_modal_label': 'Smart Grocery Planner',
+        'grocery_description': 'Plan and manage your grocery lists with ease.',
         'grocery_tooltip': 'Organize your grocery lists and meal plans',
         'recent_activity_grocery_list_created': 'Created grocery list: {name}',
         'recent_activity_grocery_item_added': 'Added grocery item: {name}',
@@ -16,7 +14,6 @@ GROCERY_TRANSLATIONS = {
         'grocery_list_created': 'Grocery list created',
         'grocery_list_saved': 'Grocery list saved',
         'grocery_list_error': 'Error managing grocery lists',
-        'grocery_no_price_history': 'No price history available',
         'grocery_list_not_found': 'Grocery list not found',
         'grocery_invalid_item': 'Invalid or missing item data',
         'grocery_invalid_item_data': 'Invalid quantity or price',
@@ -81,13 +78,17 @@ GROCERY_TRANSLATIONS = {
     'ha': {
         'grocery_management': 'Mai Tsara Kayayyakin Abinci',
         'grocery_management_desc': 'Shirya da sarrafa sayayyar kayayyakin abinci',
+        'grocery_modal_label': 'Mai Shirya Siyayya',
+        'grocery_description': 'Shirya da sarrafa jerin Siyayya cikin sauƙi.',
         'grocery_tooltip': 'Shirya jerin kayayyakin abinci da shirye-shiryen abinci',
         'recent_activity_grocery_list_created': 'An ƙirƙiri jerin kayayyakin abinci: {name}',
         'recent_activity_grocery_item_added': 'An ƙara abun kayayyakin abinci: {name}',
         'grocery_invalid_input': 'Bayanan jeri mara inganci ko ɓace',
         'grocery_invalid_budget': 'Kasafin kuɗi dole ne ya zama mai kyau',
         'grocery_insufficient_credits': 'Rashin isasshen Kuɗin Ficore',
+        'grocery_no_price_history': 'Babu tarihin farashi da aka samu',
         'grocery_list_created': 'An ƙirƙiri jerin kayayyakin abinci',
+        'grocery_list_saved': 'An adana bayanan sayayya',
         'grocery_list_error': 'Kuskure wajen sarrafa jerin kayayyakin abinci',
         'grocery_list_not_found': 'Ba a sami jerin kayayyakin abinci ba',
         'grocery_invalid_item': 'Bayanan abu mara inganci ko ɓace',
@@ -129,17 +130,14 @@ GROCERY_TRANSLATIONS = {
         'grocery_in_pantry': 'A Cikin Shago',
         'grocery_bought': 'An Saya',
         'grocery_store': 'Shago',
-        'grocery_no_price_history': 'Babu tarihin farashi da aka samu',
         'grocery_add': 'Ƙara',
         'grocery_share_list': 'Raba Jeri',
         'grocery_collaborator_email': 'Imel na Mai Haɗin Gwiwa',
-        'grocery_no_price_history': 'Babu tarihin farashi da aka samu',
         'grocery_share': 'Raba',
         'grocery_create_meal_plan': 'Ƙirƙiri Shirin Abinci',
         'grocery_meal_name': 'Sunan Abinci',
         'grocery_add_ingredient': 'Ƙara Sinadari',
         'grocery_ingredient_name': 'Sunan Sinadari',
-        'grocery_list_saved': 'An adana bayanan sayayya',
         'grocery_suggested_items': 'Abubuwan da Aka Shawarta',
         'grocery_collaborator_suggestions': 'Shawarwarin Mai Haɗin Gwiwa',
         'grocery_suggest_item': 'Shawartar Abu',
