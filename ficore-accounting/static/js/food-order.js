@@ -22,60 +22,69 @@
         try {
             if (!window.foodOrderTranslations || !window.apiUrls) {
                 console.error('Food order translations or API URLs not defined');
-                showToast('Configuration error: Translations or APIs missing', 'danger');
+                showToast(window.foodOrderTranslations?.general_error || 'Configuration error: Translations or APIs missing', 'danger');
+                return;
+            }
+            if (typeof showToast !== 'function') {
+                console.error('showToast function is not defined');
+                return;
+            }
+            if (typeof bootstrap === 'undefined') {
+                console.error('Bootstrap JavaScript is not defined');
+                showToast('Bootstrap JavaScript is required', 'danger');
                 return;
             }
 
             const root = document.getElementById('food-order-root');
             if (!root) {
                 console.error('Food order root element not found');
-                showToast('Error: Food order container not found', 'danger');
+                showToast(window.foodOrderTranslations?.general_error || 'Error: Food order container not found', 'danger');
                 return;
             }
 
             root.innerHTML = `
                 <ul class="nav nav-tabs mb-3" id="foodOrderTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab">${window.foodOrderTranslations.food_order_create}</button>
+                        <button class="nav-link active" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab">${window.foodOrderTranslations?.food_order_create || 'Create Food Order'}</button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="manage-orders-tab" data-bs-toggle="tab" data-bs-target="#manage-orders" type="button" role="tab">${window.foodOrderTranslations.general_view_all}</button>
+                        <button class="nav-link" id="manage-orders-tab" data-bs-toggle="tab" data-bs-target="#manage-orders" type="button" role="tab">${window.foodOrderTranslations?.general_view_all || 'View All'}</button>
                     </li>
                 </ul>
                 <div class="tab-content" id="foodOrderTabContent">
                     <div class="tab-pane fade show active" id="orders" role="tabpanel" aria-labelledby="orders-tab">
                         <div class="mb-3">
-                            <h6>${window.foodOrderTranslations.food_order_create}</h6>
+                            <h6>${window.foodOrderTranslations?.food_order_create || 'Create Food Order'}</h6>
                             <div class="input-group mb-2">
-                                <input type="text" class="form-control" id="newOrderName" placeholder="${window.foodOrderTranslations.food_order_name}">
-                                <input type="text" class="form-control" id="newOrderVendor" placeholder="${window.foodOrderTranslations.food_order_vendor}">
+                                <input type="text" class="form-control" id="newOrderName" placeholder="${window.foodOrderTranslations?.food_order_name || 'Order Name'}">
+                                <input type="text" class="form-control" id="newOrderVendor" placeholder="${window.foodOrderTranslations?.food_order_vendor || 'Vendor'}">
                             </div>
                             <div class="input-group mb-2">
-                                <input type="tel" class="form-control" id="newOrderPhone" placeholder="${window.foodOrderTranslations.food_order_phone}">
-                                <input type="text" class="form-control" id="newOrderLocation" placeholder="${window.foodOrderTranslations.food_order_location}">
-                                <button class="btn btn-outline-secondary" onclick="foodOrderModule.getUserLocation()">Auto-detect Location</button>
+                                <input type="tel" class="form-control" id="newOrderPhone" placeholder="${window.foodOrderTranslations?.food_order_phone || 'Phone Number'}">
+                                <input type="text" class="form-control" id="newOrderLocation" placeholder="${window.foodOrderTranslations?.food_order_location || 'Delivery Location'}">
+                                <button class="btn btn-outline-secondary" onclick="foodOrderModule.getUserLocation()">${window.foodOrderTranslations?.food_order_auto_detect || 'Auto-detect Location'}</button>
                             </div>
-                            <div class="alert alert-info">Note: Creating and submitting this order will deduct ${FC_COST} FC from your balance.</div>
-                            <button class="btn btn-primary" onclick="foodOrderModule.createFoodOrder()">${window.foodOrderTranslations.food_order_create}</button>
+                            <div class="alert alert-info">${window.foodOrderTranslations?.food_order_cost_note || `Note: Creating and submitting this order will deduct ${FC_COST} FC from your balance.`}</div>
+                            <button class="btn btn-primary" onclick="foodOrderModule.createFoodOrder()">${window.foodOrderTranslations?.food_order_create || 'Create'}</button>
                         </div>
                         <div id="foodOrders"></div>
                         <div id="foodOrderItems" class="mt-3"></div>
                         <div class="mt-3">
-                            <h6>${window.foodOrderTranslations.food_order_add_item}</h6>
+                            <h6>${window.foodOrderTranslations?.food_order_add_item || 'Add Item'}</h6>
                             <div class="input-group mb-2">
-                                <input type="text" class="form-control" id="newOrderItemName" placeholder="${window.foodOrderTranslations.food_order_item_name}">
-                                <input type="number" class="form-control" id="newOrderItemQuantity" placeholder="${window.foodOrderTranslations.food_order_quantity}" min="1">
-                                <input type="number" class="form-control" id="newOrderItemPrice" placeholder="${window.foodOrderTranslations.food_order_price}" min="0" step="0.01">
+                                <input type="text" class="form-control" id="newOrderItemName" placeholder="${window.foodOrderTranslations?.food_order_item_name || 'Item Name'}">
+                                <input type="number" class="form-control" id="newOrderItemQuantity" placeholder="${window.foodOrderTranslations?.food_order_quantity || 'Quantity'}" min="1">
+                                <input type="number" class="form-control" id="newOrderItemPrice" placeholder="${window.foodOrderTranslations?.food_order_price || 'Price'}" min="0" step="0.01">
                             </div>
                             <div class="input-group mb-2">
-                                <input type="text" class="form-control" id="newOrderItemNotes" placeholder="${window.foodOrderTranslations.food_order_item_notes}">
-                                <button class="btn btn-primary" onclick="foodOrderModule.addFoodOrderItem()">${window.foodOrderTranslations.food_order_add}</button>
+                                <input type="text" class="form-control" id="newOrderItemNotes" placeholder="${window.foodOrderTranslations?.food_order_item_notes || 'Item Notes (e.g., No pepper)'}">
+                                <button class="btn btn-primary" onclick="foodOrderModule.addFoodOrderItem()">${window.foodOrderTranslations?.food_order_add || 'Add'}</button>
                             </div>
                         </div>
                     </div>
                     <div class="tab-pane fade" id="manage-orders" role="tabpanel" aria-labelledby="manage-orders-tab">
                         <div class="mb-3">
-                            <h6>${window.foodOrderTranslations.general_view_all}</h6>
+                            <h6>${window.foodOrderTranslations?.general_view_all || 'View All'}</h6>
                             <div id="manageFoodOrders"></div>
                         </div>
                     </div>
@@ -84,14 +93,14 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title" id="successModalLabel">Order Submitted</h5>
+                                <h5 class="modal-title" id="successModalLabel">${window.foodOrderTranslations?.food_order_success_title || 'Order Submitted'}</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                Your order has been sent. Vendor will call you shortly.
+                                ${window.foodOrderTranslations?.food_order_success_message || 'Your order has been sent. Vendor will call you shortly.'}
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">${window.foodOrderTranslations?.food_order_ok || 'OK'}</button>
                             </div>
                         </div>
                     </div>
@@ -115,7 +124,7 @@
             loadManageOrders();
         } catch (error) {
             console.error('Error initializing food order:', error);
-            showToast(window.foodOrderTranslations.general_error, 'danger');
+            showToast(window.foodOrderTranslations?.general_error || 'An error occurred', 'danger');
         }
     }
 
@@ -129,14 +138,13 @@
             if (foodOrdersEl) foodOrdersEl.innerHTML = '';
             if (foodOrderItemsEl) foodOrderItemsEl.innerHTML = '';
             if (manageOrdersEl) manageOrdersEl.innerHTML = '';
-            // Remove event listeners from tabs
+            // Reinitialize Bootstrap tabs instead of cloning
             const tabEl = document.querySelector('#foodOrderTabs');
             if (tabEl) {
-                const tabs = tabEl.querySelectorAll('.nav-link');
-                tabs.forEach(tab => {
-                    const newTab = tab.cloneNode(true);
-                    tab.parentNode.replaceChild(newTab, tab);
-                });
+                const activeTab = tabEl.querySelector('.nav-link.active');
+                if (activeTab) {
+                    new bootstrap.Tab(activeTab).show();
+                }
             }
             // Ensure body scroll is restored
             document.body.classList.remove('modal-open');
@@ -183,15 +191,15 @@
                     },
                     (error) => {
                         console.error('Error getting location:', error);
-                        showToast('Unable to auto-detect location. Please enter manually.', 'warning');
+                        showToast(window.foodOrderTranslations?.food_order_location_error || 'Unable to auto-detect location. Please enter manually.', 'warning');
                     }
                 );
             } else {
-                showToast('Geolocation is not supported by this browser.', 'warning');
+                showToast(window.foodOrderTranslations?.food_order_geolocation_unsupported || 'Geolocation is not supported by this browser.', 'warning');
             }
         } catch (error) {
             console.error('Error in getUserLocation:', error);
-            showToast(window.foodOrderTranslations.general_error, 'danger');
+            showToast(window.foodOrderTranslations?.general_error || 'An error occurred', 'danger');
         }
     }
 
@@ -210,7 +218,7 @@
         try {
             const response = await fetchWithCSRF(window.apiUrls.manageFoodOrders);
             if (response.status === 403) {
-                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                showToast(window.foodOrderTranslations?.insufficient_credits || 'Insufficient credits', 'error');
                 throw new Error('Unauthorized');
             }
             const orders = await response.json();
@@ -231,9 +239,9 @@
                 <div class="food-order-item">
                     <span class="fw-semibold">${order.name} (${order.vendor})</span>
                     <div>
-                        <span class="text-muted">Total: ${format_currency(order.total_cost)}</span>
-                        <button class="btn btn-sm btn-outline-primary ms-2" onclick="foodOrderModule.loadFoodOrderItems('${order.id}')">${window.foodOrderTranslations.general_view_all}</button>
-                        <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('${order.id}')">Reorder</button>
+                        <span class="text-muted">${window.foodOrderTranslations?.food_order_total || 'Total'}: ${format_currency(order.total_cost)}</span>
+                        <button class="btn btn-sm btn-outline-primary ms-2" onclick="foodOrderModule.loadFoodOrderItems('${order.id}')">${window.foodOrderTranslations?.general_view_all || 'View All'}</button>
+                        <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('${order.id}')">${window.foodOrderTranslations?.food_order_reorder || 'Reorder'}</button>
                     </div>
                 </div>
             `).join('');
@@ -241,7 +249,7 @@
                 loadFoodOrderItems(orders[0].id);
             }
         } else {
-            foodOrdersEl.innerHTML = `<div class="text-muted">${window.foodOrderTranslations.no_orders}</div>`;
+            foodOrdersEl.innerHTML = `<div class="text-muted">${window.foodOrderTranslations?.no_orders || 'No food orders found'}</div>`;
         }
     }
 
@@ -249,7 +257,7 @@
         try {
             const response = await fetchWithCSRF(window.apiUrls.manageFoodOrders);
             if (response.status === 403) {
-                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                showToast(window.foodOrderTranslations?.insufficient_credits || 'Insufficient credits', 'error');
                 throw new Error('Unauthorized');
             }
             const orders = await response.json();
@@ -270,19 +278,19 @@
                 <div class="food-order-item">
                     <span class="fw-semibold">${order.name} (${order.vendor})</span>
                     <div>
-                        <span class="text-muted">Total: ${format_currency(order.total_cost)}</span>
-                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="foodOrderModule.deleteFoodOrder('${order.id}', '${order.name}')">Delete</button>
-                        <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('${order.id}')">Reorder</button>
+                        <span class="text-muted">${window.foodOrderTranslations?.food_order_total || 'Total'}: ${format_currency(order.total_cost)}</span>
+                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="foodOrderModule.deleteFoodOrder('${order.id}', '${order.name}')">${window.foodOrderTranslations?.food_order_delete || 'Delete'}</button>
+                        <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('${order.id}')">${window.foodOrderTranslations?.food_order_reorder || 'Reorder'}</button>
                     </div>
                 </div>
             `).join('');
         } else {
-            manageOrdersEl.innerHTML = `<div class="text-muted">${window.foodOrderTranslations.no_orders}</div>`;
+            manageOrdersEl.innerHTML = `<div class="text-muted">${window.foodOrderTranslations?.no_orders || 'No food orders found'}</div>`;
         }
     }
 
     async function deleteFoodOrder(orderId, orderName) {
-        if (!confirm(`Delete food order "${orderName}"?`)) {
+        if (!confirm(`${window.foodOrderTranslations?.food_order_confirm_delete || 'Delete food order'} "${orderName}"?`)) {
             return;
         }
         try {
@@ -290,26 +298,28 @@
                 method: 'DELETE'
             });
             if (response.status === 403) {
-                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                showToast(window.foodOrderTranslations?.insufficient_credits || 'Insufficient credits', 'error');
                 throw new Error('Unauthorized');
             }
             const data = await response.json();
             if (data.error) {
                 showToast(data.error, 'danger');
             } else {
-                showToast('Food order deleted', 'success');
+                showToast(window.foodOrderTranslations?.food_order_deleted || 'Food order deleted', 'success');
                 if (currentOrderId === orderId) {
                     currentOrderId = null;
                     const foodOrderItemsEl = document.getElementById('foodOrderItems');
-                    if (foodOrderItems) foodOrderItemsEl.innerHTML = '';
+                    if (foodOrderItemsEl) foodOrderItemsEl.innerHTML = '';
                 }
                 loadFoodOrders();
                 loadManageOrders();
-                loadFinancialSummary();
+                if (typeof loadFinancialSummary === 'function') {
+                    loadFinancialSummary();
+                }
             }
         } catch (error) {
             console.error('Error deleting food order:', error);
-            showToast(window.foodOrderTranslations.general_error, 'danger');
+            showToast(window.foodOrderTranslations?.general_error || 'An error occurred', 'danger');
         }
     }
 
@@ -318,14 +328,14 @@
         try {
             const response = await fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', orderId));
             if (response.status === 403) {
-                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                showToast(window.foodOrderTranslations?.insufficient_credits || 'Insufficient credits', 'error');
                 throw new Error('Unauthorized');
             }
             const items = await response.json();
             offlineData.items[orderId] = items;
             localStorage.setItem('foodOrderItems', JSON.stringify(offlineData.items));
             renderFoodOrderItems(items);
-        } catch (error) {
+        } Tiered Response {
             console.error('Error loading food order items:', error);
             renderFoodOrderItems([]);
         }
@@ -341,18 +351,18 @@
                     <div class="d-flex align-items-center gap-2">
                         <input type="number" class="form-control" value="${item.quantity}" min="1" onchange="foodOrderModule.updateFoodOrderItem('${item.item_id}', 'quantity', this.value)">
                         <input type="number" class="form-control" value="${item.price}" min="0" step="0.01" onchange="foodOrderModule.updateFoodOrderItem('${item.item_id}', 'price', this.value)">
-                        <input type="text" class="form-control" value="${item.notes || ''}" placeholder="Notes" onchange="foodOrderModule.updateFoodOrderItem('${item.item_id}', 'notes', this.value)">
+                        <input type="text" class="form-control" value="${item.notes || ''}" placeholder="${window.foodOrderTranslations?.food_order_item_notes || 'Notes'}" onchange="foodOrderModule.updateFoodOrderItem('${item.item_id}', 'notes', this.value)">
                     </div>
                 </div>
             `).join('');
         } else {
-            foodOrderItemsEl.innerHTML = `<div class="text-muted">${window.foodOrderTranslations.no_items}</div>`;
+            foodOrderItemsEl.innerHTML = `<div class="text-muted">${window.foodOrderTranslations?.no_items || 'No items in this order'}</div>`;
         }
     }
 
     async function createFoodOrder() {
         if (!canCreateOrder()) {
-            showToast(`Please wait ${ORDER_COOLDOWN_MINUTES} minutes before creating another order.`, 'warning');
+            showToast(window.foodOrderTranslations?.food_order_duplicate || `Please wait ${ORDER_COOLDOWN_MINUTES} minutes before creating another order`, 'warning');
             return;
         }
         const name = document.getElementById('newOrderName').value;
@@ -360,7 +370,7 @@
         const phone = document.getElementById('newOrderPhone').value;
         const location = document.getElementById('newOrderLocation').value;
         if (!name || !vendor || !phone || !location) {
-            showToast(window.foodOrderTranslations.general_please_provide, 'warning');
+            showToast(window.foodOrderTranslations?.general_please_provide || 'Please provide all required fields', 'warning');
             return;
         }
         try {
@@ -369,7 +379,7 @@
                 body: JSON.stringify({ name, vendor, phone, location })
             });
             if (response.status === 403) {
-                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                showToast(window.foodOrderTranslations?.insufficient_credits || 'Insufficient credits', 'error');
                 throw new Error('Unauthorized');
             }
             const data = await response.json();
@@ -384,17 +394,19 @@
                 document.getElementById('newOrderLocation').value = '';
                 loadFoodOrders();
                 loadManageOrders();
-                loadFinancialSummary();
+                if (typeof loadFinancialSummary === 'function') {
+                    loadFinancialSummary();
+                }
             }
         } catch (error) {
             console.error('Error creating food order:', error);
-            showToast(window.foodOrderTranslations.general_error, 'danger');
+            showToast(window.foodOrderTranslations?.general_error || 'An error occurred', 'danger');
         }
     }
 
     async function addFoodOrderItem() {
         if (!currentOrderId) {
-            showToast(window.foodOrderTranslations.general_select_order, 'warning');
+            showToast(window.foodOrderTranslations?.general_select_order || 'Please select an order', 'warning');
             return;
         }
         const name = document.getElementById('newOrderItemName').value;
@@ -402,7 +414,7 @@
         const price = document.getElementById('newOrderItemPrice').value;
         const notes = document.getElementById('newOrderItemNotes').value;
         if (!name || !quantity || !price) {
-            showToast(window.foodOrderTranslations.general_please_provide, 'warning');
+            showToast(window.foodOrderTranslations?.general_please_provide || 'Please provide all required fields', 'warning');
             return;
         }
         try {
@@ -411,24 +423,26 @@
                 body: JSON.stringify({ name, quantity, price, notes })
             });
             if (response.status === 403) {
-                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                showToast(window.foodOrderTranslations?.insufficient_credits || 'Insufficient credits', 'error');
                 throw new Error('Unauthorized');
             }
             const data = await response.json();
             if (data.error) {
                 showToast(data.error, 'danger');
             } else {
-                showToast(window.foodOrderTranslations.item_added, 'success');
+                showToast(window.foodOrderTranslations?.item_added || 'Item added to order', 'success');
                 document.getElementById('newOrderItemName').value = '';
                 document.getElementById('newOrderItemQuantity').value = '';
                 document.getElementById('newOrderItemPrice').value = '';
                 document.getElementById('newOrderItemNotes').value = '';
                 loadFoodOrderItems(currentOrderId);
-                loadFinancialSummary();
+                if (typeof loadFinancialSummary === 'function') {
+                    loadFinancialSummary();
+                }
             }
         } catch (error) {
             console.error('Error adding food order item:', error);
-            showToast(window.foodOrderTranslations.general_error, 'danger');
+            showToast(window.foodOrderTranslations?.general_error || 'An error occurred', 'danger');
         }
     }
 
@@ -439,20 +453,22 @@
                 body: JSON.stringify({ item_id: itemId, [field]: value })
             });
             if (response.status === 403) {
-                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                showToast(window.foodOrderTranslations?.insufficient_credits || 'Insufficient credits', 'error');
                 throw new Error('Unauthorized');
             }
             const data = await response.json();
             if (data.error) {
                 showToast(data.error, 'danger');
             } else {
-                showToast(window.foodOrderTranslations.item_updated, 'success');
+                showToast(window.foodOrderTranslations?.item_updated || 'Item updated', 'success');
                 loadFoodOrderItems(currentOrderId);
-                loadFinancialSummary();
+                if (typeof loadFinancialSummary === 'function') {
+                    loadFinancialSummary();
+                }
             }
         } catch (error) {
             console.error('Error updating food order item:', error);
-            showToast(window.foodOrderTranslations.general_error, 'danger');
+            showToast(window.foodOrderTranslations?.general_error || 'An error occurred', 'danger');
         }
     }
 
@@ -462,7 +478,7 @@
                 method: 'POST'
             });
             if (response.status === 403) {
-                showToast(window.foodOrderTranslations.insufficient_credits, 'error');
+                showToast(window.foodOrderTranslations?.insufficient_credits || 'Insufficient credits', 'error');
                 throw new Error('Unauthorized');
             }
             const data = await response.json();
@@ -473,17 +489,25 @@
                 showSuccessModal();
                 loadFoodOrders();
                 loadManageOrders();
-                loadFinancialSummary();
+                if (typeof loadFinancialSummary === 'function') {
+                    loadFinancialSummary();
+                }
             }
         } catch (error) {
             console.error('Error reordering food order:', error);
-            showToast(window.foodOrderTranslations.general_error, 'danger');
+            showToast(window.foodOrderTranslations?.general_error || 'An error occurred', 'danger');
         }
     }
 
     function showSuccessModal() {
-        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-        successModal.show();
+        const successModalEl = document.getElementById('successModal');
+        if (successModalEl && typeof bootstrap !== 'undefined') {
+            const successModal = new bootstrap.Modal(successModalEl);
+            successModal.show();
+        } else {
+            console.error('Success modal element or Bootstrap not found');
+            showToast(window.foodOrderTranslations?.general_error || 'An error occurred', 'danger');
+        }
     }
 
     function loadOfflineData() {
@@ -503,10 +527,10 @@
     }
 
     function format_currency(value) {
-        if (!value && value !== 0) return '0.00';
+        if (!value && value !== 0) return '₦0.00';
         value = parseFloat(value);
-        if (isNaN(value)) return '0.00';
-        return value.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (isNaN(value)) return '₦0.00';
+        return value.toLocaleString('en-NG', { style: 'currency', currency: 'NGN' });
     }
 
     function formatTimeAgo(dateStr) {
@@ -517,10 +541,10 @@
         const diffHours = Math.floor(diffMins / 60);
         const diffDays = Math.floor(diffHours / 24);
 
-        if (diffMins < 1) return window.foodOrderTranslations.just_now;
-        if (diffMins < 60) return `${diffMins} ${window.foodOrderTranslations.minutes_ago}`;
-        if (diffHours < 24) return `${diffHours} ${window.foodOrderTranslations.hours_ago}`;
-        return `${diffDays} ${window.foodOrderTranslations.days_ago}`;
+        if (diffMins < 1) return window.foodOrderTranslations?.just_now || 'Just now';
+        if (diffMins < 60) return `${diffMins} ${window.foodOrderTranslations?.minutes_ago || 'minutes ago'}`;
+        if (diffHours < 24) return `${diffHours} ${window.foodOrderTranslations?.hours_ago || 'hours ago'}`;
+        return `${diffDays} ${window.foodOrderTranslations?.days_ago || 'days ago'}`;
     }
 
     // Expose functions to the global scope with a namespace
