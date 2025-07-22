@@ -381,6 +381,8 @@ def main():
             if not latest_order or (order.get('created_at') and (latest_order['created_at'] == 'N/A' or order.get('created_at') > datetime.strptime(latest_order['created_at'], '%Y-%m-%d %H:%M:%S'))):
                 latest_order = order_data
                 items = order_data['items']
+                logger.debug(f"latest_order.items type: {type(order_data['items'])}, value: {order_data['items']}", 
+                             extra={'session_id': session.get('sid', 'no-session-id')})
                 categories = {
                     trans('food_order_category_uncategorized', default='Uncategorized'): sum(item['price_raw'] * item['quantity'] for item in items if item['category'] == 'Uncategorized')
                 }
@@ -399,6 +401,7 @@ def main():
                 'status': 'submitted',
                 'items': []
             }
+            items = []
 
         total_orders = len(orders_dict)
         total_spent = sum(order['total_cost_raw'] for order in orders_dict.values())
@@ -420,6 +423,7 @@ def main():
             item_form=item_form,
             orders=orders_dict,
             latest_order=latest_order,
+            items=items,  # Explicitly pass items
             categories=categories,
             total_orders=total_orders,
             total_spent=format_currency(total_spent),
@@ -431,7 +435,7 @@ def main():
         )
     except Exception as e:
         logger.error(f"Unexpected error in food_order.main: {str(e)}", 
-                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
         flash(trans('food_order_dashboard_load_error', default='Error loading food order dashboard.'), 'danger')
         return render_template(
             'personal/FOOD_ORDER/food_order_main.html',
@@ -450,6 +454,7 @@ def main():
                 'status': 'submitted',
                 'items': []
             },
+            items=[],  # Explicitly pass empty items
             categories={},
             total_orders=0,
             total_spent=format_currency(0.0),
