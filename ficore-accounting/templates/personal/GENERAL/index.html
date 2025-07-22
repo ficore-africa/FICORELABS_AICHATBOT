@@ -19,7 +19,7 @@
             <div class="quick-actions">
                 {% for tool in tools_for_template %}
                 <a href="{{ tool.url | e }}" class="quick-action-card {{ tool.label_key }}-management text-decoration-none" aria-label="{{ t(tool.label_key, default=tool.label) | e }}">
-                    <i class="bi {{ tool.icon | e }} action-icon text-{{ 'info' if tool.icon == 'bi-cart' else 'primary' }}"></i>
+                    <i class="bi {{ tool.icon | e }} action-icon text-{{ 'info' if tool.label_key == 'grocery_management' else 'primary' }}"></i>
                     <div class="action-label">{{ t(tool.label_key, default=tool.label) | e }}</div>
                 </a>
                 {% endfor %}
@@ -198,19 +198,19 @@
 window.apiUrls = {
     budgetSummary: "/personal/summaries/budget/summary",
     billSummary: "/personal/summaries/bill/summary",
-    grocerySummary: "/personal/summaries/grocery/summary",
+    grocerySummary: "/personal/shopping/summary",
     foodOrderSummary: "/personal/summaries/food_order/summary",
     ficoreBalance: "/personal/summaries/ficore_balance",
     recentActivity: "/personal/summaries/recent_activity",
     notifications: "/personal/summaries/notifications",
-    manageGroceryLists: "/personal/grocery/summary",
-    manageGroceryItems: "/personal/grocery/lists/{list_id}/items",
-    shareGroceryList: "/personal/grocery/lists/{list_id}/share",
-    manageGrocerySuggestions: "/personal/grocery/lists/{list_id}/suggestions",
-    approveGrocerySuggestion: "/personal/grocery/lists/{list_id}/suggestions/{suggestion_id}/approve",
-    manageMealPlans: "/personal/grocery/meal_plans",
-    groceryPriceHistory: "/personal/grocery/price_history/{item_name}",
-    predictiveSuggestions: "/personal/grocery/suggestions",
+    manageGroceryLists: "/personal/shopping/main",
+    manageGroceryItems: "/personal/shopping/lists/{list_id}/items",
+    shareGroceryList: "/personal/shopping/lists/{list_id}/share",
+    manageGrocerySuggestions: "/personal/shopping/lists/{list_id}/suggestions",
+    approveGrocerySuggestion: "/personal/shopping/lists/{list_id}/suggestions/{suggestion_id}/approve",
+    manageMealPlans: "/personal/shopping/meal_plans",
+    groceryPriceHistory: "/personal/shopping/price_history/{item_name}",
+    predictiveSuggestions: "/personal/shopping/suggestions",
     manageFoodOrders: "/personal/food_order/manage_orders",
     manageFoodOrderItems: "/personal/food_order/manage_items/{order_id}",
     reorderFoodOrder: "/personal/food_order/reorder/{order_id}",
@@ -307,9 +307,9 @@ function loadFinancialSummary() {
                 return;
             }
             const grocerySpending = document.getElementById('grocerySpending');
-            grocerySpending.querySelector('.amount-value').dataset.amount = data.total_grocery_spent;
-            grocerySpending.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.total_grocery_spent) : '****';
-            document.getElementById('groceryStatusLabel').textContent = data.total_grocery_spent <= data.total_grocery_budget ? window.t('within_budget', { default: 'Cikin Kasafin Kuɗi' }) : window.t('over_budget', { default: 'Fiye da Kasafin Kuɗi' });
+            grocerySpending.querySelector('.amount-value').dataset.amount = data.totalBudget;
+            grocerySpending.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.totalBudget) : '****';
+            document.getElementById('groceryStatusLabel').textContent = data.totalBudget <= data.total_grocery_budget ? window.t('within_budget', { default: 'Cikin Kasafin Kuɗi' }) : window.t('over_budget', { default: 'Fiye da Kasafin Kuɗi' });
         })
         .catch(error => {
             console.error('Error loading grocery summary:', error);
