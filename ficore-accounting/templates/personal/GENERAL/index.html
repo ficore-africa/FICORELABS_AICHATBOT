@@ -15,15 +15,15 @@
 
         <!-- Daily Tools -->
         <section class="section-card daily-tools">
-            <h3 class="section-title">Daily Tools</h3>
+            <h3 class="section-title">Popular Tools</h3>
             <div class="quick-actions">
-                <a href="#" class="quick-action-card grocery-management text-decoration-none" data-bs-toggle="modal" data-bs-target="#groceryModal" aria-label="Smart Grocery Planner">
+                <a href="javascript:void(0)" class="quick-action-card grocery-management text-decoration-none" data-bs-toggle="modal" data-bs-target="#groceryModal" aria-label="Smart Grocery Planner">
                     <i class="bi bi-cart action-icon text-info"></i>
                     <div class="action-label">Smart Grocery Planner</div>
                 </a>
-                <a href="#" class="quick-action-card food-order text-decoration-none" data-bs-toggle="modal" data-bs-target="#foodOrderModal" aria-label="Food Order">
+                <a href="javascript:void(0)" class="quick-action-card food-order text-decoration-none" data-bs-toggle="modal" data-bs-target="#foodOrderModal" aria-label="Food Order">
                     <i class="bi bi-box-seam action-icon text-primary"></i>
-                    <div class="action-label">Food Order</div>
+                    <div class="action-label">Order Food</div>
                 </a>
             </div>
         </section>
@@ -240,6 +240,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/static/js/translations.js"></script>
@@ -539,16 +540,44 @@ function showToast(message, type) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Verify Bootstrap is loaded
+    if (typeof bootstrap === 'undefined') {
+        console.error('Bootstrap JavaScript is not loaded');
+        showToast('Bootstrap JavaScript failed to load', 'danger');
+    } else {
+        console.log('Bootstrap JavaScript loaded successfully');
+    }
+
+    // Initialize modals explicitly
+    const foodOrderModal = document.getElementById('foodOrderModal');
+    if (foodOrderModal) {
+        new bootstrap.Modal(foodOrderModal);
+        console.log('Food Order Modal initialized');
+    } else {
+        console.error('Food Order Modal element not found');
+    }
+
+    const groceryModal = document.getElementById('groceryModal');
+    if (groceryModal) {
+        new bootstrap.Modal(groceryModal);
+        console.log('Grocery Modal initialized');
+    } else {
+        console.error('Grocery Modal element not found');
+    }
+
+    // Initialize tooltips
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(tooltipTriggerEl => {
         new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
+    // Validate Bootstrap Icons
     document.querySelectorAll('.bi').forEach(icon => {
         if (!icon.className.includes('bi-')) {
             console.warn('Invalid or missing Bootstrap Icon class:', icon.className);
         }
     });
 
+    // Check navigation items
     const topNav = document.querySelector('.top-header');
     const bottomNav = document.querySelector('.bottom-nav');
     if (topNav && bottomNav) {
@@ -558,24 +587,59 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Load static data
     loadFinancialSummary();
     loadRecentActivity();
     loadNotifications();
-    try {
-        if (typeof groceryModule !== 'undefined' && typeof groceryModule.initGroceryPlanner === 'function') {
-            groceryModule.initGroceryPlanner();
-        } else {
-            console.warn('groceryModule.initGroceryPlanner is not defined');
+
+    // Initialize modules after scripts are loaded
+    function initializeModules() {
+        try {
+            if (typeof groceryModule !== 'undefined' && typeof groceryModule.initGroceryPlanner === 'function') {
+                console.log('Initializing groceryModule...');
+                groceryModule.initGroceryPlanner();
+                console.log('groceryModule initialized successfully');
+            } else {
+                console.warn('groceryModule.initGroceryPlanner is not defined');
+            }
+            if (typeof foodOrderModule !== 'undefined' && typeof foodOrderModule.initFoodOrder === 'function') {
+                console.log('Initializing foodOrderModule...');
+                foodOrderModule.initFoodOrder();
+                console.log('foodOrderModule initialized successfully');
+            } else {
+                console.error('foodOrderModule.initFoodOrder is not defined');
+                showToast('Failed to initialize Food Order feature', 'danger');
+            }
+        } catch (error) {
+            console.error('Error initializing modules:', error);
+            showToast('Error initializing application', 'danger');
         }
-        if (typeof foodOrderModule !== 'undefined' && typeof foodOrderModule.initFoodOrder === 'function') {
-            foodOrderModule.initFoodOrder();
+    }
+
+    // Check if food-order.js is included and load it dynamically if needed
+    const foodOrderScript = document.querySelector('script[src="/static/js/food-order.js"]');
+    if (foodOrderScript) {
+        // If script is already in the DOM, wait for it to load
+        if (foodOrderScript.complete || foodOrderScript.readyState === 'loaded' || foodOrderScript.readyState === 'complete') {
+            initializeModules();
         } else {
-            console.error('foodOrderModule.initFoodOrder is not defined');
-            showToast('Failed to initialize Food Order feature', 'danger');
+            foodOrderScript.onload = initializeModules;
+            foodOrderScript.onerror = () => {
+                console.error('Failed to load food-order.js');
+                showToast('Failed to load Food Order script', 'danger');
+            };
         }
-    } catch (error) {
-        console.error('Error initializing modules:', error);
-        showToast('Error initializing application', 'danger');
+    } else {
+        // Dynamically load food-order.js
+        const script = document.createElement('script');
+        script.src = '/static/js/food-order.js';
+        script.async = true;
+        script.onload = initializeModules;
+        script.onerror = () => {
+            console.error('Failed to load food-order.js');
+            showToast('Failed to load Food Order script', 'danger');
+        };
+        document.body.appendChild(script);
     }
 });
 </script>
