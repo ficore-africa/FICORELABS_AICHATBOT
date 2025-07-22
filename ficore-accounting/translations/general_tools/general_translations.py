@@ -18,6 +18,9 @@ GENERAL_TRANSLATIONS = {
         'finance_snapshots': 'Financial Snapshots',
         'upcoming_bills': 'Upcoming Bills',
         'toggle_amount_visibility': 'Toggle Amount Visibility',
+        # General module
+        'grocery_spending': 'Grocery Spending',
+        'submitted': 'Submitted',
         'balance_overview': 'Balance Overview',
         'ficore_credits': 'Ficore Credits',
         'recent_activity': 'Recent Activity',
@@ -1801,6 +1804,9 @@ GENERAL_TRANSLATIONS = {
         'food_order_no_orders': 'Ba a sami odar abinci ba',
         'food_order_no_items': 'Babu abubuwa a cikin wannan oda',
         'food_order_created': 'An ƙirƙiri odar abinci',
+        # General module
+        'grocery_spending': 'Kashe Kuɗi na Grocery',
+        'submitted': 'An Ƙaddamar',
         'food_order_item_added': 'An ƙara abu zuwa oda',
         'grocery_management': 'Gudanar da Kayayyakin Abinci',
         'grocery_management_desc': 'Gudanar da kayan abincinku da jerin siyayya cikin inganci.',
