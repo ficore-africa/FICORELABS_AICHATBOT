@@ -455,6 +455,8 @@ def main():
             if not latest_list or (lst.get('created_at') and (latest_list['created_at'] == 'N/A' or lst.get('created_at') > datetime.strptime(latest_list['created_at'], '%Y-%m-%d'))):
                 latest_list = list_data
                 items = list_data['items']
+                logger.debug(f"latest_list.items type: {type(list_data['items'])}, value: {list_data['items']}", 
+                             extra={'session_id': session.get('sid', 'no-session-id')})
                 categories = {
                     trans('shopping_category_fruits', default='Fruits'): sum(item['price_raw'] * item['quantity'] for item in items if item['category'] == 'fruits'),
                     trans('shopping_category_vegetables', default='Vegetables'): sum(item['price_raw'] * item['quantity'] for item in items if item['category'] == 'vegetables'),
@@ -480,6 +482,7 @@ def main():
                 'collaborators': [],
                 'items': []
             }
+            items = []
 
         tips = [
             trans('shopping_tip_plan_ahead', default='Plan your shopping list ahead to avoid impulse buys.'),
@@ -501,6 +504,7 @@ def main():
             share_form=share_form,
             lists=lists_dict,
             latest_list=latest_list,
+            items=items,  # Explicitly pass items
             categories=categories,
             tips=tips,
             insights=insights,
@@ -529,6 +533,7 @@ def main():
                 'collaborators': [],
                 'items': []
             },
+            items=[],  # Explicitly pass empty items
             categories={},
             tips=[],
             insights=[],
@@ -725,8 +730,8 @@ def init_app(app):
         db.shopping_items.create_index([('list_id', 1), ('created_at', -1)])
         db.pending_deletions.create_index([('list_id', 1), ('user_id', 1)])
         app.register_blueprint(shopping_bp)
-        current_app.logger.info("Initialized shopping blueprint", extra={'session_id': 'no-request-context'})
+        logger.info("Initialized shopping blueprint", extra={'session_id': 'no-request-context'})
     except Exception as e:
-        current_app.logger.error(f"Error initializing shopping blueprint: {str(e)}", 
-                                 extra={'session_id': 'no-request-context', 'stack_trace': traceback.format_exc()})
+        logger.error(f"Error initializing shopping blueprint: {str(e)}", 
+                     extra={'session_id': 'no-request-context', 'stack_trace': traceback.format_exc()})
         raise
