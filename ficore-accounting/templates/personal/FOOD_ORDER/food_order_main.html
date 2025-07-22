@@ -32,7 +32,7 @@
                     <button class="btn btn-primary" onclick="foodOrderModule.createFoodOrder()">{{ t('food_order_create', default='Create') }}</button>
                 </div>
                 <div id="foodOrders">
-                    {% if orders_data|length > 0 %}
+                    {% if orders_data is defined and orders_data is iterable and orders_data|length > 0 %}
                         {% for order in orders_data %}
                             <div class="food-order-item">
                                 <span class="fw-semibold">{{ order.name }} ({{ order.vendor }})</span>
@@ -48,7 +48,7 @@
                     {% endif %}
                 </div>
                 <div id="foodOrderItems" class="mt-3">
-                    {% if orders_data|length > 0 and orders_data[0].items|length > 0 %}
+                    {% if orders_data is defined and orders_data is iterable and orders_data|length > 0 and orders_data[0].items is defined and orders_data[0].items is iterable and orders_data[0].items|length > 0 %}
                         {% for item in orders_data[0].items %}
                             <div class="food-order-item">
                                 <span class="fw-semibold">{{ item.name }}</span>
@@ -80,7 +80,7 @@
                 <div class="mb-3">
                     <h6>{{ t('general_view_all', default='View All') }}</h6>
                     <div id="manageFoodOrders">
-                        {% if orders_data|length > 0 %}
+                        {% if orders_data is defined and orders_data is iterable and orders_data|length > 0 %}
                             {% for order in orders_data %}
                                 <div class="food-order-item">
                                     <span class="fw-semibold">{{ order.name }} ({{ order.vendor }})</span>
@@ -589,7 +589,7 @@
             document.body.classList.remove('modal-open');
             const modalBackdrop = document.querySelector('.modal-backdrop');
             if (modalBackdrop) {
-                modalBackdrop.remove();
+                modal/ORderItemsEl) modalBackdrop.remove();
             }
         } catch (error) {
             console.error('Error during modal cleanup:', error);
