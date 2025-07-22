@@ -26,7 +26,7 @@
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link {{ 'active' if active_tab == 'dashboard' else '' }}" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab" aria-controls="dashboard" aria-selected="{{ 'true' if active_tab == 'dashboard' else 'false' }}">
-                <i class="fas fa-chart-line"></i> {{ trans('general_view_all', default='View All') }}
+                <i class="fas fa-list"></i> {{ trans('general_view_all', default='View All') }}
             </button>
         </li>
     </ul>
@@ -53,7 +53,7 @@
                         </div>
                         <div class="mb-3">
                             <label for="{{ order_form.phone.id }}" class="form-label">{{ trans('food_order_phone', default='Phone') }}</label>
-                            {{ order_form.phone(class="form-control number-input phone-input", placeholder=trans('food_order_phone_placeholder', default='e.g., +1234567890')) }}
+                            {{ order_form.phone(class="form-control phone-input", placeholder=trans('food_order_phone_placeholder', default='e.g., +1234567890')) }}
                             <div class="invalid-feedback">{{ trans('food_order_phone_invalid', default='Please enter a valid phone number') }}</div>
                         </div>
                         <div class="mb-3">
@@ -73,36 +73,9 @@
         <div class="tab-pane fade {{ 'show active' if active_tab == 'dashboard' else '' }}" id="dashboard" role="tabpanel" aria-labelledby="dashboard-tab">
             <div class="card">
                 <div class="card-header">
-                    <h5><i class="fas fa-chart-pie"></i> {{ trans('food_order_dashboard', default='Food Order Dashboard') }}</h5>
+                    <h5><i class="fas fa-list"></i> {{ trans('food_order_dashboard', default='Food Order Dashboard') }}</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row text-center mb-4">
-                        <div class="col-md-4 mb-3">
-                            <div class="card bg-success text-white">
-                                <div class="card-body">
-                                    <h6>{{ trans('food_order_total_orders', default='Total Orders') }}</h6>
-                                    <h4>{{ total_orders }}</h4>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <div class="card bg-danger text-white">
-                                <div class="card-body">
-                                    <h6>{{ trans('food_order_total_spent', default='Total Spent') }}</h6>
-                                    <h4>{{ format_currency(total_spent) }}</h4>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <div class="card bg-warning text-white">
-                                <div class="card-body">
-                                    <h6>{{ trans('food_order_pending', default='Pending Orders') }}</h6>
-                                    <h4>{{ pending_orders }}</h4>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     {% if latest_order and latest_order.id %}
                         <div class="card mb-4">
                             <div class="card-header">
@@ -113,11 +86,9 @@
                                 <p><strong>{{ trans('food_order_vendor', default='Vendor') }}:</strong> {{ latest_order.vendor }}</p>
                                 <p><strong>{{ trans('food_order_phone', default='Phone') }}:</strong> {{ latest_order.phone }}</p>
                                 <p><strong>{{ trans('food_order_location', default='Location') }}:</strong> {{ latest_order.location }}</p>
-                                <p><strong>{{ trans('food_order_total_cost', default='Total Cost') }}:</strong> {{ format_currency(latest_order.total_cost) }}</p>
                                 <p><strong>{{ trans('general_status', default='Status') }}:</strong> {{ trans(latest_order.status, default=latest_order.status) }}</p>
                                 <p><strong>{{ trans('general_date', default='Created At') }}:</strong> {{ latest_order.created_at | format_datetime }}</p>
                                 <div class="mt-2">
-                                    <a href="{{ url_for('personal.food_order.export_order_pdf', order_id=latest_order.id) }}" class="btn btn-success btn-sm">{{ trans('food_order_export_pdf', default='Export to PDF') }}</a>
                                     <form method="POST" action="{{ url_for('personal.food_order.main', tab='dashboard') }}" class="d-inline">
                                         {{ order_form.csrf_token }}
                                         <input type="hidden" name="action" value="delete_order">
@@ -137,7 +108,7 @@
                                 <h6>{{ trans('food_order_add_item', default='Add Item to Order') }}</h6>
                             </div>
                             <div class="card-body">
-                                <form method="POST" action="{{ url_for('personal.food_order.main', tab='dashboard') }}">
+                                <form method="POST" action="{{ url_for('personal.food_order.main', tab='dashboard') }}" id="addItemForm" class="validate-form">
                                     {{ item_form.csrf_token }}
                                     <input type="hidden" name="action" value="add_item">
                                     <input type="hidden" name="order_id" value="{{ latest_order.id }}">
@@ -148,13 +119,8 @@
                                     </div>
                                     <div class="mb-3">
                                         <label for="{{ item_form.quantity.id }}" class="form-label">{{ trans('food_order_quantity', default='Quantity') }}</label>
-                                        {{ item_form.quantity(class="form-control number-input", placeholder=trans('food_order_quantity_placeholder', default='e.g., 2')) }}
+                                        {{ item_form.quantity(class="form-control number-input", placeholder=trans('food_order_quantity_placeholder', default='e.g., 2'), value='' if item_form.quantity.data is none else item_form.quantity.data) }}
                                         <div class="invalid-feedback">{{ trans('food_order_quantity_invalid', default='Please enter a valid quantity (e.g., 2)') }}</div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="{{ item_form.price.id }}" class="form-label">{{ trans('food_order_price', default='Price') }}</label>
-                                        {{ item_form.price(class="form-control number-input", placeholder=trans('food_order_price_placeholder', default='e.g., 10.00')) }}
-                                        <div class="invalid-feedback">{{ trans('food_order_price_invalid', default='Please enter a valid price (e.g., 10.00)') }}</div>
                                     </div>
                                     <div class="mb-3">
                                         <label for="{{ item_form.notes.id }}" class="form-label">{{ trans('food_order_notes', default='Notes') }}</label>
@@ -178,19 +144,25 @@
                                                 <tr>
                                                     <th>{{ trans('food_order_item_name', default='Item Name') }}</th>
                                                     <th>{{ trans('food_order_quantity', default='Quantity') }}</th>
-                                                    <th>{{ trans('food_order_price', default='Price') }}</th>
                                                     <th>{{ trans('food_order_notes', default='Notes') }}</th>
-                                                    <th>{{ trans('food_order_category', default='Category') }}</th>
+                                                    <th>{{ trans('general_actions', default='Actions') }}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {% for item in items %}
                                                     <tr>
                                                         <td>{{ item.name }}</td>
-                                                        <td><input type="number" class="form-control number-input" value="{{ item.quantity }}" min="1" onchange="updateFoodOrderItem('{{ item.item_id }}', 'quantity', this.value)"></td>
-                                                        <td><input type="number" class="form-control number-input" value="{{ item.price_raw | float | format_currency }}" min="0" step="0.01" onchange="updateFoodOrderItem('{{ item.item_id }}', 'price', this.value)"></td>
-                                                        <td><input type="text" class="form-control" value="{{ item.notes }}" onchange="updateFoodOrderItem('{{ item.item_id }}', 'notes', this.value)"></td>
-                                                        <td>{{ trans(item.category, default=item.category) }}</td>
+                                                        <td>{{ item.quantity }}</td>
+                                                        <td>{{ item.notes }}</td>
+                                                        <td>
+                                                            <form method="POST" action="{{ url_for('personal.food_order.main', tab='dashboard') }}" class="d-inline">
+                                                                {{ item_form.csrf_token }}
+                                                                <input type="hidden" name="action" value="delete_item">
+                                                                <input type="hidden" name="item_id" value="{{ item.item_id }}">
+                                                                <input type="hidden" name="order_id" value="{{ latest_order.id }}">
+                                                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('{{ trans('food_order_confirm_delete_item', default='Are you sure you want to delete this item?') | e }}');">{{ trans('general_delete', default='Delete') }}</button>
+                                                            </form>
+                                                        </td>
                                                     </tr>
                                                 {% endfor %}
                                             </tbody>
@@ -203,7 +175,7 @@
                         </div>
                     {% else %}
                         <div class="text-center">
-                            <i class="fas fa-ut7426.75ensils fa-3x mb-3 text-muted"></i>
+                            <i class="fas fa-utensils fa-3x mb-3 text-muted"></i>
                             <p>{{ trans('food_order_no_orders', default='No food orders found. Create one to get started.') }}</p>
                         </div>
                     {% endif %}
@@ -220,8 +192,8 @@
                                             <tr>
                                                 <th>{{ trans('food_order_name', default='Order Name') }}</th>
                                                 <th>{{ trans('food_order_vendor', default='Vendor') }}</th>
-                                                <th>{{ trans('food_order_total_cost', default='Total Cost') }}</th>
                                                 <th>{{ trans('general_status', default='Status') }}</th>
+                                                <th>{{ trans('general_date', default='Created At') }}</th>
                                                 <th>{{ trans('general_actions', default='Actions') }}</th>
                                             </tr>
                                         </thead>
@@ -230,10 +202,9 @@
                                                 <tr>
                                                     <td>{{ order.name }}</td>
                                                     <td>{{ order.vendor }}</td>
-                                                    <td>{{ format_currency(order.total_cost) }}</td>
                                                     <td>{{ trans(order.status, default=order.status) }}</td>
+                                                    <td>{{ order.created_at | format_datetime }}</td>
                                                     <td>
-                                                        <a href="{{ url_for('personal.food_order.export_order_pdf', order_id=order.id) }}" class="btn btn-success btn-sm">{{ trans('food_order_export_pdf', default='Export') }}</a>
                                                         <form method="POST" action="{{ url_for('personal.food_order.main', tab='dashboard') }}" class="d-inline">
                                                             {{ order_form.csrf_token }}
                                                             <input type="hidden" name="action" value="delete_order">
@@ -255,101 +226,40 @@
                     {% else %}
                         <p class="text-center">{{ trans('food_order_no_orders', default='No food orders found.') }}</p>
                     {% endif %}
-
-                    {% if categories %}
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h6>{{ trans('food_order_categories', default='Spending by Category') }}</h6>
-                            </div>
-                            <div class="card-body">
-                                <canvas id="categoryChart" height="200"></canvas>
-                                <div id="chartError" class="text-danger mt-2" style="display: none;">
-                                    {{ trans('food_order_chart_error', default='Error rendering category chart. Please try again later.') }}
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
-
-                    {% if tips %}
-                        <div class="mt-4">
-                            <h6>{{ trans('food_order_tips', default='Food Order Tips') }}</h6>
-                            <ul class="list-unstyled">
-                                {% for tip in tips %}
-                                    <li><i class="fas fa-check-circle text-success"></i> {{ trans(tip, default=tip) }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
-
-                    {% if insights %}
-                        <div class="mt-4">
-                            <h6>{{ trans('food_order_insights', default='Insights') }}</h6>
-                            <ul class="list-unstyled">
-                                {% for insight in insights %}
-                                    <li><i class="fas fa-lightbulb text-warning"></i> {{ trans(insight, default=insight) }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
-
-    {% if current_user.is_authenticated %}
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5>{{ trans('general_share_ficore', default='Share Ficore Africa with Friends') }}</h5>
-            </div>
-            <div class="card-body">
-                <p>{{ trans('general_share_ficore_invite', default='Invite your friends to join Ficore Africa and manage their finances better!') }}</p>
-                <div class="input-group mb-3">
-                    <input type="text" class="form-control" id="referralLink" value="{{ url_for('users.signup', ref=current_user.referral_code, _external=True) if current_user.referral_code else trans('general_profile_no_referral', default='No referral link available.') }}" readonly>
-                    <button class="btn btn-secondary" type="button" onclick="copyReferralLink()">{{ trans('general_profile_copy_link', default='Copy') }}</button>
-                </div>
-            </div>
-        </div>
-    {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Translation map for help text and validation
+    // Translation map for validation
     const translations = {
-        'name': "{{ trans('food_order_name_help', default='Enter the name of your order (e.g., Lunch Order)') | e }}",
-        'vendor': "{{ trans('food_order_vendor_help', default='Enter the vendor name (e.g., Local Restaurant)') | e }}",
-        'phone': "{{ trans('food_order_phone_help', default='Enter a valid phone number (e.g., +1234567890)') | e }}",
-        'location': "{{ trans('food_order_location_help', default='Enter delivery location or coordinates (e.g., 123 Main St or Lat,Lon)') | e }}",
-        'item_name': "{{ trans('food_order_item_name_help', default='Enter the item name (e.g., Chicken Burger)') | e }}",
-        'quantity': "{{ trans('food_order_quantity_help', default='Enter quantity (e.g., 2)') | e }}",
-        'price': "{{ trans('food_order_price_help', default='Enter price per item (e.g., 10.00)') | e }}",
-        'notes': "{{ trans('food_order_notes_help', default='Enter any special instructions (e.g., No onions)') | e }}",
+        'name': "{{ trans('food_order_name_invalid', default='Please enter a valid order name') | e }}",
+        'vendor': "{{ trans('food_order_vendor_invalid', default='Please enter a valid vendor name') | e }}",
+        'phone': "{{ trans('food_order_phone_invalid', default='Please enter a valid phone number') | e }}",
+        'location': "{{ trans('food_order_location_invalid', default='Please enter a valid location') | e }}",
+        'item_name': "{{ trans('food_order_item_name_invalid', default='Please enter a valid item name') | e }}",
+        'quantity': "{{ trans('food_order_quantity_invalid', default='Please enter a valid quantity (e.g., 2)') | e }}",
+        'notes': "{{ trans('food_order_notes_invalid', default='Please enter valid notes') | e }}",
         'quantity_max': "{{ trans('food_order_quantity_max', default='Quantity cannot exceed 100') | e }}",
-        'price_max': "{{ trans('food_order_price_max', default='Price cannot exceed 10,000') | e }}",
-        'amount_positive': "{{ trans('food_order_amount_positive', default='Amount must be positive') | e }}",
+        'quantity_positive': "{{ trans('food_order_quantity_positive', default='Quantity must be positive') | e }}",
         'phone_invalid': "{{ trans('food_order_phone_invalid', default='Please enter a valid phone number') | e }}"
     };
 
     // Helper function to format numbers for display
-    function formatForDisplay(value, isQuantity) {
+    function formatForDisplay(value) {
         if (value === null || value === undefined || isNaN(value)) return '';
-        if (isQuantity) {
-            return Math.floor(value).toLocaleString('en-US', { maximumFractionDigits: 0 });
-        } else {
-            return parseFloat(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
+        return Math.floor(value).toLocaleString('en-US', { maximumFractionDigits: 0 });
     }
 
     // Helper function to clean input for numeric parsing
     function cleanForParse(value) {
         if (!value) return '';
-        let clean = value.replace(/,/g, '');
-        const parts = clean.split('.');
-        if (parts.length > 2) clean = parts[0] + '.' + parts.slice(1).join('');
-        return clean;
+        return value.replace(/[^0-9]/g, '');
     }
 
     // Phone number validation
@@ -360,54 +270,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Apply formatting and validation to number inputs
     document.querySelectorAll('.number-input').forEach(input => {
-        const isQuantity = input.id === '{{ item_form.quantity.id }}';
-        const originalHelpText = translations[input.id] || translations['quantity'];
-
         input.addEventListener('focus', function() {
             input.value = cleanForParse(input.value);
         });
 
         input.addEventListener('blur', function() {
             let rawValue = cleanForParse(input.value);
-            let numValue = parseFloat(rawValue) || 0;
-            if (isQuantity) {
-                numValue = parseInt(rawValue) || 0;
-                if (numValue > 100) {
-                    numValue = 100;
-                    input.classList.add('is-invalid');
-                    document.getElementById(`${input.id}_help`).innerText = translations['quantity_max'];
-                } else if (numValue < 1) {
-                    numValue = 1;
-                    input.classList.add('is-invalid');
-                    document.getElementById(`${input.id}_help`).innerText = translations['amount_positive'];
-                } else {
-                    input.classList.remove('is-invalid');
-                    document.getElementById(`${input.id}_help`).innerText = originalHelpText;
-                }
+            let numValue = parseInt(rawValue) || 0;
+            if (numValue > 100) {
+                numValue = 100;
+                input.classList.add('is-invalid');
+                document.getElementById(`${input.id}_help`).innerText = translations['quantity_max'];
+            } else if (numValue < 1) {
+                numValue = 1;
+                input.classList.add('is-invalid');
+                document.getElementById(`${input.id}_help`).innerText = translations['quantity_positive'];
             } else {
-                if (numValue > 10000) {
-                    numValue = 10000;
-                    input.classList.add('is-invalid');
-                    document.getElementById(`${input.id}_help`).innerText = translations['price_max'];
-                } else if (numValue < 0) {
-                    numValue = 0;
-                    input.classList.add('is-invalid');
-                    document.getElementById(`${input.id}_help`).innerText = translations['amount_positive'];
-                } else {
-                    input.classList.remove('is-invalid');
-                    document.getElementById(`${input.id}_help`).innerText = originalHelpText;
-                }
+                input.classList.remove('is-invalid');
+                document.getElementById(`${input.id}_help`).innerText = '';
             }
-            input.value = formatForDisplay(numValue, isQuantity);
+            input.value = formatForDisplay(numValue);
         });
 
         input.addEventListener('input', function() {
             let value = input.value;
-            let cleanedValue = isQuantity ? value.replace(/[^0-9]/g, '') : value.replace(/[^0-9.]/g, '');
-            const parts = cleanedValue.split('.');
-            if (!isQuantity && parts.length > 2) {
-                cleanedValue = parts[0] + '.' + parts.slice(1).join('');
-            }
+            let cleanedValue = value.replace(/[^0-9]/g, '');
             if (input.value !== cleanedValue) {
                 const start = input.selectionStart;
                 input.value = cleanedValue;
@@ -422,106 +309,55 @@ document.addEventListener('DOMContentLoaded', function() {
         phoneInput.addEventListener('blur', function() {
             if (!validatePhoneNumber(phoneInput.value)) {
                 phoneInput.classList.add('is-invalid');
-                document.getElementById('phone_help').innerText = translations['phone_invalid'];
+                document.getElementById(`${phoneInput.id}_help`).innerText = translations['phone_invalid'];
             } else {
                 phoneInput.classList.remove('is-invalid');
-                document.getElementById('phone_help').innerText = translations['phone'];
+                document.getElementById(`${phoneInput.id}_help`).innerText = '';
             }
         });
     }
 
     // Form submission validation
-    document.getElementById('foodOrderForm').addEventListener('submit', function(e) {
-        let formIsValid = true;
-        this.querySelectorAll('.form-control').forEach(input => {
-            if (input.id === '{{ order_form.phone.id }}') {
-                if (!validatePhoneNumber(input.value)) {
+    document.querySelectorAll('.validate-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            let formIsValid = true;
+            form.querySelectorAll('.form-control').forEach(input => {
+                if (input.classList.contains('phone-input') && !validatePhoneNumber(input.value)) {
                     input.classList.add('is-invalid');
-                    document.getElementById('phone_help').innerText = translations['phone_invalid'];
+                    document.getElementById(`${input.id}_help`).innerText = translations['phone_invalid'];
                     formIsValid = false;
+                } else if (!input.classList.contains('number-input') && !input.value.trim()) {
+                    input.classList.add('is-invalid');
+                    document.getElementById(`${input.id}_help`).innerText = translations[input.id] || translations['required'];
+                    formIsValid = false;
+                } else if (!input.classList.contains('phone-input')) {
+                    input.classList.remove('is-invalid');
+                    document.getElementById(`${input.id}_help`).innerText = '';
                 }
-            } else if (!input.value.trim()) {
-                input.classList.add('is-invalid');
-                document.getElementById(`${input.id}_help`).innerText = translations[input.id] ? `Please enter a valid ${input.id}` : translations['general_error'];
-                formIsValid = false;
-            } else {
-                input.classList.remove('is-invalid');
-                document.getElementById(`${input.id}_help`).innerText = translations[input.id];
-            }
-        });
-        this.querySelectorAll('.number-input').forEach(input => {
-            const isQuantity = input.id === '{{ item_form.quantity.id }}';
-            let rawValue = cleanForParse(input.value);
-            let numValue = parseFloat(rawValue) || 0;
-            if (isQuantity) {
-                numValue = parseInt(rawValue) || 0;
+            });
+            form.querySelectorAll('.number-input').forEach(input => {
+                let rawValue = cleanForParse(input.value);
+                let numValue = parseInt(rawValue) || 0;
                 if (numValue > 100 || numValue < 1) {
                     input.classList.add('is-invalid');
-                    document.getElementById(`${input.id}_help`).innerText = numValue > 100 ? translations['quantity_max'] : translations['amount_positive'];
+                    document.getElementById(`${input.id}_help`).innerText = numValue > 100 ? translations['quantity_max'] : translations['quantity_positive'];
                     formIsValid = false;
+                } else {
+                    input.classList.remove('is-invalid');
+                    document.getElementById(`${input.id}_help`).innerText = '';
                 }
-            } else {
-                if (numValue > 10000 || numValue < 0) {
-                    input.classList.add('is-invalid');
-                    document.getElementById(`${input.id}_help`).innerText = numValue > 10000 ? translations['price_max'] : translations['amount_positive'];
-                    formIsValid = false;
+                input.value = numValue.toString();
+            });
+            if (!formIsValid) {
+                e.preventDefault();
+                const firstInvalid = form.querySelector('.is-invalid');
+                if (firstInvalid) {
+                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstInvalid.focus();
                 }
             }
-            input.value = isQuantity ? numValue.toString() : numValue.toFixed(2);
         });
-        if (!formIsValid) {
-            e.preventDefault();
-            const firstInvalid = this.querySelector('.is-invalid');
-            if (firstInvalid) {
-                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                firstInvalid.focus();
-            }
-        }
     });
-
-    // Chart.js rendering
-    const categoryChartCtx = document.getElementById('categoryChart');
-    if (categoryChartCtx) {
-        const categoriesData = {{ categories | tojson }};
-        if (categoriesData && Object.keys(categoriesData).length > 0) {
-            try {
-                const labels = Object.keys(categoriesData).map(key => key.charAt(0).toUpperCase() + key.slice(1));
-                const data = Object.values(categoriesData);
-                new Chart(categoryChartCtx, {
-                    type: 'pie',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            data: data,
-                            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
-                            borderColor: '#fff',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: { position: 'top' },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        let label = context.label || '';
-                                        if (label) label += ': ';
-                                        if (context.parsed !== null) label += formatForDisplay(context.parsed, false);
-                                        return label;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-                document.getElementById('chartError').style.display = 'none';
-            } catch (error) {
-                console.error("Error drawing chart:", error);
-                document.getElementById('chartError').style.display = 'block';
-            }
-        }
-    }
 
     // Tab persistence
     const validTabs = ['create-order', 'dashboard'];
@@ -549,44 +385,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Copy referral link
-    window.copyReferralLink = function() {
-        const referralLink = document.getElementById('referralLink');
-        const value = referralLink.value;
-        if (value && value !== '{{ trans('general_profile_no_referral', default='No referral link available.') | e }}') {
-            navigator.clipboard.writeText(value).then(() => {
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'alert alert-success alert-dismissible fade show';
-                alertDiv.innerHTML = `
-                    {{ trans('general_profile_link_copied', default='Referral link copied to clipboard!') | e }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ trans('general_close', default='Close') }}"></button>
-                `;
-                referralLink.parentNode.appendChild(alertDiv);
-                setTimeout(() => alertDiv.remove(), 3000);
-            }).catch(() => {
-                referralLink.select();
-                document.execCommand('copy');
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'alert alert-success alert-dismissible fade show';
-                alertDiv.innerHTML = `
-                    {{ trans('general_profile_link_copied', default='Referral link copied to clipboard!') | e }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ trans('general_close', default='Close') }}"></button>
-                `;
-                referralLink.parentNode.appendChild(alertDiv);
-                setTimeout(() => alertDiv.remove(), 3000);
-            });
-        } else {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-warning alert-dismissible fade show';
-            alertDiv.innerHTML = `
-                {{ trans('general_profile_no_referral', default='No referral link available.') | e }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ trans('general_close', default='Close') }}"></button>
-            `;
-            referralLink.parentNode.appendChild(alertDiv);
-            setTimeout(() => alertDiv.remove(), 3000);
-        }
-    };
-
     // Geolocation
     window.getUserLocation = async function() {
         try {
@@ -613,34 +411,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('Error in getUserLocation:', error);
-            alert('{{ trans("general_error", default="An error occurred") | e }}');
-        }
-    };
-
-    // Update food order item
-    window.updateFoodOrderItem = async function(itemId, field, value) {
-        try {
-            {% if latest_order.id %}
-            const response = await fetch('{{ url_for("personal.food_order.manage_items", order_id=latest_order.id) }}', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': '{{ order_form.csrf_token._value() }}'
-                },
-                body: JSON.stringify({ item_id: itemId, [field]: value })
-            });
-            const data = await response.json();
-            if (data.error) {
-                alert(data.error);
-            } else {
-                alert('{{ trans("food_order_item_updated", default="Item updated successfully") | e }}');
-                window.location.reload();
-            }
-            {% else %}
-            alert('{{ trans("food_order_no_order", default="No order selected to update items.") | e }}');
-            {% endif %}
-        } catch (error) {
-            console.error('Error updating food order item:', error);
             alert('{{ trans("general_error", default="An error occurred") | e }}');
         }
     };
