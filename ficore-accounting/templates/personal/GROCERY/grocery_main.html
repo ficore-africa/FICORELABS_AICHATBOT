@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script>{% extends "base.html" %}
+{% extends "base.html" %}
 {% block title %}{{ t('grocery_title', default='Grocery') }} - FiCore{% endblock %}
 {% block content %}
 <div class="container mt-5">
@@ -96,6 +57,7 @@
                                         <option value="bought" {% if item.status == 'bought' %}selected{% endif %}>{{ t('grocery_bought', default='Bought') }}</option>
                                     </select>
                                     <input type="text" class="form-control" value="{{ item.store|default('Unknown') }}" placeholder="{{ t('grocery_store', default='Store') }}" onchange="groceryModule.updateGroceryItem('{{ item.id }}', 'store', this.value)">
+                                    <input type="number" class="form-control" value="{{ item.frequency|default(7) }}" min="1" placeholder="{{ t('grocery_frequency', default='Frequency (days)') }}" onchange="groceryModule.updateGroceryItem('{{ item.id }}', 'frequency', this.value)">
                                     <button class="btn btn-sm btn-outline-info" onclick="groceryModule.showPriceHistory('{{ item.name }}')">{{ t('grocery_price_history', default='Price History') }}</button>
                                 </div>
                             </div>
@@ -123,6 +85,7 @@
                         <input type="email" class="form-control" id="shareEmail" placeholder="{{ t('grocery_collaborator_email', default='Collaborator Email') }}">
                         <button class="btn btn-primary" onclick="groceryModule.shareGroceryList()">{{ t('grocery_share', default='Share') }}</button>
                     </div>
+                    <small class="text-muted">{{ t('grocery_share_note', default='Note: Collaborators can view and edit the list.') }}</small>
                 </div>
             </div>
             <div class="tab-pane fade" id="manage-lists" role="tabpanel" aria-labelledby="manage-lists-tab">
@@ -211,38 +174,6 @@
 {% endblock %}
 
 {% block page_scripts %}
-<script type="text/javascript">
-    var gk_isXlsx = false;
-    var gk_xlsxFileLookup = {};
-    var gk_fileData = {};
-    function filledCell(cell) {
-        return cell !== '' && cell != null;
-    }
-    function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                    row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                    headerRowIndex = 0;
-                }
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-    }
-</script>
 <style>
 .modal-footer .btn {
     padding: 0.75rem 1.5rem;
@@ -400,6 +331,7 @@
                             <option value="bought" ${item.status === 'bought' ? 'selected' : ''}>{{ t('grocery_bought', default='Bought') }}</option>
                         </select>
                         <input type="text" class="form-control" value="${item.store || 'Unknown'}" placeholder="{{ t('grocery_store', default='Store') }}" onchange="groceryModule.updateGroceryItem('${item.id}', 'store', this.value)">
+                        <input type="number" class="form-control" value="${item.frequency || 7}" min="1" placeholder="{{ t('grocery_frequency', default='Frequency (days)') }}" onchange="groceryModule.updateGroceryItem('${item.id}', 'frequency', this.value)">
                         <button class="btn btn-sm btn-outline-info" onclick="groceryModule.showPriceHistory('${item.name}')">{{ t('grocery_price_history', default='Price History') }}</button>
                     </div>
                 </div>
@@ -654,7 +586,8 @@
             return;
         }
         const email = document.getElementById('shareEmail').value;
-        if (!email) {
+        const emailRegex = /^[\w\.-]+@[\w\.-]+\.\w+$/;
+        if (!email || !emailRegex.test(email)) {
             showToast('{{ t('grocery_invalid_email', default='Please provide a valid email address') }}', 'warning');
             return;
         }
