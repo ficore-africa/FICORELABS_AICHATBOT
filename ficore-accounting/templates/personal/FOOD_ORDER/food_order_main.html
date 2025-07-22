@@ -1,647 +1,332 @@
-{% extends "base.html" %}
-{% block title %}{{ t('food_order_title', default='Food Order') }} - FiCore{% endblock %}
-{% block content %}
-<div class="container mt-5">
-    <div class="page-title">
-        <h1>{{ t('food_order_title', default='Food Order') }}</h1>
-        <small class="subtext">{{ t('food_order_subtitle', default='Manage Your Food Orders') }}</small>
-    </div>
-    <div id="food-order-root">
-        <ul class="nav nav-tabs mb-3" id="foodOrderTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab">{{ t('food_order_create', default='Create Food Order') }}</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="manage-orders-tab" data-bs-toggle="tab" data-bs-target="#manage-orders" type="button" role="tab">{{ t('general_view_all', default='View All') }}</button>
-            </li>
-        </ul>
-        <div class="tab-content" id="foodOrderTabContent">
-            <div class="tab-pane fade show active" id="orders" role="tabpanel" aria-labelledby="orders-tab">
-                <div class="mb-3">
-                    <h6>{{ t('food_order_create', default='Create Food Order') }}</h6>
-                    <div class="input-group mb-2">
-                        <input type="text" class="form-control" id="newOrderName" placeholder="{{ t('food_order_name', default='Order Name') }}">
-                        <input type="text" class="form-control" id="newOrderVendor" placeholder="{{ t('food_order_vendor', default='Vendor') }}">
-                    </div>
-                    <div class="input-group mb-2">
-                        <input type="tel" class="form-control" id="newOrderPhone" placeholder="{{ t('food_order_phone', default='Phone Number') }}">
-                        <input type="text" class="form-control" id="newOrderLocation" placeholder="{{ t('food_order_location', default='Delivery Location') }}">
-                        <button class="btn btn-outline-secondary" onclick="foodOrderModule.getUserLocation()">{{ t('food_order_auto_detect', default='Auto Detect Location') }}</button>
-                    </div>
-                    <div class="alert alert-info">{{ t('food_order_cost_note', default='Note: Creating and submitting this order will deduct 0.1 FC from your balance.') }}</div>
-                    <button class="btn btn-primary" onclick="foodOrderModule.createFoodOrder()">{{ t('food_order_create', default='Create') }}</button>
+<!DOCTYPE html>
+<html lang="{{ session.get('lang', 'en') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ tool_title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .flash-message { padding: 1rem; margin-bottom: 1rem; border-radius: 0.25rem; }
+        .flash-success { background-color: #d4edda; color: #155724; }
+        .flash-danger { background-color: #f8d7da; color: #721c24; }
+        .flash-warning { background-color: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto p-4">
+        <h1 class="text-3xl font-bold mb-4">{{ tool_title }}</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="tabs mb-4">
+            <button class="tab-button px-4 py-2 {% if active_tab == 'create-order' %}bg-blue-500 text-white{% else %}bg-gray-200{% endif %}" onclick="openTab('create-order')">{{ trans('food_order_create', default='Create Food Order') }}</button>
+            <button class="tab-button px-4 py-2 {% if active_tab == 'dashboard' %}bg-blue-500 text-white{% else %}bg-gray-200{% endif %}" onclick="openTab('dashboard')">{{ trans('general_view_all', default='View All') }}</button>
+        </div>
+
+        <div id="create-order" class="tab-content {% if active_tab == 'create-order' %}active{% endif %}">
+            <h2 class="text-xl font-semibold mb-4">{{ trans('food_order_create', default='Create New Food Order') }}</h2>
+            <form method="POST" action="{{ url_for('personal.food_order.main', tab='create-order') }}">
+                {{ order_form.hidden_tag() }}
+                <input type="hidden" name="action" value="create_order">
+                <div class="mb-4">
+                    {{ order_form.name.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ order_form.name(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                    {% for error in order_form.name.errors %}
+                        <span class="text-red-600 text-sm">{{ error }}</span>
+                    {% endfor %}
                 </div>
-                <div id="foodOrders">
-                    {% if orders_data is defined and orders_data is iterable and orders_data|length > 0 %}
-                        {% for order in orders_data %}
-                            <div class="food-order-item">
-                                <span class="fw-semibold">{{ order.name }} ({{ order.vendor }})</span>
-                                <div>
-                                    <span class="text-muted">{{ t('food_order_total', default='Total') }}: {{ order.total_cost }}</span>
-                                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="foodOrderModule.loadFoodOrderItems('{{ order.id }}')">{{ t('general_view_all', default='View All') }}</button>
-                                    <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('{{ order.id }}')">{{ t('food_order_reorder', default='Reorder') }}</button>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-muted">{{ t('no_orders', default='No food orders found') }}</div>
-                    {% endif %}
+                <div class="mb-4">
+                    {{ order_form.vendor.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ order_form.vendor(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                    {% for error in order_form.vendor.errors %}
+                        <span class="text-red-600 text-sm">{{ error }}</span>
+                    {% endfor %}
                 </div>
-                <div id="foodOrderItems" class="mt-3">
-                    {% if orders_data is defined and orders_data is iterable and orders_data|length > 0 and orders_data[0].items is defined and orders_data[0].items is iterable and orders_data[0].items|length > 0 %}
-                        {% for item in orders_data[0].items %}
-                            <div class="food-order-item">
-                                <span class="fw-semibold">{{ item.name }}</span>
-                                <div class="d-flex align-items-center gap-2">
-                                    <input type="number" class="form-control" value="{{ item.quantity }}" min="1" onchange="foodOrderModule.updateFoodOrderItem('{{ item.item_id }}', 'quantity', this.value)">
-                                    <input type="number" class="form-control" value="{{ item.price }}" min="0" step="0.01" onchange="foodOrderModule.updateFoodOrderItem('{{ item.item_id }}', 'price', this.value)">
-                                    <input type="text" class="form-control" value="{{ item.notes|default('') }}" placeholder="{{ t('food_order_item_notes', default='Item Notes') }}" onchange="foodOrderModule.updateFoodOrderItem('{{ item.item_id }}', 'notes', this.value)">
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-muted">{{ t('no_items', default='No items in this order') }}</div>
-                    {% endif %}
+                <div class="mb-4">
+                    {{ order_form.phone.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ order_form.phone(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                    {% for error in order_form.phone.errors %}
+                        <span class="text-red-600 text-sm">{{ error }}</span>
+                    {% endfor %}
                 </div>
-                <div class="mt-3">
-                    <h6>{{ t('food_order_add_item', default='Add Item') }}</h6>
-                    <div class="input-group mb-2">
-                        <input type="text" class="form-control" id="newOrderItemName" placeholder="{{ t('food_order_item_name', default='Item Name') }}">
-                        <input type="number" class="form-control" id="newOrderItemQuantity" placeholder="{{ t('food_order_quantity', default='Quantity') }}" min="1">
-                        <input type="number" class="form-control" id="newOrderItemPrice" placeholder="{{ t('food_order_price', default='Price') }}" min="0" step="0.01">
-                    </div>
-                    <div class="input-group mb-2">
-                        <input type="text" class="form-control" id="newOrderItemNotes" placeholder="{{ t('food_order_item_notes', default='Item Notes (e.g., No Pepper)') }}">
-                        <button class="btn btn-primary" onclick="foodOrderModule.addFoodOrderItem()">{{ t('food_order_add', default='Add') }}</button>
-                    </div>
+                <div class="mb-4">
+                    {{ order_form.location.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ order_form.location(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                    <button type="button" class="mt-2 bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300" onclick="getUserLocation()">{{ trans('food_order_auto_detect', default='Auto Detect Location') }}</button>
+                    {% for error in order_form.location.errors %}
+                        <span class="text-red-600 text-sm">{{ error }}</span>
+                    {% endfor %}
+                </div>
+                {{ order_form.submit(class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600") }}
+            </form>
+        </div>
+
+        <div id="dashboard" class="tab-content {% if active_tab == 'dashboard' %}active{% endif %}">
+            <h2 class="text-xl font-semibold mb-4">{{ trans('food_order_dashboard', default='Food Order Dashboard') }}</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="bg-white p-4 rounded-md shadow">
+                    <h3 class="text-lg font-medium">{{ trans('food_order_total_orders', default='Total Orders') }}</h3>
+                    <p>{{ total_orders }}</p>
+                </div>
+                <div class="bg-white p-4 rounded-md shadow">
+                    <h3 class="text-lg font-medium">{{ trans('food_order_total_spent', default='Total Spent') }}</h3>
+                    <p>{{ total_spent }}</p>
+                </div>
+                <div class="bg-white p-4 rounded-md shadow">
+                    <h3 class="text-lg font-medium">{{ trans('food_order_pending', default='Pending Orders') }}</h3>
+                    <p>{{ pending_orders }}</p>
                 </div>
             </div>
-            <div class="tab-pane fade" id="manage-orders" role="tabpanel" aria-labelledby="manage-orders-tab">
-                <div class="mb-3">
-                    <h6>{{ t('general_view_all', default='View All') }}</h6>
-                    <div id="manageFoodOrders">
-                        {% if orders_data is defined and orders_data is iterable and orders_data|length > 0 %}
-                            {% for order in orders_data %}
-                                <div class="food-order-item">
-                                    <span class="fw-semibold">{{ order.name }} ({{ order.vendor }})</span>
-                                    <div>
-                                        <span class="text-muted">{{ t('food_order_total', default='Total') }}: {{ order.total_cost }}</span>
-                                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="foodOrderModule.deleteFoodOrder('{{ order.id }}', '{{ order.name }}')">{{ t('food_order_delete', default='Delete') }}</button>
-                                        <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('{{ order.id }}')">{{ t('food_order_reorder', default='Reorder') }}</button>
-                                    </div>
-                                </div>
+
+            {% if latest_order.id %}
+                <div class="mb-4">
+                    <h3 class="text-lg font-medium">{{ trans('food_order_latest_order', default='Latest Food Order') }}</h3>
+                    <p><strong>{{ trans('food_order_name', default='Order Name') }}:</strong> {{ latest_order.name }}</p>
+                    <p><strong>{{ trans('food_order_vendor', default='Vendor') }}:</strong> {{ latest_order.vendor }}</p>
+                    <p><strong>{{ trans('food_order_phone', default='Phone') }}:</strong> {{ latest_order.phone }}</p>
+                    <p><strong>{{ trans('food_order_location', default='Location') }}:</strong> {{ latest_order.location }}</p>
+                    <p><strong>{{ trans('food_order_total_cost', default='Total Cost') }}:</strong> {{ latest_order.total_cost }}</p>
+                    <p><strong>{{ trans('general_status', default='Status') }}:</strong> {{ trans(latest_order.status, default=latest_order.status) }}</p>
+                    <p><strong>{{ trans('general_date', default='Created At') }}:</strong> {{ latest_order.created_at }}</p>
+                    <div class="mt-2">
+                        <a href="{{ url_for('personal.food_order.export_order_pdf', order_id=latest_order.id) }}" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">{{ trans('food_order_export_pdf', default='Export to PDF') }}</a>
+                        <form method="POST" action="{{ url_for('personal.food_order.main', tab='dashboard') }}" class="inline">
+                            <input type="hidden" name="action" value="delete_order">
+                            <input type="hidden" name="order_id" value="{{ latest_order.id }}">
+                            {{ order_form.csrf_token }}
+                            <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">{{ trans('food_order_delete', default='Delete Order') }}</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('personal.food_order.reorder', order_id=latest_order.id) }}" class="inline">
+                            {{ order_form.csrf_token }}
+                            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">{{ trans('food_order_reorder', default='Reorder') }}</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h3 class="text-lg font-medium">{{ trans('food_order_add_item', default='Add Item to Order') }}</h3>
+                    <form method="POST" action="{{ url_for('personal.food_order.main', tab='dashboard') }}">
+                        {{ item_form.hidden_tag() }}
+                        <input type="hidden" name="action" value="add_item">
+                        <input type="hidden" name="order_id" value="{{ latest_order.id }}">
+                        <div class="mb-4">
+                            {{ item_form.name.label(class="block text-sm font-medium text-gray-700") }}
+                            {{ item_form.name(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                            {% for error in item_form.name.errors %}
+                                <span class="text-red-600 text-sm">{{ error }}</span>
                             {% endfor %}
-                        {% else %}
-                            <div class="text-muted">{{ t('no_orders', default='No food orders found') }}</div>
-                        {% endif %}
-                    </div>
+                        </div>
+                        <div class="mb-4">
+                            {{ item_form.quantity.label(class="block text-sm font-medium text-gray-700") }}
+                            {{ item_form.quantity(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                            {% for error in item_form.quantity.errors %}
+                                <span class="text-red-600 text-sm">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-4">
+                            {{ item_form.price.label(class="block text-sm font-medium text-gray-700") }}
+                            {{ item_form.price(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                            {% for error in item_form.price.errors %}
+                                <span class="text-red-600 text-sm">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-4">
+                            {{ item_form.notes.label(class="block text-sm font-medium text-gray-700") }}
+                            {{ item_form.notes(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                            {% for error in item_form.notes.errors %}
+                                <span class="text-red-600 text-sm">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {{ item_form.submit(class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600") }}
+                    </form>
                 </div>
-            </div>
-        </div>
-        <div class="row mt-4">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ t('food_order_total_orders', default='Total Orders') }}</h5>
-                        <p class="card-text">{{ total_orders }}</p>
-                    </div>
+
+                <div class="mb-4">
+                    <h3 class="text-lg font-medium">{{ trans('food_order_items', default='Items') }}</h3>
+                    {% if latest_order.items %}
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="bg-gray-200">
+                                    <th class="border p-2">{{ trans('food_order_item_name', default='Item Name') }}</th>
+                                    <th class="border p-2">{{ trans('food_order_quantity', default='Quantity') }}</th>
+                                    <th class="border p-2">{{ trans('food_order_price', default='Price') }}</th>
+                                    <th class="border p-2">{{ trans('food_order_notes', default='Notes') }}</th>
+                                    <th class="border p-2">{{ trans('food_order_category', default='Category') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in latest_order.items %}
+                                    <tr>
+                                        <td class="border p-2">{{ item.name }}</td>
+                                        <td class="border p-2">
+                                            <input type="number" class="w-full border-gray-300 rounded-md" value="{{ item.quantity }}" min="1" onchange="updateFoodOrderItem('{{ item.item_id }}', 'quantity', this.value)">
+                                        </td>
+                                        <td class="border p-2">
+                                            <input type="number" class="w-full border-gray-300 rounded-md" value="{{ item.price_raw }}" min="0" step="0.01" onchange="updateFoodOrderItem('{{ item.item_id }}', 'price', this.value)">
+                                        </td>
+                                        <td class="border p-2">
+                                            <input type="text" class="w-full border-gray-300 rounded-md" value="{{ item.notes }}" onchange="updateFoodOrderItem('{{ item.item_id }}', 'notes', this.value)">
+                                        </td>
+                                        <td class="border p-2">{{ trans(item.category, default=item.category) }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p>{{ trans('food_order_no_items', default='No items in this order.') }}</p>
+                    {% endif %}
                 </div>
+            {% else %}
+                <p>{{ trans('food_order_no_orders', default='No food orders found. Create one to get started.') }}</p>
+            {% endif %}
+
+            <div class="mb-4">
+                <h3 class="text-lg font-medium">{{ trans('food_order_all_orders', default='All Food Orders') }}</h3>
+                {% if orders %}
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr class="bg-gray-200">
+                                <th class="border p-2">{{ trans('food_order_name', default='Order Name') }}</th>
+                                <th class="border p-2">{{ trans('food_order_vendor', default='Vendor') }}</th>
+                                <th class="border p-2">{{ trans('food_order_total_cost', default='Total Cost') }}</th>
+                                <th class="border p-2">{{ trans('general_status', default='Status') }}</th>
+                                <th class="border p-2">{{ trans('general_actions', default='Actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order_id, order in orders.items() %}
+                                <tr>
+                                    <td class="border p-2">{{ order.name }}</td>
+                                    <td class="border p-2">{{ order.vendor }}</td>
+                                    <td class="border p-2">{{ order.total_cost }}</td>
+                                    <td class="border p-2">{{ trans(order.status, default=order.status) }}</td>
+                                    <td class="border p-2">
+                                        <a href="{{ url_for('personal.food_order.export_order_pdf', order_id=order.id) }}" class="text-green-500 hover:underline">{{ trans('food_order_export_pdf', default='Export') }}</a>
+                                        <form method="POST" action="{{ url_for('personal.food_order.main', tab='dashboard') }}" class="inline">
+                                            <input type="hidden" name="action" value="delete_order">
+                                            <input type="hidden" name="order_id" value="{{ order.id }}">
+                                            {{ order_form.csrf_token }}
+                                            <button type="submit" class="text-red-500 hover:underline">{{ trans('food_order_delete', default='Delete') }}</button>
+                                        </form>
+                                        <form method="POST" action="{{ url_for('personal.food_order.reorder', order_id=order.id) }}" class="inline">
+                                            {{ order_form.csrf_token }}
+                                            <button type="submit" class="text-blue-500 hover:underline">{{ trans('food_order_reorder', default='Reorder') }}</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>{{ trans('food_order_no_orders', default='No food orders found.') }}</p>
+                {% endif %}
             </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ t('food_order_total_spent', default='Total Spent') }}</h5>
-                        <p class="card-text">{{ total_spent }}</p>
-                    </div>
+
+            {% if categories %}
+                <div class="mb-4">
+                    <h3 class="text-lg font-medium">{{ trans('food_order_categories', default='Spending by Category') }}</h3>
+                    <ul>
+                        {% for category, amount in categories.items() %}
+                            <li>{{ category }}: {{ format_currency(amount) }}</li>
+                        {% endfor %}
+                    </ul>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ t('food_order_pending', default='Pending Orders') }}</h5>
-                        <p class="card-text">{{ pending_orders }}</p>
-                    </div>
+            {% endif %}
+
+            {% if tips %}
+                <div class="mb-4">
+                    <h3 class="text-lg font-medium">{{ trans('food_order_tips', default='Food Order Tips') }}</h3>
+                    <ul class="list-disc pl-5">
+                        {% for tip in tips %}
+                            <li>{{ tip }}</li>
+                        {% endfor %}
+                    </ul>
                 </div>
-            </div>
-        </div>
-        <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="successModalLabel">{{ t('food_order_success_title', default='Order Submitted') }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t('general_close', default='Close') }}"></button>
-                    </div>
-                    <div class="modal-body">
-                        {{ t('food_order_success_message', default='Your order has been submitted. The vendor will contact you shortly.') }}
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">{{ t('food_order_ok', default='OK') }}</button>
-                    </div>
+            {% endif %}
+
+            {% if insights %}
+                <div class="mb-4">
+                    <h3 class="text-lg font-medium">{{ trans('food_order_insights', default='Insights') }}</h3>
+                    <ul class="list-disc pl-5">
+                        {% for insight in insights %}
+                            <li>{{ insight }}</li>
+                        {% endfor %}
+                    </ul>
                 </div>
-            </div>
+            {% endif %}
         </div>
     </div>
-</div>
-{% endblock %}
 
-{% block page_scripts %}
-<style>
-.modal-footer .btn {
-    padding: 0.75rem 1.5rem;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: clamp(0.875rem, 2vw, 0.9375rem);
-    box-shadow: var(--card-shadow);
-    transition: var(--transition-base);
-}
-.modal-footer.two-buttons .btn:first-child:not([data-bs-dismiss="modal"]) {
-    background: var(--button-primary-bg);
-    color: #ffffff;
-    border: none;
-}
-.modal-footer.two-buttons .btn:first-child:not([data-bs-dismiss="modal"]):hover,
-.modal-footer.two-buttons .btn:first-child:not([data-bs-dismiss="modal"]):focus {
-    background: var(--button-primary-hover);
-    transform: translateY(-2px);
-    box-shadow: var(--card-shadow-hover);
-}
-.modal-footer.two-buttons .btn:last-child {
-    background: var(--button-secondary-bg);
-    color: var(--button-secondary-border);
-    border: 2px solid var(--button-secondary-border);
-}
-.modal-footer.two-buttons .btn:last-child:hover,
-.modal-footer.two-buttons .btn:last-child:focus {
-    background: var(--button-secondary-hover);
-    color: var(--text-color);
-    transform: translateY(-2px);
-}
-</style>
-<script>
-(function () {
-    let currentOrderId = null;
-    let offlineData = { orders: [], items: {} };
-    let modalElement = null;
-    const FC_COST = 0.1;
-    const ORDER_COOLDOWN_MINUTES = 5;
+    <script>
+        function openTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('bg-blue-500', 'text-white'));
+            document.querySelectorAll('.tab-button').forEach(button => button.classList.add('bg-gray-200'));
+            document.getElementById(tabName).classList.add('active');
+            document.querySelector(`button[onclick="openTab('${tabName}')"]`).classList.add('bg-blue-500', 'text-white');
+            window.history.pushState({}, '', '{{ url_for("personal.food_order.main") }}?tab=' + tabName);
+        }
 
-    let csrfToken = null;
-    function setupCSRF() {
-        const metaTag = document.querySelector('meta[name="csrf-token"]');
-        if (metaTag) {
-            csrfToken = metaTag.getAttribute('content');
-        } else {
-            console.warn('CSRF token not found in meta tag');
-        }
-    }
-
-    async function fetchWithCSRF(url, options = {}) {
-        try {
-            const headers = {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': csrfToken,
-                ...options.headers
-            };
-            const response = await fetch(url, { ...options, headers });
-            return response;
-        } catch (error) {
-            console.error('Fetch error:', error);
-            throw error;
-        }
-    }
-
-    async function getUserLocation() {
-        try {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    async (position) => {
-                        const { latitude, longitude } = position.coords;
-                        const location = `${latitude},${longitude}`;
-                        document.getElementById('newOrderLocation').value = location;
-                        const response = await fetchWithCSRF(`${window.apiUrls.getNearestVendor}?location=${location}`);
-                        const data = await response.json();
-                        if (data.vendor) {
-                            document.getElementById('newOrderVendor').value = data.vendor;
-                        } else {
-                            showToast('{{ t('food_order_no_vendors', default='No vendors found nearby') }}', 'warning');
-                        }
-                    },
-                    (error) => {
-                        console.error('Error getting location:', error);
-                        showToast('{{ t('food_order_location_error', default='Unable to auto-detect location. Please enter manually.') }}', 'warning');
-                    }
-                );
-            } else {
-                showToast('{{ t('food_order_geolocation_unsupported', default='Geolocation is not supported by this browser.') }}', 'warning');
-            }
-        } catch (error) {
-            console.error('Error in getUserLocation:', error);
-            showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
-        }
-    }
-
-    function canCreateOrder() {
-        const lastOrderTime = localStorage.getItem('lastOrderTime');
-        if (!lastOrderTime) return true;
-        const lastTime = new Date(lastOrderTime);
-        const now = new Date();
-        const diffMinutes = (now - lastTime) / 1000 / 60;
-        return diffMinutes >= ORDER_COOLDOWN_MINUTES;
-    }
-
-    async function loadFoodOrders() {
-        try {
-            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrders);
-            if (response.status === 403) {
-                showToast('{{ t('food_order_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const orders = await response.json();
-            offlineData.orders = orders;
-            localStorage.setItem('foodOrders', JSON.stringify(orders));
-            renderFoodOrders(orders);
-        } catch (error) {
-            console.error('Error loading food orders:', error);
-            renderFoodOrders(offlineData.orders);
-        }
-    }
-
-    function renderFoodOrders(orders) {
-        const foodOrdersEl = document.getElementById('foodOrders');
-        if (!foodOrdersEl) return;
-        if (orders && orders.length > 0) {
-            foodOrdersEl.innerHTML = orders.map(order => `
-                <div class="food-order-item">
-                    <span class="fw-semibold">${order.name} (${order.vendor})</span>
-                    <div>
-                        <span class="text-muted">{{ t('food_order_total', default='Total') }}: ${order.total_cost}</span>
-                        <button class="btn btn-sm btn-outline-primary ms-2" onclick="foodOrderModule.loadFoodOrderItems('${order.id}')">{{ t('general_view_all', default='View All') }}</button>
-                        <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('${order.id}')">{{ t('food_order_reorder', default='Reorder') }}</button>
-                    </div>
-                </div>
-            `).join('');
-            if (!currentOrderId && orders[0]) {
-                loadFoodOrderItems(orders[0].id);
-            }
-        } else {
-            foodOrdersEl.innerHTML = `<div class="text-muted">{{ t('no_orders', default='No food orders found') }}</div>`;
-        }
-    }
-
-    async function loadManageOrders() {
-        try {
-            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrders);
-            if (response.status === 403) {
-                showToast('{{ t('food_order_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const orders = await response.json();
-            offlineData.orders = orders;
-            localStorage.setItem('foodOrders', JSON.stringify(orders));
-            renderManageOrders(orders);
-        } catch (error) {
-            console.error('Error loading food orders for management:', error);
-            renderManageOrders(offlineData.orders);
-        }
-    }
-
-    function renderManageOrders(orders) {
-        const manageOrdersEl = document.getElementById('manageFoodOrders');
-        if (!manageOrdersEl) return;
-        if (orders && orders.length > 0) {
-            manageOrdersEl.innerHTML = orders.map(order => `
-                <div class="food-order-item">
-                    <span class="fw-semibold">${order.name} (${order.vendor})</span>
-                    <div>
-                        <span class="text-muted">{{ t('food_order_total', default='Total') }}: ${order.total_cost}</span>
-                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="foodOrderModule.deleteFoodOrder('${order.id}', '${order.name}')">{{ t('food_order_delete', default='Delete') }}</button>
-                        <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('${order.id}')">{{ t('food_order_reorder', default='Reorder') }}</button>
-                    </div>
-                </div>
-            `).join('');
-        } else {
-            manageOrdersEl.innerHTML = `<div class="text-muted">{{ t('no_orders', default='No food orders found') }}</div>`;
-        }
-    }
-
-    async function deleteFoodOrder(orderId, orderName) {
-        if (!confirm(`{{ t('food_order_confirm_delete', default='Delete food order') }} "${orderName}"?`)) {
-            return;
-        }
-        try {
-            const response = await fetchWithCSRF(`${window.apiUrls.manageFoodOrders}/${orderId}`, {
-                method: 'DELETE'
-            });
-            if (response.status === 403) {
-                showToast('{{ t('food_order_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const data = await response.json();
-            if (data.error) {
-                showToast(data.error, 'danger');
-            } else {
-                showToast('{{ t('food_order_deleted', default='Food order deleted') }}', 'success');
-                if (currentOrderId === orderId) {
-                    currentOrderId = null;
-                    const foodOrderItemsEl = document.getElementById('foodOrderItems');
-                    if (foodOrderItemsEl) foodOrderItemsEl.innerHTML = '';
-                }
-                loadFoodOrders();
-                loadManageOrders();
-                if (typeof loadFinancialSummary === 'function') {
-                    loadFinancialSummary();
-                }
-            }
-        } catch (error) {
-            console.error('Error deleting food order:', error);
-            showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
-        }
-    }
-
-    async function loadFoodOrderItems(orderId) {
-        currentOrderId = orderId;
-        try {
-            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', orderId));
-            if (response.status === 403) {
-                showToast('{{ t('food_order_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const items = await response.json();
-            offlineData.items[orderId] = items;
-            localStorage.setItem('foodOrderItems', JSON.stringify(offlineData.items));
-            renderFoodOrderItems(items);
-        } catch (error) {
-            console.error('Error loading food order items:', error);
-            renderFoodOrderItems(offlineData.items[orderId] || []);
-        }
-    }
-
-    function renderFoodOrderItems(items) {
-        const foodOrderItemsEl = document.getElementById('foodOrderItems');
-        if (!foodOrderItemsEl) return;
-        if (items && items.length > 0) {
-            foodOrderItemsEl.innerHTML = items.map(item => `
-                <div class="food-order-item">
-                    <span class="fw-semibold">${item.name}</span>
-                    <div class="d-flex align-items-center gap-2">
-                        <input type="number" class="form-control" value="${item.quantity}" min="1" onchange="foodOrderModule.updateFoodOrderItem('${item.item_id}', 'quantity', this.value)">
-                        <input type="number" class="form-control" value="${item.price}" min="0" step="0.01" onchange="foodOrderModule.updateFoodOrderItem('${item.item_id}', 'price', this.value)">
-                        <input type="text" class="form-control" value="${item.notes || ''}" placeholder="{{ t('food_order_item_notes', default='Item Notes') }}" onchange="foodOrderModule.updateFoodOrderItem('${item.item_id}', 'notes', this.value)">
-                    </div>
-                </div>
-            `).join('');
-        } else {
-            foodOrderItemsEl.innerHTML = `<div class="text-muted">{{ t('no_items', default='No items in this order') }}</div>`;
-        }
-    }
-
-    async function createFoodOrder() {
-        if (!canCreateOrder()) {
-            showToast(`{{ t('food_order_duplicate', default='Please wait ${ORDER_COOLDOWN_MINUTES} minutes before creating another order') }}`, 'warning');
-            return;
-        }
-        const name = document.getElementById('newOrderName').value;
-        const vendor = document.getElementById('newOrderVendor').value;
-        const phone = document.getElementById('newOrderPhone').value;
-        const location = document.getElementById('newOrderLocation').value;
-        if (!name || !vendor || !phone || !location) {
-            showToast('{{ t('general_please_provide', default='Please provide all required fields') }}', 'warning');
-            return;
-        }
-        try {
-            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrders, {
-                method: 'POST',
-                body: JSON.stringify({ name, vendor, phone, location })
-            });
-            if (response.status === 403) {
-                showToast('{{ t('food_order_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const data = await response.json();
-            if (data.error) {
-                showToast(data.error, 'danger');
-            } else {
-                localStorage.setItem('lastOrderTime', new Date().toISOString());
-                showSuccessModal();
-                document.getElementById('newOrderName').value = '';
-                document.getElementById('newOrderVendor').value = '';
-                document.getElementById('newOrderPhone').value = '';
-                document.getElementById('newOrderLocation').value = '';
-                loadFoodOrders();
-                loadManageOrders();
-                if (typeof loadFinancialSummary === 'function') {
-                    loadFinancialSummary();
-                }
-            }
-        } catch (error) {
-            console.error('Error creating food order:', error);
-            showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
-        }
-    }
-
-    async function addFoodOrderItem() {
-        if (!currentOrderId) {
-            showToast('{{ t('general_select_order', default='Please select an order') }}', 'warning');
-            return;
-        }
-        const name = document.getElementById('newOrderItemName').value;
-        const quantity = document.getElementById('newOrderItemQuantity').value;
-        const price = document.getElementById('newOrderItemPrice').value;
-        const notes = document.getElementById('newOrderItemNotes').value;
-        if (!name || !quantity || !price) {
-            showToast('{{ t('general_please_provide', default='Please provide all required fields') }}', 'warning');
-            return;
-        }
-        try {
-            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', currentOrderId), {
-                method: 'POST',
-                body: JSON.stringify({ name, quantity, price, notes })
-            });
-            if (response.status === 403) {
-                showToast('{{ t('food_order_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const data = await response.json();
-            if (data.error) {
-                showToast(data.error, 'danger');
-            } else {
-                showToast('{{ t('item_added', default='Item added to order') }}', 'success');
-                document.getElementById('newOrderItemName').value = '';
-                document.getElementById('newOrderItemQuantity').value = '';
-                document.getElementById('newOrderItemPrice').value = '';
-                document.getElementById('newOrderItemNotes').value = '';
-                loadFoodOrderItems(currentOrderId);
-                loadFoodOrders();
-                if (typeof loadFinancialSummary === 'function') {
-                    loadFinancialSummary();
-                }
-            }
-        } catch (error) {
-            console.error('Error adding food order item:', error);
-            showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
-        }
-    }
-
-    async function updateFoodOrderItem(itemId, field, value) {
-        try {
-            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', currentOrderId), {
-                method: 'PUT',
-                body: JSON.stringify({ item_id: itemId, [field]: value })
-            });
-            if (response.status === 403) {
-                showToast('{{ t('food_order_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const data = await response.json();
-            if (data.error) {
-                showToast(data.error, 'danger');
-            } else {
-                showToast('{{ t('item_updated', default='Item updated') }}', 'success');
-                loadFoodOrderItems(currentOrderId);
-                loadFoodOrders();
-                if (typeof loadFinancialSummary === 'function') {
-                    loadFinancialSummary();
-                }
-            }
-        } catch (error) {
-            console.error('Error updating food order item:', error);
-            showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
-        }
-    }
-
-    async function reorder(orderId) {
-        try {
-            const response = await fetchWithCSRF(window.apiUrls.reorderFoodOrder.replace('{order_id}', orderId), {
-                method: 'POST'
-            });
-            if (response.status === 403) {
-                showToast('{{ t('food_order_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const data = await response.json();
-            if (data.error) {
-                showToast(data.error, 'danger');
-            } else {
-                localStorage.setItem('lastOrderTime', new Date().toISOString());
-                showSuccessModal();
-                loadFoodOrders();
-                loadManageOrders();
-                if (typeof loadFinancialSummary === 'function') {
-                    loadFinancialSummary();
-                }
-            }
-        } catch (error) {
-            console.error('Error reordering food order:', error);
-            showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
-        }
-    }
-
-    function showSuccessModal() {
-        const successModalEl = document.getElementById('successModal');
-        if (successModalEl && typeof bootstrap !== 'undefined') {
-            const successModal = new bootstrap.Modal(successModalEl);
-            successModal.show();
-        } else {
-            console.error('Success modal element or Bootstrap not found');
-            showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
-        }
-    }
-
-    function loadOfflineData() {
-        const cachedOrders = localStorage.getItem('foodOrders');
-        const cachedItems = localStorage.getItem('foodOrderItems');
-        if (cachedOrders) {
-            offlineData.orders = JSON.parse(cachedOrders);
-            renderFoodOrders(offlineData.orders);
-            renderManageOrders(offlineData.orders);
-        }
-        if (cachedItems) {
-            offlineData.items = JSON.parse(cachedItems);
-            if (currentOrderId && offlineData.items[currentOrderId]) {
-                renderFoodOrderItems(offlineData.items[currentOrderId]);
-            }
-        }
-    }
-
-    function format_currency(value) {
-        if (!value && value !== 0) return '₦0.00';
-        value = parseFloat(value);
-        if (isNaN(value)) return '₦0.00';
-        return value.toLocaleString('en-NG', { style: 'currency', currency: 'NGN' });
-    }
-
-    function cleanupModal() {
-        try {
-            currentOrderId = null;
-            const foodOrdersEl = document.getElementById('foodOrders');
-            const foodOrderItemsEl = document.getElementById('foodOrderItems');
-            const manageOrdersEl = document.getElementById('manageFoodOrders');
-            if (foodOrdersEl) foodOrdersEl.innerHTML = '';
-            if (foodOrderItemsEl) foodOrderItemsEl.innerHTML = '';
-            if (manageOrdersEl) manageOrdersEl.innerHTML = '';
-            const tabEl = document.querySelector('#foodOrderTabs');
-            if (tabEl) {
-                const activeTab = tabEl.querySelector('.nav-link.active');
-                if (activeTab) {
-                    new bootstrap.Tab(activeTab).show();
-                }
-            }
-            document.body.classList.remove('modal-open');
-            const modalBackdrop = document.querySelector('.modal-backdrop');
-            if (modalBackdrop) {
-                modal/ORderItemsEl) modalBackdrop.remove();
-            }
-        } catch (error) {
-            console.error('Error during modal cleanup:', error);
-        }
-    }
-
-    window.foodOrderModule = {
-        initFoodOrder: function() {
+        async function getUserLocation() {
             try {
-                if (!window.foodOrderTranslations || !window.apiUrls) {
-                    console.error('Food order translations or API URLs not defined');
-                    showToast('{{ t('general_error', default='Initialization error: Translations or APIs not found') }}', 'danger');
-                    return;
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        async (position) => {
+                            const location = `${position.coords.latitude},${position.coords.longitude}`;
+                            document.getElementById('{{ order_form.location.id }}').value = location;
+                            const response = await fetch('{{ url_for("personal.food_order.get_nearest_vendor") }}?location=' + encodeURIComponent(location));
+                            const data = await response.json();
+                            if (data.vendor) {
+                                document.getElementById('{{ order_form.vendor.id }}').value = data.vendor;
+                            } else {
+                                alert('{{ trans("food_order_no_vendors", default="No vendors found nearby") }}');
+                            }
+                        },
+                        (error) => {
+                            console.error('Error getting location:', error);
+                            alert('{{ trans("food_order_location_error", default="Unable to auto-detect location. Please enter manually.") }}');
+                        }
+                    );
+                } else {
+                    alert('{{ trans("food_order_geolocation_unsupported", default="Geolocation is not supported by this browser.") }}');
                 }
-                if (typeof showToast !== 'function') {
-                    console.error('showToast function is not defined');
-                    return;
-                }
-                if (typeof bootstrap === 'undefined') {
-                    console.error('Bootstrap JavaScript is not defined');
-                    showToast('{{ t('bootstrap_required', default='Bootstrap JavaScript is required') }}', 'danger');
-                    return;
-                }
-                const tabEl = document.querySelector('#foodOrderTabs');
-                if (tabEl) {
-                    new bootstrap.Tab(tabEl.querySelector('.nav-link.active')).show();
-                }
-                modalElement = document.getElementById('successModal');
-                if (modalElement) {
-                    modalElement.addEventListener('hidden.bs.modal', cleanupModal);
-                }
-                loadFoodOrders();
-                loadManageOrders();
-                loadOfflineData();
             } catch (error) {
-                console.error('Error initializing food order:', error);
-                showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
+                console.error('Error in getUserLocation:', error);
+                alert('{{ trans("general_error", default="An error occurred") }}');
             }
-        },
-        createFoodOrder,
-        addFoodOrderItem,
-        updateFoodOrderItem,
-        loadFoodOrderItems,
-        deleteFoodOrder,
-        getUserLocation,
-        reorder
-    };
+        }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        setupCSRF();
-        window.foodOrderModule.initFoodOrder();
-    });
-})();
-</script>
-{% endblock %}
+        async function updateFoodOrderItem(itemId, field, value) {
+            try {
+                const response = await fetch('{{ url_for("personal.food_order.manage_items", order_id=latest_order.id) }}', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': '{{ order_form.csrf_token._value() }}'
+                    },
+                    body: JSON.stringify({ item_id: itemId, [field]: value })
+                });
+                const data = await response.json();
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    alert('{{ trans("food_order_item_updated", default="Item updated successfully") }}');
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Error updating food order item:', error);
+                alert('{{ trans("general_error", default="An error occurred") }}');
+            }
+        }
+    </script>
+</body>
+</html>
