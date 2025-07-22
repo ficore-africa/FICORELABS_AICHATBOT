@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, current_app, request, session
+from flask import Blueprint, jsonify, current_app, request, session, render_template, flash, redirect, url_for
 from flask_login import current_user, login_required
 from pymongo import errors
 from bson import ObjectId
@@ -12,7 +12,7 @@ import geocoder
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
-food_order_bp = Blueprint('food_order', __name__, url_prefix='/food_order')
+food_order_bp = Blueprint('food_order', __name__, url_prefix='/food_order', template_folder='templates/personal/FOOD_ORDER')
 
 def deduct_ficore_credits(db, user_id, amount, action, order_id=None):
     """Deduct Ficore Credits from user balance and log the transaction using MongoDB transaction."""
@@ -65,6 +65,71 @@ def deduct_ficore_credits(db, user_id, amount, action, order_id=None):
     finally:
         if 'mongo_session' in locals():
             mongo_session.end_session()
+
+def format_currency(value):
+    """Format a numeric value with comma separation, no currency symbol."""
+    try:
+        numeric_value = float(value)
+        formatted = f"{numeric_value:,.2f}"
+        current_app.logger.debug(f"Formatted value: input={value}, output={formatted}", extra={'session_id': session.get('sid', 'unknown')})
+        return formatted
+    except (ValueError, TypeError) as e:
+        current_app.logger.warning(f"Format Error: input={value}, error={str(e)}", extra={'session_id': session.get('sid', 'unknown')})
+        return "0.00"
+
+@food_order_bp.route('/index', methods=['GET'])
+@login_required
+@requires_role(['personal', 'admin'])
+def index():
+    """Render the food order management interface."""
+    try:
+        db = get_mongo_db()
+        user_id = str(current_user.id)
+        orders = list(db.FoodOrder.find({'user_id': user_id}, {'_id': 0}).sort('created_at', -1).limit(10))
+        
+        # Format order data for template
+        orders_data = []
+        for order in orders:
+            order_data = {
+                'id': order['id'],
+                'name': order.get('name', ''),
+                'vendor': order.get('vendor', ''),
+                'phone': order.get('phone', ''),
+                'location': order.get('location', ''),
+                'total_cost': format_currency(order.get('total_cost', 0.0)),
+                'total_cost_raw': float(order.get('total_cost', 0.0)),
+                'created_at': order.get('created_at').strftime('%Y-%m-%d %H:%M:%S'),
+                'status': order.get('status', 'submitted'),
+                'items': order.get('items', [])
+            }
+            orders_data.append(order_data)
+        
+        # Calculate summary statistics
+        total_orders = len(orders_data)
+        total_spent = sum(order['total_cost_raw'] for order in orders_data)
+        pending_orders = sum(1 for order in orders_data if order['status'] == 'submitted')
+        
+        current_app.logger.info(f"Rendering food order index for user {user_id}, fetched {total_orders} orders", extra={'session_id': session.get('sid', 'unknown')})
+        
+        return render_template(
+            'personal/FOOD_ORDER/food_order_main.html',
+            title=trans('food_order_title', default='Food Order Manager'),
+            orders_data=orders_data,
+            total_orders=total_orders,
+            total_spent=format_currency(total_spent),
+            pending_orders=pending_orders,
+            is_admin=is_admin(),
+            is_anonymous=False
+        )
+    except Exception as e:
+        current_app.logger.error(f"Error rendering food order index: {str(e)}", extra={'session_id': session.get('sid', 'unknown')})
+        flash(trans('general_error', default='An error occurred while loading the food order dashboard'), 'danger')
+        return render_template(
+            'personal/FOOD_ORDER/error.html',
+            title=trans('food_order_title', default='Food Order Manager'),
+            error_message=trans('general_error', default='An error occurred while loading the food order dashboard'),
+            is_admin=is_admin()
+        ), 500
 
 @food_order_bp.route('/get_nearest_vendor', methods=['GET'])
 @login_required
