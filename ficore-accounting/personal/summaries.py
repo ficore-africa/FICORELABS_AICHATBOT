@@ -14,117 +14,136 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None):
     query = {} if is_admin_user else {'user_id': str(user_id)}
     activities = []
 
-    # Fetch recent bills
-    bills = db.bills.find(query).sort('created_at', -1).limit(5)
-    for bill in bills:
-        if not bill.get('created_at') or not bill.get('bill_name'):
-            logger.warning(f"Skipping invalid bill record: {bill.get('_id')}", 
-                           extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-            continue
-        activities.append({
+    # Define required fields for each activity type
+    activity_configs = {
+        'bills': {
+            'collection': 'bills',
+            'required_fields': ['created_at', 'bill_name'],
             'type': 'bill',
-            'description': trans('recent_activity_bill_added', default='Added bill: {name}', name=bill.get('bill_name', 'Unknown')),
-            'timestamp': bill.get('created_at', datetime.utcnow()).isoformat(),
-            'details': {
-                'amount': bill.get('amount', 0),
-                'due_date': bill.get('due_date', 'N/A'),
-                'status': bill.get('status', 'Unknown')
-            },
-            'icon': 'bi-receipt'
-        })
-
-    # Fetch recent budgets
-    budgets = db.budgets.find(query).sort('created_at', -1).limit(5)
-    for budget in budgets:
-        activities.append({
+            'icon': 'bi-receipt',
+            'description_key': 'recent_activity_bill_added',
+            'default_description': 'Added bill: {name}',
+            'details': lambda x: {
+                'amount': x.get('amount', 0),
+                'due_date': x.get('due_date', 'N/A'),
+                'status': x.get('status', 'Unknown')
+            }
+        },
+        'budgets': {
+            'collection': 'budgets',
+            'required_fields': ['created_at', 'income'],
             'type': 'budget',
-            'description': trans('recent_activity_budget_created', default='Created budget with income: {amount}', amount=budget.get('income', 0)),
-            'timestamp': budget.get('created_at', datetime.utcnow()).isoformat(),
-            'details': {
-                'income': budget.get('income', 0),
-                'surplus_deficit': budget.get('surplus_deficit', 0)
-            },
-            'icon': 'bi-cash-coin'
-        })
-
-    # Fetch recent grocery lists
-    grocery_lists = db.grocery_lists.find(query).sort('created_at', -1).limit(5)
-    for grocery_list in grocery_lists:
-        activities.append({
+            'icon': 'bi-cash-coin',
+            'description_key': 'recent_activity_budget_created',
+            'default_description': 'Created budget with income: {amount}',
+            'details': lambda x: {
+                'income': x.get('income', 0),
+                'surplus_deficit': x.get('surplus_deficit', 0)
+            }
+        },
+        'grocery_lists': {
+            'collection': 'grocery_lists',
+            'required_fields': ['created_at', 'name'],
             'type': 'grocery_list',
-            'description': trans('recent_activity_grocery_list_created', default='Created grocery list: {name}', name=grocery_list.get('name', 'Unknown')),
-            'timestamp': grocery_list.get('created_at', datetime.utcnow()).isoformat(),
-            'details': {
-                'budget': grocery_list.get('budget', 0),
-                'total_spent': grocery_list.get('total_spent', 0)
+            'icon': 'bi-cart',
+            'description_key': 'recent_activity_grocery_list_created',
+            'default_description': 'Created grocery list: {name}',
+            'details': lambda x: {
+                'budget': x.get('budget', 0),
+                'total_spent': x.get('total_spent', 0)
+            }
+        },
+        'grocery_items': {
+            'collection': 'grocery_items',
+            'required_fields': ['updated_at', 'name', 'status'],
+            'type': 'grocery_item',
+            'icon': 'bi-check-circle',
+            'description_key': 'recent_activity_grocery_item_bought',
+            'default_description': 'Bought item: {name}',
+            'details': lambda x: {
+                'quantity': x.get('quantity', 1),
+                'price': x.get('price', 0),
+                'store': x.get('store', 'Unknown')
             },
-            'icon': 'bi-cart'
-        })
-
-    # Fetch recent grocery items
-    grocery_items = db.grocery_items.find(query).sort('updated_at', -1).limit(5)
-    for item in grocery_items:
-        if item.get('status') == 'bought':
-            activities.append({
-                'type': 'grocery_item',
-                'description': trans('recent_activity_grocery_item_bought', default='Bought item: {name}', name=item.get('name', 'Unknown')),
-                'timestamp': item.get('updated_at', datetime.utcnow()).isoformat(),
-                'details': {
-                    'quantity': item.get('quantity', 1),
-                    'price': item.get('price', 0),
-                    'store': item.get('store', 'Unknown')
-                },
-                'icon': 'bi-check-circle'
-            })
-
-    # Fetch recent learning hub progress
-    learning_hub_progress = db.learning_materials.find(query).sort('updated_at', -1).limit(5)
-    for progress in learning_hub_progress:
-        if progress.get('course_id'):
-            activities.append({
-                'type': 'learning_hub',
-                'description': trans('recent_activity_learning_hub_progress', default='Progress in course: {course_id}', course_id=progress.get('course_id', 'N/A')),
-                'timestamp': progress.get('updated_at', datetime.utcnow()).isoformat(),
-                'details': {
-                    'course_id': progress.get('course_id', 'N/A'),
-                    'lessons_completed': len(progress.get('lessons_completed', [])),
-                    'current_lesson': progress.get('current_lesson', 'N/A')
-                },
-                'icon': 'bi-book'
-            })
-
-    # Fetch recent Ficore Credits transactions
-    ficore_transactions = db.ficore_credit_transactions.find(query).sort('timestamp', -1).limit(5)
-    for transaction in ficore_transactions:
-        activities.append({
+            'filter': lambda x: x.get('status') == 'bought'
+        },
+        'learning_materials': {
+            'collection': 'learning_materials',
+            'required_fields': ['updated_at', 'course_id'],
+            'type': 'learning_hub',
+            'icon': 'bi-book',
+            'description_key': 'recent_activity_learning_hub_progress',
+            'default_description': 'Progress in course: {course_id}',
+            'details': lambda x: {
+                'course_id': x.get('course_id', 'N/A'),
+                'lessons_completed': len(x.get('lessons_completed', [])),
+                'current_lesson': x.get('current_lesson', 'N/A')
+            }
+        },
+        'ficore_credit_transactions': {
+            'collection': 'ficore_credit_transactions',
+            'required_fields': ['timestamp', 'amount', 'action'],
             'type': 'ficore_credit',
-            'description': trans('recent_activity_ficore_credit', default='{action}: {amount} credits', 
-                                action=transaction.get('action', 'Transaction'), amount=abs(transaction.get('amount', 0))),
-            'timestamp': transaction.get('timestamp', datetime.utcnow()).isoformat(),
-            'details': {
-                'amount': transaction.get('amount', 0),
-                'action': transaction.get('action', 'Unknown')
-            },
-            'icon': 'bi-wallet2'
-        })
-
-    # Fetch recent food orders
-    food_orders = db.food_orders.find(query).sort('created_at', -1).limit(5)
-    for order in food_orders:
-        if not order.get('created_at') or not order.get('name'):
-            logger.warning(f"Skipping invalid food order record: {order.get('_id')}", 
-                           extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-            continue
-        activities.append({
+            'icon': 'bi-wallet2',
+            'description_key': 'recent_activity_ficore_credit',
+            'default_description': '{action}: {amount} credits',
+            'details': lambda x: {
+                'amount': x.get('amount', 0),
+                'action': x.get('action', 'Unknown')
+            }
+        },
+        'food_orders': {
+            'collection': 'food_orders',
+            'required_fields': ['created_at', 'name'],
             'type': 'food_order',
-            'description': trans('recent_activity_food_order_created', default='Created food order: {name}', name=order.get('name', 'Unknown')),
-            'timestamp': order.get('created_at', datetime.utcnow()).isoformat(),
-            'details': {
-                'vendor': order.get('vendor', 'Unknown'),
-                'total_cost': order.get('total_cost', 0)
-            },
-            'icon': 'bi-box-seam'
-        })
+            'icon': 'bi-box-seam',
+            'description_key': 'recent_activity_food_order_created',
+            'default_description': 'Created food order: {name}',
+            'details': lambda x: {
+                'vendor': x.get('vendor', 'Unknown'),
+                'total_cost': x.get('total_cost', 0)
+            }
+        }
+    }
+
+    for config in activity_configs.values():
+        try:
+            cursor = db[config['collection']].find(query).sort(config.get('sort_field', 'created_at'), -1).limit(5)
+            for record in cursor:
+                # Validate required fields
+                if any(record.get(field) is None for field in config['required_fields']):
+                    logger.warning(
+                        f"Skipping invalid {config['collection']} record: {record.get('_id', 'unknown')}",
+                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr}
+                    )
+                    continue
+                # Apply additional filter if specified
+                if 'filter' in config and not config['filter'](record):
+                    continue
+                # Construct activity object
+                activity = {
+                    'type': config['type'],
+                    'description_key': config['description_key'],
+                    'description': trans(
+                        config['description_key'],
+                        default=config['default_description'].format(**{
+                            'name': record.get('name', 'Unknown'),
+                            'amount': abs(record.get('amount', record.get('income', 0))),
+                            'action': record.get('action', 'Transaction'),
+                            'course_id': record.get('course_id', 'N/A')
+                        })
+                    ),
+                    'timestamp': record.get(config.get('sort_field', 'created_at'), datetime.utcnow()).isoformat(),
+                    'details': config['details'](record),
+                    'icon': config['icon']
+                }
+                activities.append(activity)
+        except Exception as e:
+            logger.error(
+                f"Error processing {config['collection']} for recent activities: {str(e)}",
+                extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr}
+            )
+            continue
 
     activities.sort(key=lambda x: x['timestamp'], reverse=True)
     return activities[:10]
@@ -144,6 +163,7 @@ def _get_notifications_data(user_id, is_admin_user, db):
     return [{
         'id': str(n.get('notification_id', ObjectId())),
         'message': n.get('message', 'No message'),
+        'message_key': n.get('message_key', 'unknown_notification'),
         'type': n.get('type', 'info'),
         'timestamp': n.get('sent_at', datetime.utcnow()).isoformat(),
         'read': n.get('read_status', False),
@@ -181,7 +201,7 @@ def budget_summary():
     except Exception as e:
         logger.error(f"Error fetching budget summary for user {current_user.id}: {str(e)}", 
                      extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-        return jsonify({'error': trans('budget_summary_error', default='Error fetching budget summary')}), 500
+        return jsonify({'totalBudget': 0.0, 'error': trans('budget_summary_error', default='Error fetching budget summary')}), 500
 
 @summaries_bp.route('/bill/summary')
 @login_required
@@ -338,7 +358,7 @@ def recent_activity():
     except Exception as e:
         logger.error(f"Error in summaries.recent_activity: {str(e)}", 
                      extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-        return jsonify({'error': trans('general_something_went_wrong', default='Failed to fetch recent activity')}), 500
+        return jsonify([]), 200  # Return empty array instead of error to avoid client-side issues
 
 @summaries_bp.route('/notification_count')
 @login_required
@@ -355,7 +375,7 @@ def notification_count():
     except Exception as e:
         logger.error(f"Error fetching notification count: {str(e)}", 
                      extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-        return jsonify({'error': trans('general_something_went_wrong', default='Failed to fetch notification count')}), 500
+        return jsonify({'count': 0, 'error': trans('general_something_went_wrong', default='Failed to fetch notification count')}), 500
 
 @summaries_bp.route('/notifications')
 @login_required
@@ -385,6 +405,7 @@ def notifications():
                 result.append({
                     'id': str(n.get('notification_id', ObjectId())),
                     'message': n.get('message', 'No message'),
+                    'message_key': n.get('message_key', 'unknown_notification'),
                     'type': n.get('type', 'info'),
                     'timestamp': n.get('sent_at', datetime.utcnow()).isoformat(),
                     'read': n.get('read_status', False),
@@ -401,4 +422,4 @@ def notifications():
     except Exception as e:
         logger.error(f"Error fetching notifications: {str(e)}", 
                      extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-        return jsonify({'error': trans('general_something_went_wrong', default='Failed to fetch notifications')}), 500
+        return jsonify([]), 200  # Return empty array instead of error to avoid client-side issues
