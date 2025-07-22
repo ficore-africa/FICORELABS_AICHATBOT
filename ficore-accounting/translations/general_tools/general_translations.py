@@ -7,6 +7,7 @@ GENERAL_TRANSLATIONS = {
         'general_register': 'Register',
         'general_back_to_dashboard': 'Back to Dashboard',
         'general_signup': 'Sign Up',
+        'general_select': 'Select',
         'grocery_management': 'Grocery Management',
         'grocery_management_desc': 'Manage your grocery inventory and shopping lists efficiently.',
         'general_na': 'N/A',
@@ -1804,6 +1805,7 @@ GENERAL_TRANSLATIONS = {
         'food_order_no_orders': 'Ba a sami odar abinci ba',
         'food_order_no_items': 'Babu abubuwa a cikin wannan oda',
         'food_order_created': 'An ƙirƙiri odar abinci',
+        'general_select': 'Zaɓi',
         # General module
         'grocery_spending': 'Kashe Kuɗi na Grocery',
         'submitted': 'An Ƙaddamar',
