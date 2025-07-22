@@ -307,9 +307,9 @@ function loadFinancialSummary() {
                 return;
             }
             const grocerySpending = document.getElementById('grocerySpending');
-            grocerySpending.querySelector('.amount-value').dataset.amount = data.totalBudget;
-            grocerySpending.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.totalBudget) : '****';
-            document.getElementById('groceryStatusLabel').textContent = data.totalBudget <= data.total_grocery_budget ? window.t('within_budget', { default: 'Cikin Kasafin Kuɗi' }) : window.t('over_budget', { default: 'Fiye da Kasafin Kuɗi' });
+            grocerySpending.querySelector('.amount-value').dataset.amount = data.total_shopping_spent;
+            grocerySpending.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.total_shopping_spent) : '****';
+            document.getElementById('groceryStatusLabel').textContent = data.total_shopping_spent <= data.total_shopping_budget ? window.t('within_budget', { default: 'Cikin Kasafin Kuɗi' }) : window.t('over_budget', { default: 'Fiye da Kasafin Kuɗi' });
         })
         .catch(error => {
             console.error('Error loading grocery summary:', error);
