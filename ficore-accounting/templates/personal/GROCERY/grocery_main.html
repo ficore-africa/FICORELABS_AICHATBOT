@@ -1,772 +1,277 @@
-{% extends "base.html" %}
-{% block title %}{{ t('grocery_title', default='Grocery') }} - FiCore{% endblock %}
-{% block content %}
-<div class="container mt-5">
-    <div class="page-title">
-        <h1>{{ t('grocery_title', default='Grocery') }}</h1>
-        <small class="subtext">{{ t('grocery_subtitle', default='Manage Your Grocery Lists') }}</small>
-    </div>
-    <div id="grocery-root">
-        <ul class="nav nav-tabs mb-3" id="groceryTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="lists-tab" data-bs-toggle="tab" data-bs-target="#lists" type="button" role="tab">{{ t('grocery_create', default='Create Grocery List') }}</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="manage-lists-tab" data-bs-toggle="tab" data-bs-target="#manage-lists" type="button" role="tab">{{ t('general_view_all', default='View All') }}</button>
-            </li>
-        </ul>
-        <div class="tab-content" id="groceryTabContent">
-            <div class="tab-pane fade show active" id="lists" role="tabpanel" aria-labelledby="lists-tab">
-                <div class="mb-3">
-                    <h6>{{ t('grocery_create', default='Create Grocery List') }}</h6>
-                    <div class="input-group mb-2">
-                        <input type="text" class="form-control" id="newListName" placeholder="{{ t('grocery_list_name', default='List Name') }}">
-                        <input type="number" class="form-control" id="newListBudget" placeholder="{{ t('grocery_budget', default='Budget') }}" min="0" step="0.01">
-                    </div>
-                    <div class="alert alert-info">{{ t('grocery_cost_note', default='Note: Creating, editing, saving, or exporting this list will deduct 0.1 FC, and deleting will deduct 0.5 FC from your balance.') }}</div>
-                    <button class="btn btn-primary" onclick="groceryModule.createGroceryList()">{{ t('grocery_create', default='Create') }}</button>
+<!DOCTYPE html>
+<html lang="{{ session.get('lang', 'en') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ tool_title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .flash-message { padding: 1rem; margin-bottom: 1rem; border-radius: 0.25rem; }
+        .flash-success { background-color: #d4edda; color: #155724; }
+        .flash-danger { background-color: #f8d7da; color: #721c24; }
+        .flash-warning { background-color: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto p-4">
+        <h1 class="text-3xl font-bold mb-4">{{ tool_title }}</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="tabs mb-4">
+            <button class="tab-button px-4 py-2 {% if active_tab == 'create-list' %}bg-blue-500 text-white{% else %}bg-gray-200{% endif %}" onclick="openTab('create-list')">Create List</button>
+            <button class="tab-button px-4 py-2 {% if active_tab == 'dashboard' %}bg-blue-500 text-white{% else %}bg-gray-200{% endif %}" onclick="openTab('dashboard')">Dashboard</button>
+        </div>
+
+        <div id="create-list" class="tab-content {% if active_tab == 'create-list' %}active{% endif %}">
+            <h2 class="text-xl font-semibold mb-4">{{ trans('shopping_create_list', default='Create New Shopping List') }}</h2>
+            <form method="POST" action="{{ url_for('personal.shopping.main', tab='create-list') }}">
+                {{ list_form.hidden_tag() }}
+                <input type="hidden" name="action" value="create_list">
+                <div class="mb-4">
+                    {{ list_form.name.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ list_form.name(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                    {% for error in list_form.name.errors %}
+                        <span class="text-red-600 text-sm">{{ error }}</span>
+                    {% endfor %}
                 </div>
-                <div id="groceryLists">
-                    {% if recent_lists|length > 0 %}
-                        {% for list in recent_lists %}
-                            <div class="grocery-list-item">
-                                <span class="fw-semibold">{{ list.name }}</span>
-                                <div>
-                                    <span class="text-muted">{{ t('grocery_budget', default='Budget') }}: {{ list.budget }}</span>
-                                    <span class="text-muted ms-2">{{ t('grocery_total_spent', default='Total Spent') }}: {{ list.total_spent }}</span>
-                                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="groceryModule.loadGroceryItems('{{ list.id }}')">{{ t('general_view_all', default='View All') }}</button>
-                                    <button class="btn btn-sm btn-outline-success ms-2" onclick="groceryModule.saveGroceryList('{{ list.id }}')">{{ t('grocery_save', default='Save') }}</button>
-                                    <button class="btn btn-sm btn-outline-info ms-2" onclick="groceryModule.exportGroceryList('{{ list.id }}')">{{ t('grocery_export_pdf', default='Export PDF') }}</button>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-muted">{{ t('no_lists', default='No grocery lists found') }}</div>
-                    {% endif %}
+                <div class="mb-4">
+                    {{ list_form.budget.label(class="block text-sm font-medium text-gray-700") }}
+                    {{ list_form.budget(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                    {% for error in list_form.budget.errors %}
+                        <span class="text-red-600 text-sm">{{ error }}</span>
+                    {% endfor %}
                 </div>
-                <div id="groceryItems" class="mt-3">
-                    {% if recent_lists|length > 0 and recent_lists[0].items|length > 0 %}
-                        {% for item in recent_lists[0].items %}
-                            <div class="grocery-item">
-                                <span class="fw-semibold">{{ item.name }} ({{ item.category }})</span>
-                                <div class="d-flex align-items-center gap-2">
-                                    <input type="number" class="form-control" value="{{ item.quantity }}" min="1" onchange="groceryModule.updateGroceryItem('{{ item.id }}', 'quantity', this.value)">
-                                    <input type="number" class="form-control" value="{{ item.price }}" min="0" step="0.01" onchange="groceryModule.updateGroceryItem('{{ item.id }}', 'price', this.value)">
-                                    <select class="form-control" onchange="groceryModule.updateGroceryItem('{{ item.id }}', 'status', this.value)">
-                                        <option value="to_buy" {% if item.status == 'to_buy' %}selected{% endif %}>{{ t('grocery_to_buy', default='To Buy') }}</option>
-                                        <option value="bought" {% if item.status == 'bought' %}selected{% endif %}>{{ t('grocery_bought', default='Bought') }}</option>
-                                    </select>
-                                    <input type="text" class="form-control" value="{{ item.store|default('Unknown') }}" placeholder="{{ t('grocery_store', default='Store') }}" onchange="groceryModule.updateGroceryItem('{{ item.id }}', 'store', this.value)">
-                                    <input type="number" class="form-control" value="{{ item.frequency|default(7) }}" min="1" placeholder="{{ t('grocery_frequency', default='Frequency (days)') }}" onchange="groceryModule.updateGroceryItem('{{ item.id }}', 'frequency', this.value)">
-                                    <button class="btn btn-sm btn-outline-info" onclick="groceryModule.showPriceHistory('{{ item.name }}')">{{ t('grocery_price_history', default='Price History') }}</button>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-muted">{{ t('no_items', default='No items in this list') }}</div>
-                    {% endif %}
-                </div>
-                <div class="mt-3">
-                    <h6>{{ t('grocery_add_item', default='Add Item') }}</h6>
-                    <div class="input-group mb-2">
-                        <input type="text" class="form-control" id="newItemName" placeholder="{{ t('grocery_item_name', default='Item Name') }}">
-                        <input type="number" class="form-control" id="newItemQuantity" placeholder="{{ t('grocery_quantity', default='Quantity') }}" min="1">
-                        <input type="number" class="form-control" id="newItemPrice" placeholder="{{ t('grocery_price', default='Price') }}" min="0" step="0.01">
-                        <input type="text" class="form-control" id="newItemStore" placeholder="{{ t('grocery_store', default='Store') }}">
-                    </div>
-                    <div class="input-group mb-2">
-                        <input type="number" class="form-control" id="newItemFrequency" placeholder="{{ t('grocery_frequency', default='Frequency (days)') }}" min="1" value="7">
-                        <button class="btn btn-primary" onclick="groceryModule.addGroceryItem()">{{ t('grocery_add', default='Add') }}</button>
+                {{ list_form.submit(class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600") }}
+            </form>
+        </div>
+
+        <div id="dashboard" class="tab-content {% if active_tab == 'dashboard' %}active{% endif %}">
+            <h2 class="text-xl font-semibold mb-4">{{ trans('shopping_dashboard', default='Shopping List Dashboard') }}</h2>
+            
+            {% if latest_list.id %}
+                <div class="mb-4">
+                    <h3 class="text-lg font-medium">{{ trans('shopping_latest_list', default='Latest Shopping List') }}</h3>
+                    <p><strong>{{ trans('general_list_name', default='List Name') }}:</strong> {{ latest_list.name }}</p>
+                    <p><strong>{{ trans('general_budget', default='Budget') }}:</strong> {{ latest_list.budget }}</p>
+                    <p><strong>{{ trans('general_total_spent', default='Total Spent') }}:</strong> {{ latest_list.total_spent }}</p>
+                    <p><strong>{{ trans('general_status', default='Status') }}:</strong> {{ trans(latest_list.status, default=latest_list.status) }}</p>
+                    <p><strong>{{ trans('general_collaborators', default='Collaborators') }}:</strong> {{ latest_list.collaborators|join(', ') or 'None' }}</p>
+                    <p><strong>{{ trans('general_date', default='Created At') }}:</strong> {{ latest_list.created_at }}</p>
+                    <div class="mt-2">
+                        <a href="{{ url_for('personal.shopping.export_list_pdf', list_id=latest_list.id) }}" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">{{ trans('shopping_export_pdf', default='Export to PDF') }}</a>
+                        <form method="POST" action="{{ url_for('personal.shopping.main', tab='dashboard') }}" class="inline">
+                            <input type="hidden" name="action" value="delete_list">
+                            <input type="hidden" name="list_id" value="{{ latest_list.id }}">
+                            {{ list_form.csrf_token }}
+                            <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">{{ trans('shopping_delete_list', default='Delete List') }}</button>
+                        </form>
                     </div>
                 </div>
-                <div class="mt-3">
-                    <h6>{{ t('grocery_share_list', default='Share List') }}</h6>
-                    <div class="input-group mb-2">
-                        <input type="email" class="form-control" id="shareEmail" placeholder="{{ t('grocery_collaborator_email', default='Collaborator Email') }}">
-                        <button class="btn btn-primary" onclick="groceryModule.shareGroceryList()">{{ t('grocery_share', default='Share') }}</button>
-                    </div>
-                    <small class="text-muted">{{ t('grocery_share_note', default='Note: Collaborators can view and edit the list.') }}</small>
-                </div>
-            </div>
-            <div class="tab-pane fade" id="manage-lists" role="tabpanel" aria-labelledby="manage-lists-tab">
-                <div class="mb-3">
-                    <h6>{{ t('general_view_all', default='View All') }}</h6>
-                    <div id="manageGroceryLists">
-                        {% if recent_lists|length > 0 %}
-                            {% for list in recent_lists %}
-                                <div class="grocery-list-item">
-                                    <span class="fw-semibold">{{ list.name }}</span>
-                                    <div>
-                                        <span class="text-muted">{{ t('grocery_budget', default='Budget') }}: {{ list.budget }}</span>
-                                        <span class="text-muted ms-2">{{ t('grocery_total_spent', default='Total Spent') }}: {{ list.total_spent }}</span>
-                                        <button class="btn btn-sm btn-outline-primary ms-2" onclick="groceryModule.editGroceryList('{{ list.id }}')">{{ t('grocery_edit', default='Edit') }}</button>
-                                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="groceryModule.initiateDeleteGroceryList('{{ list.id }}', '{{ list.name }}')">{{ t('grocery_delete', default='Delete') }}</button>
-                                        <button class="btn btn-sm btn-outline-success ms-2" onclick="groceryModule.saveGroceryList('{{ list.id }}')">{{ t('grocery_save', default='Save') }}</button>
-                                        <button class="btn btn-sm btn-outline-info ms-2" onclick="groceryModule.exportGroceryList('{{ list.id }}')">{{ t('grocery_export_pdf', default='Export PDF') }}</button>
-                                    </div>
-                                </div>
+
+                <div class="mb-4">
+                    <h3 class="text-lg font-medium">{{ trans('shopping_add_item', default='Add Item to List') }}</h3>
+                    <form method="POST" action="{{ url_for('personal.shopping.main', tab='dashboard') }}">
+                        {{ item_form.hidden_tag() }}
+                        <input type="hidden" name="action" value="add_item">
+                        <input type="hidden" name="list_id" value="{{ latest_list.id }}">
+                        <div class="mb-4">
+                            {{ item_form.name.label(class="block text-sm font-medium text-gray-700") }}
+                            {{ item_form.name(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                            {% for error in item_form.name.errors %}
+                                <span class="text-red-600 text-sm">{{ error }}</span>
                             {% endfor %}
-                        {% else %}
-                            <div class="text-muted">{{ t('no_lists', default='No grocery lists found') }}</div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="successModalLabel">{{ t('grocery_success_title', default='Action Successful') }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t('general_close', default='Close') }}"></button>
-                    </div>
-                    <div class="modal-body" id="successModalMessage">
-                        {{ t('grocery_success_message', default='Your action was completed successfully.') }}
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">{{ t('grocery_ok', default='OK') }}</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="modal fade" id="editListModal" tabindex="-1" aria-labelledby="editListModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="editListModalLabel">{{ t('grocery_edit_list', default='Edit Grocery List') }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t('general_close', default='Close') }}"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="editListName" class="form-label">{{ t('grocery_list_name', default='List Name') }}</label>
-                            <input type="text" class="form-control" id="editListName" placeholder="{{ t('grocery_list_name', default='List Name') }}">
                         </div>
-                        <div class="mb-3">
-                            <label for="editListBudget" class="form-label">{{ t('grocery_budget', default='Budget') }}</label>
-                            <input type="number" class="form-control" id="editListBudget" placeholder="{{ t('grocery_budget', default='Budget') }}" min="0" step="0.01">
+                        <div class="mb-4">
+                            {{ item_form.quantity.label(class="block text-sm font-medium text-gray-700") }}
+                            {{ item_form.quantity(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                            {% for error in item_form.quantity.errors %}
+                                <span class="text-red-600 text-sm">{{ error }}</span>
+                            {% endfor %}
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('general_cancel', default='Cancel') }}</button>
-                        <button type="button" class="btn btn-primary" onclick="groceryModule.confirmEditGroceryList()">{{ t('grocery_save_changes', default='Save Changes') }}</button>
-                    </div>
+                        <div class="mb-4">
+                            {{ item_form.price.label(class="block text-sm font-medium text-gray-700") }}
+                            {{ item_form.price(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                            {% for error in item_form.price.errors %}
+                                <span class="text-red-600 text-sm">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-4">
+                            {{ item_form.store.label(class="block text-sm font-medium text-gray-700") }}
+                            {{ item_form.store(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                            {% for error in item_form.store.errors %}
+                                <span class="text-red-600 text-sm">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-4">
+                            {{ item_form.category.label(class="block text-sm font-medium text-gray-700") }}
+                            {{ item_form.category(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                            {% for error in item_form.category.errors %}
+                                <span class="text-red-600 text-sm">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-4">
+                            {{ item_form.status.label(class="block text-sm font-medium text-gray-700") }}
+                            {{ item_form.status(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                            {% for error in item_form.status.errors %}
+                                <span class="text-red-600 text-sm">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-4">
+                            {{ item_form.frequency.label(class="block text-sm font-medium text-gray-700") }}
+                            {{ item_form.frequency(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                            {% for error in item_form.frequency.errors %}
+                                <span class="text-red-600 text-sm">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {{ item_form.submit(class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600") }}
+                    </form>
                 </div>
-            </div>
-        </div>
-        <div class="modal fade" id="priceHistoryModal" tabindex="-1" aria-labelledby="priceHistoryModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="priceHistoryModalLabel">{{ t('grocery_price_history', default='Price History') }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t('general_close', default='Close') }}"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div id="priceHistoryContent"></div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">{{ t('grocery_ok', default='OK') }}</button>
-                    </div>
+
+                <div class="mb-4">
+                    <h3 class="text-lg font-medium">{{ trans('shopping_share_list', default='Share List') }}</h3>
+                    <form method="POST" action="{{ url_for('personal.shopping.main', tab='dashboard') }}">
+                        {{ share_form.hidden_tag() }}
+                        <input type="hidden" name="action" value="share_list">
+                        <input type="hidden" name="list_id" value="{{ latest_list.id }}">
+                        <div class="mb-4">
+                            {{ share_form.email.label(class="block text-sm font-medium text-gray-700") }}
+                            {{ share_form.email(class="mt-1 block w-full border-gray-300 rounded-md shadow-sm") }}
+                            {% for error in share_form.email.errors %}
+                                <span class="text-red-600 text-sm">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {{ share_form.submit(class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600") }}
+                    </form>
                 </div>
+
+                <div class="mb-4">
+                    <h3 class="text-lg font-medium">{{ trans('shopping_items', default='Items') }}</h3>
+                    {% if latest_list.items %}
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="bg-gray-200">
+                                    <th class="border p-2">{{ trans('general_item_name', default='Item Name') }}</th>
+                                    <th class="border p-2">{{ trans('general_quantity', default='Quantity') }}</th>
+                                    <th class="border p-2">{{ trans('general_price', default='Price') }}</th>
+                                    <th class="border p-2">{{ trans('general_category', default='Category') }}</th>
+                                    <th class="border p-2">{{ trans('general_status', default='Status') }}</th>
+                                    <th class="border p-2">{{ trans('general_store', default='Store') }}</th>
+                                    <th class="border p-2">{{ trans('general_frequency', default='Frequency') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in latest_list.items %}
+                                    <tr>
+                                        <td class="border p-2">{{ item.name }}</td>
+                                        <td class="border p-2">{{ item.quantity }}</td>
+                                        <td class="border p-2">{{ item.price }}</td>
+                                        <td class="border p-2">{{ trans(item.category, default=item.category) }}</td>
+                                        <td class="border p-2">{{ trans(item.status, default=item.status) }}</td>
+                                        <td class="border p-2">{{ item.store }}</td>
+                                        <td class="border p-2">{{ item.frequency }} {{ trans('general_days', default='days') }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p>{{ trans('shopping_no_items', default='No items in this list.') }}</p>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p>{{ trans('shopping_no_lists', default='No shopping lists found. Create one to get started.') }}</p>
+            {% endif %}
+
+            <div class="mb-4">
+                <h3 class="text-lg font-medium">{{ trans('shopping_all_lists', default='All Shopping Lists') }}</h3>
+                {% if lists %}
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr class="bg-gray-200">
+                                <th class="border p-2">{{ trans('general_list_name', default='List Name') }}</th>
+                                <th class="border p-2">{{ trans('general_budget', default='Budget') }}</th>
+                                <th class="border p-2">{{ trans('general_total_spent', default='Total Spent') }}</th>
+                                <th class="border p-2">{{ trans('general_status', default='Status') }}</th>
+                                <th class="border p-2">{{ trans('general_actions', default='Actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for list_id, lst in lists.items() %}
+                                <tr>
+                                    <td class="border p-2">{{ lst.name }}</td>
+                                    <td class="border p-2">{{ lst.budget }}</td>
+                                    <td class="border p-2">{{ lst.total_spent }}</td>
+                                    <td class="border p-2">{{ trans(lst.status, default=lst.status) }}</td>
+                                    <td class="border p-2">
+                                        <a href="{{ url_for('personal.shopping.export_list_pdf', list_id=lst.id) }}" class="text-green-500 hover:underline">{{ trans('shopping_export_pdf', default='Export') }}</a>
+                                        <form method="POST" action="{{ url_for('personal.shopping.main', tab='dashboard') }}" class="inline">
+                                            <input type="hidden" name="action" value="delete_list">
+                                            <input type="hidden" name="list_id" value="{{ lst.id }}">
+                                            {{ list_form.csrf_token }}
+                                            <button type="submit" class="text-red-500 hover:underline">{{ trans('shopping_delete_list', default='Delete') }}</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>{{ trans('shopping_no_lists', default='No shopping lists found.') }}</p>
+                {% endif %}
             </div>
+
+            {% if categories %}
+                <div class="mb-4">
+                    <h3 class="text-lg font-medium">{{ trans('shopping_categories', default='Spending by Category') }}</h3>
+                    <ul>
+                        {% for category, amount in categories.items() %}
+                            <li>{{ category }}: {{ format_currency(amount) }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            {% if tips %}
+                <div class="mb-4">
+                    <h3 class="text-lg font-medium">{{ trans('shopping_tips', default='Shopping Tips') }}</h3>
+                    <ul class="list-disc pl-5">
+                        {% for tip in tips %}
+                            <li>{{ tip }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            {% if insights %}
+                <div class="mb-4">
+                    <h3 class="text-lg font-medium">{{ trans('shopping_insights', default='Insights') }}</h3>
+                    <ul class="list-disc pl-5">
+                        {% for insight in insights %}
+                            <li>{{ insight }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
         </div>
     </div>
-</div>
-{% endblock %}
 
-{% block page_scripts %}
-<style>
-.modal-footer .btn {
-    padding: 0.75rem 1.5rem;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: clamp(0.875rem, 2vw, 0.9375rem);
-    box-shadow: var(--card-shadow);
-    transition: var(--transition-base);
-}
-.modal-footer.two-buttons .btn:first-child:not([data-bs-dismiss="modal"]) {
-    background: var(--button-primary-bg);
-    color: #ffffff;
-    border: none;
-}
-.modal-footer.two-buttons .btn:first-child:not([data-bs-dismiss="modal"]):hover,
-.modal-footer.two-buttons .btn:first-child:not([data-bs-dismiss="modal"]):focus {
-    background: var(--button-primary-hover);
-    transform: translateY(-2px);
-    box-shadow: var(--card-shadow-hover);
-}
-.modal-footer.two-buttons .btn:last-child {
-    background: var(--button-secondary-bg);
-    color: var(--button-secondary-border);
-    border: 2px solid var(--button-secondary-border);
-}
-.modal-footer.two-buttons .btn:last-child:hover,
-.modal-footer.two-buttons .btn:last-child:focus {
-    background: var(--button-secondary-hover);
-    color: var(--text-color);
-    transform: translateY(-2px);
-}
-</style>
-<script>
-(function () {
-    let currentListId = null;
-    let offlineData = { lists: [], items: {} };
-    let modalElement = null;
-    let editListId = null;
-    const FC_COST_CREATE = 0.1;
-    const FC_COST_DELETE = 0.5;
-
-    let csrfToken = null;
-    function setupCSRF() {
-        const metaTag = document.querySelector('meta[name="csrf-token"]');
-        if (metaTag) {
-            csrfToken = metaTag.getAttribute('content');
-        } else {
-            console.warn('CSRF token not found in meta tag');
+    <script>
+        function openTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('bg-blue-500', 'text-white'));
+            document.querySelectorAll('.tab-button').forEach(button => button.classList.add('bg-gray-200'));
+            document.getElementById(tabName).classList.add('active');
+            document.querySelector(`button[onclick="openTab('${tabName}')"]`).classList.add('bg-blue-500', 'text-white');
+            window.history.pushState({}, '', '{{ url_for("personal.shopping.main") }}?tab=' + tabName);
         }
-    }
-
-    async function fetchWithCSRF(url, options = {}) {
-        try {
-            const headers = {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': csrfToken,
-                ...options.headers
-            };
-            const response = await fetch(url, { ...options, headers });
-            return response;
-        } catch (error) {
-            console.error('Fetch error:', error);
-            throw error;
-        }
-    }
-
-    async function loadGroceryLists() {
-        try {
-            const response = await fetchWithCSRF(window.apiUrls.groceryLists);
-            if (response.status === 403) {
-                showToast('{{ t('grocery_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const lists = await response.json();
-            offlineData.lists = lists;
-            localStorage.setItem('groceryLists', JSON.stringify(lists));
-            renderGroceryLists(lists);
-        } catch (error) {
-            console.error('Error loading grocery lists:', error);
-            renderGroceryLists(offlineData.lists);
-        }
-    }
-
-    function renderGroceryLists(lists) {
-        const groceryListsEl = document.getElementById('groceryLists');
-        const manageListsEl = document.getElementById('manageGroceryLists');
-        if (!groceryListsEl || !manageListsEl) return;
-        if (lists && lists.length > 0) {
-            const listHtml = lists.map(list => `
-                <div class="grocery-list-item">
-                    <span class="fw-semibold">${list.name}</span>
-                    <div>
-                        <span class="text-muted">{{ t('grocery_budget', default='Budget') }}: ${format_currency(list.budget)}</span>
-                        <span class="text-muted ms-2">{{ t('grocery_total_spent', default='Total Spent') }}: ${format_currency(list.total_spent)}</span>
-                        <button class="btn btn-sm btn-outline-primary ms-2" onclick="groceryModule.loadGroceryItems('${list.id}')">{{ t('general_view_all', default='View All') }}</button>
-                        <button class="btn btn-sm btn-outline-success ms-2" onclick="groceryModule.saveGroceryList('${list.id}')">{{ t('grocery_save', default='Save') }}</button>
-                        <button class="btn btn-sm btn-outline-info ms-2" onclick="groceryModule.exportGroceryList('${list.id}')">{{ t('grocery_export_pdf', default='Export PDF') }}</button>
-                    </div>
-                </div>
-            `).join('');
-            const manageListHtml = lists.map(list => `
-                <div class="grocery-list-item">
-                    <span class="fw-semibold">${list.name}</span>
-                    <div>
-                        <span class="text-muted">{{ t('grocery_budget', default='Budget') }}: ${format_currency(list.budget)}</span>
-                        <span class="text-muted ms-2">{{ t('grocery_total_spent', default='Total Spent') }}: ${format_currency(list.total_spent)}</span>
-                        <button class="btn btn-sm btn-outline-primary ms-2" onclick="groceryModule.editGroceryList('${list.id}')">{{ t('grocery_edit', default='Edit') }}</button>
-                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="groceryModule.initiateDeleteGroceryList('${list.id}', '${list.name}')">{{ t('grocery_delete', default='Delete') }}</button>
-                        <button class="btn btn-sm btn-outline-success ms-2" onclick="groceryModule.saveGroceryList('${list.id}')">{{ t('grocery_save', default='Save') }}</button>
-                        <button class="btn btn-sm btn-outline-info ms-2" onclick="groceryModule.exportGroceryList('${list.id}')">{{ t('grocery_export_pdf', default='Export PDF') }}</button>
-                    </div>
-                </div>
-            `).join('');
-            groceryListsEl.innerHTML = listHtml;
-            manageListsEl.innerHTML = manageListHtml;
-            if (!currentListId && lists[0]) {
-                loadGroceryItems(lists[0].id);
-            }
-        } else {
-            groceryListsEl.innerHTML = `<div class="text-muted">{{ t('no_lists', default='No grocery lists found') }}</div>`;
-            manageListsEl.innerHTML = `<div class="text-muted">{{ t('no_lists', default='No grocery lists found') }}</div>`;
-        }
-    }
-
-    async function loadGroceryItems(listId) {
-        currentListId = listId;
-        try {
-            const response = await fetchWithCSRF(window.apiUrls.groceryItems.replace('{list_id}', listId));
-            if (response.status === 403) {
-                showToast('{{ t('grocery_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const items = await response.json();
-            offlineData.items[listId] = items;
-            localStorage.setItem('groceryItems', JSON.stringify(offlineData.items));
-            renderGroceryItems(items);
-        } catch (error) {
-            console.error('Error loading grocery items:', error);
-            renderGroceryItems(offlineData.items[listId] || []);
-        }
-    }
-
-    function renderGroceryItems(items) {
-        const groceryItemsEl = document.getElementById('groceryItems');
-        if (!groceryItemsEl) return;
-        if (items && items.length > 0) {
-            groceryItemsEl.innerHTML = items.map(item => `
-                <div class="grocery-item">
-                    <span class="fw-semibold">${item.name} (${item.category})</span>
-                    <div class="d-flex align-items-center gap-2">
-                        <input type="number" class="form-control" value="${item.quantity}" min="1" onchange="groceryModule.updateGroceryItem('${item.id}', 'quantity', this.value)">
-                        <input type="number" class="form-control" value="${item.price}" min="0" step="0.01" onchange="groceryModule.updateGroceryItem('${item.id}', 'price', this.value)">
-                        <select class="form-control" onchange="groceryModule.updateGroceryItem('${item.id}', 'status', this.value)">
-                            <option value="to_buy" ${item.status === 'to_buy' ? 'selected' : ''}>{{ t('grocery_to_buy', default='To Buy') }}</option>
-                            <option value="bought" ${item.status === 'bought' ? 'selected' : ''}>{{ t('grocery_bought', default='Bought') }}</option>
-                        </select>
-                        <input type="text" class="form-control" value="${item.store || 'Unknown'}" placeholder="{{ t('grocery_store', default='Store') }}" onchange="groceryModule.updateGroceryItem('${item.id}', 'store', this.value)">
-                        <input type="number" class="form-control" value="${item.frequency || 7}" min="1" placeholder="{{ t('grocery_frequency', default='Frequency (days)') }}" onchange="groceryModule.updateGroceryItem('${item.id}', 'frequency', this.value)">
-                        <button class="btn btn-sm btn-outline-info" onclick="groceryModule.showPriceHistory('${item.name}')">{{ t('grocery_price_history', default='Price History') }}</button>
-                    </div>
-                </div>
-            `).join('');
-        } else {
-            groceryItemsEl.innerHTML = `<div class="text-muted">{{ t('no_items', default='No items in this list') }}</div>`;
-        }
-    }
-
-    async function createGroceryList() {
-        const name = document.getElementById('newListName').value;
-        const budget = document.getElementById('newListBudget').value;
-        if (!name || !budget || budget <= 0) {
-            showToast('{{ t('grocery_invalid_input', default='Please provide a valid list name and budget') }}', 'warning');
-            return;
-        }
-        try {
-            const response = await fetchWithCSRF(window.apiUrls.groceryLists, {
-                method: 'POST',
-                body: JSON.stringify({ name, budget })
-            });
-            if (response.status === 403) {
-                showToast('{{ t('grocery_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const data = await response.json();
-            if (data.error) {
-                showToast(data.error, 'danger');
-            } else {
-                showSuccessModal('{{ t('grocery_list_created', default='Grocery list created successfully') }}');
-                document.getElementById('newListName').value = '';
-                document.getElementById('newListBudget').value = '';
-                loadGroceryLists();
-            }
-        } catch (error) {
-            console.error('Error creating grocery list:', error);
-            showToast('{{ t('grocery_list_error', default='Error creating grocery list') }}', 'danger');
-        }
-    }
-
-    async function editGroceryList(listId) {
-        try {
-            const response = await fetchWithCSRF(`${window.apiUrls.groceryLists}/${listId}`);
-            if (response.status === 403) {
-                showToast('{{ t('grocery_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const list = await response.json();
-            if (list.error) {
-                showToast(list.error, 'danger');
-                return;
-            }
-            editListId = listId;
-            document.getElementById('editListName').value = list.name;
-            document.getElementById('editListBudget').value = list.budget;
-            const editModalEl = document.getElementById('editListModal');
-            if (editModalEl && typeof bootstrap !== 'undefined') {
-                const editModal = new bootstrap.Modal(editModalEl);
-                editModal.show();
-            } else {
-                console.error('Edit modal element or Bootstrap not found');
-                showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
-            }
-        } catch (error) {
-            console.error('Error loading grocery list for edit:', error);
-            showToast('{{ t('grocery_list_error', default='Error loading grocery list') }}', 'danger');
-        }
-    }
-
-    async function confirmEditGroceryList() {
-        if (!editListId) {
-            showToast('{{ t('grocery_no_list_selected', default='No list selected for editing') }}', 'warning');
-            return;
-        }
-        const name = document.getElementById('editListName').value;
-        const budget = document.getElementById('editListBudget').value;
-        if (!name || !budget || budget <= 0) {
-            showToast('{{ t('grocery_invalid_input', default='Please provide a valid list name and budget') }}', 'warning');
-            return;
-        }
-        try {
-            const response = await fetchWithCSRF(`${window.apiUrls.groceryLists}/${editListId}/edit`, {
-                method: 'PUT',
-                body: JSON.stringify({ name, budget })
-            });
-            if (response.status === 403) {
-                showToast('{{ t('grocery_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const data = await response.json();
-            if (data.error) {
-                showToast(data.error, 'danger');
-            } else {
-                showSuccessModal('{{ t('grocery_list_updated', default='Grocery list updated successfully') }}');
-                const editModalEl = document.getElementById('editListModal');
-                if (editModalEl && typeof bootstrap !== 'undefined') {
-                    bootstrap.Modal.getInstance(editModalEl).hide();
-                }
-                editListId = null;
-                loadGroceryLists();
-            }
-        } catch (error) {
-            console.error('Error editing grocery list:', error);
-            showToast('{{ t('grocery_list_error', default='Error editing grocery list') }}', 'danger');
-        }
-    }
-
-    async function saveGroceryList(listId) {
-        try {
-            const response = await fetchWithCSRF(`${window.apiUrls.groceryLists}/${listId}/save`, {
-                method: 'PUT'
-            });
-            if (response.status === 403) {
-                showToast('{{ t('grocery_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const data = await response.json();
-            if (data.error) {
-                showToast(data.error, 'danger');
-            } else {
-                showSuccessModal('{{ t('grocery_list_saved', default='Grocery list saved successfully') }}');
-                loadGroceryLists();
-            }
-        } catch (error) {
-            console.error('Error saving grocery list:', error);
-            showToast('{{ t('grocery_list_error', default='Error saving grocery list') }}', 'danger');
-        }
-    }
-
-    async function exportGroceryList(listId) {
-        try {
-            const response = await fetchWithCSRF(`${window.apiUrls.groceryLists}/${listId}/export_pdf`);
-            if (response.status === 403) {
-                showToast('{{ t('grocery_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            if (response.status !== 200) {
-                const data = await response.json();
-                showToast(data.error || '{{ t('grocery_export_error', default='Error exporting grocery list to PDF') }}', 'danger');
-                return;
-            }
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `grocery_list_${listId}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            showSuccessModal('{{ t('grocery_export_success', default='Grocery list exported to PDF successfully') }}');
-        } catch (error) {
-            console.error('Error exporting grocery list to PDF:', error);
-            showToast('{{ t('grocery_export_error', default='Error exporting grocery list to PDF') }}', 'danger');
-        }
-    }
-
-    async function initiateDeleteGroceryList(listId, listName) {
-        if (!confirm(`{{ t('grocery_confirm_delete', default='Delete grocery list') }} "${listName}"?`)) {
-            return;
-        }
-        try {
-            const response = await fetchWithCSRF(`${window.apiUrls.groceryLists}/${listId}/pending_delete`, {
-                method: 'POST'
-            });
-            if (response.status === 403) {
-                showToast('{{ t('grocery_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const data = await response.json();
-            if (data.error) {
-                showToast(data.error, 'danger');
-            } else {
-                showSuccessModal('{{ t('grocery_list_deletion_initiated', default='Grocery list deletion initiated. Will delete in 20 seconds.') }}');
-                setTimeout(() => loadGroceryLists(), 20000);
-            }
-        } catch (error) {
-            console.error('Error initiating grocery list deletion:', error);
-            showToast('{{ t('grocery_list_error', default='Error initiating deletion') }}', 'danger');
-        }
-    }
-
-    async function addGroceryItem() {
-        if (!currentListId) {
-            showToast('{{ t('grocery_no_list_selected', default='Please select a list') }}', 'warning');
-            return;
-        }
-        const name = document.getElementById('newItemName').value;
-        const quantity = document.getElementById('newItemQuantity').value;
-        const price = document.getElementById('newItemPrice').value;
-        const store = document.getElementById('newItemStore').value;
-        const frequency = document.getElementById('newItemFrequency').value;
-        if (!name || !quantity || !price || quantity <= 0 || price < 0) {
-            showToast('{{ t('grocery_invalid_item', default='Please provide valid item name, quantity, and price') }}', 'warning');
-            return;
-        }
-        try {
-            const response = await fetchWithCSRF(window.apiUrls.groceryItems.replace('{list_id}', currentListId), {
-                method: 'POST',
-                body: JSON.stringify({ name, quantity, price, store, frequency })
-            });
-            if (response.status === 403) {
-                showToast('{{ t('grocery_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const data = await response.json();
-            if (data.error) {
-                showToast(data.error, 'danger');
-            } else {
-                showSuccessModal('{{ t('grocery_item_added', default='Item added to list successfully') }}');
-                document.getElementById('newItemName').value = '';
-                document.getElementById('newItemQuantity').value = '';
-                document.getElementById('newItemPrice').value = '';
-                document.getElementById('newItemStore').value = '';
-                document.getElementById('newItemFrequency').value = '7';
-                loadGroceryItems(currentListId);
-                loadGroceryLists();
-            }
-        } catch (error) {
-            console.error('Error adding grocery item:', error);
-            showToast('{{ t('grocery_item_error', default='Error adding item') }}', 'danger');
-        }
-    }
-
-    async function updateGroceryItem(itemId, field, value) {
-        try {
-            const response = await fetchWithCSRF(window.apiUrls.groceryItems.replace('{list_id}', currentListId), {
-                method: 'PUT',
-                body: JSON.stringify({ item_id: itemId, [field]: value })
-            });
-            if (response.status === 403) {
-                showToast('{{ t('grocery_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const data = await response.json();
-            if (data.error) {
-                showToast(data.error, 'danger');
-            } else {
-                showSuccessModal('{{ t('grocery_item_updated', default='Item updated successfully') }}');
-                loadGroceryItems(currentListId);
-                loadGroceryLists();
-            }
-        } catch (error) {
-            console.error('Error updating grocery item:', error);
-            showToast('{{ t('grocery_item_error', default='Error updating item') }}', 'danger');
-        }
-    }
-
-    async function shareGroceryList() {
-        if (!currentListId) {
-            showToast('{{ t('grocery_no_list_selected', default='Please select a list') }}', 'warning');
-            return;
-        }
-        const email = document.getElementById('shareEmail').value;
-        const emailRegex = /^[\w\.-]+@[\w\.-]+\.\w+$/;
-        if (!email || !emailRegex.test(email)) {
-            showToast('{{ t('grocery_invalid_email', default='Please provide a valid email address') }}', 'warning');
-            return;
-        }
-        try {
-            const response = await fetchWithCSRF(window.apiUrls.groceryShare.replace('{list_id}', currentListId), {
-                method: 'POST',
-                body: JSON.stringify({ email })
-            });
-            if (response.status === 403) {
-                showToast('{{ t('grocery_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const data = await response.json();
-            if (data.error) {
-                showToast(data.error, 'danger');
-            } else {
-                showSuccessModal('{{ t('grocery_list_shared', default='List shared successfully') }}');
-                document.getElementById('shareEmail').value = '';
-                loadGroceryLists();
-            }
-        } catch (error) {
-            console.error('Error sharing grocery list:', error);
-            showToast('{{ t('grocery_share_error', default='Error sharing list') }}', 'danger');
-        }
-    }
-
-    async function showPriceHistory(itemName) {
-        try {
-            const response = await fetchWithCSRF(`${window.apiUrls.groceryPriceHistory}/${encodeURIComponent(itemName)}`);
-            if (response.status === 403) {
-                showToast('{{ t('grocery_insufficient_credits', default='Insufficient credits') }}', 'error');
-                throw new Error('Unauthorized');
-            }
-            const data = await response.json();
-            if (data.error) {
-                showToast(data.error, 'danger');
-                return;
-            }
-            const priceHistoryContent = document.getElementById('priceHistoryContent');
-            if (data.prices && data.prices.length > 0) {
-                priceHistoryContent.innerHTML = `
-                    <h6>{{ t('grocery_price_history_for', default='Price History for') }} ${itemName}</h6>
-                    <p>{{ t('grocery_average_price', default='Average Price') }}: ${format_currency(data.average_price)}</p>
-                    <ul>
-                        ${data.prices.map(p => `<li>${p.date}: ${format_currency(p.price)} at ${p.store}</li>`).join('')}
-                    </ul>
-                `;
-            } else {
-                priceHistoryContent.innerHTML = `<p>{{ t('grocery_no_price_history', default='No price history found for this item') }}</p>`;
-            }
-            const priceHistoryModalEl = document.getElementById('priceHistoryModal');
-            if (priceHistoryModalEl && typeof bootstrap !== 'undefined') {
-                const priceHistoryModal = new bootstrap.Modal(priceHistoryModalEl);
-                priceHistoryModal.show();
-            } else {
-                console.error('Price history modal element or Bootstrap not found');
-                showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
-            }
-        } catch (error) {
-            console.error('Error fetching price history:', error);
-            showToast('{{ t('grocery_price_history_error', default='Error fetching price history') }}', 'danger');
-        }
-    }
-
-    function showSuccessModal(message) {
-        const successModalEl = document.getElementById('successModal');
-        if (successModalEl && typeof bootstrap !== 'undefined') {
-            document.getElementById('successModalMessage').innerText = message;
-            const successModal = new bootstrap.Modal(successModalEl);
-            successModal.show();
-        } else {
-            console.error('Success modal element or Bootstrap not found');
-            showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
-        }
-    }
-
-    function loadOfflineData() {
-        const cachedLists = localStorage.getItem('groceryLists');
-        const cachedItems = localStorage.getItem('groceryItems');
-        if (cachedLists) {
-            offlineData.lists = JSON.parse(cachedLists);
-            renderGroceryLists(offlineData.lists);
-        }
-        if (cachedItems) {
-            offlineData.items = JSON.parse(cachedItems);
-            if (currentListId && offlineData.items[currentListId]) {
-                renderGroceryItems(offlineData.items[currentListId]);
-            }
-        }
-    }
-
-    function format_currency(value) {
-        if (!value && value !== 0) return '₦0.00';
-        value = parseFloat(value);
-        if (isNaN(value)) return '₦0.00';
-        return value.toLocaleString('en-NG', { style: 'currency', currency: 'NGN' });
-    }
-
-    function cleanupModal() {
-        try {
-            currentListId = null;
-            const groceryListsEl = document.getElementById('groceryLists');
-            const groceryItemsEl = document.getElementById('groceryItems');
-            const manageListsEl = document.getElementById('manageGroceryLists');
-            if (groceryListsEl) groceryListsEl.innerHTML = '';
-            if (groceryItemsEl) groceryItemsEl.innerHTML = '';
-            if (manageListsEl) manageListsEl.innerHTML = '';
-            const tabEl = document.querySelector('#groceryTabs');
-            if (tabEl) {
-                const activeTab = tabEl.querySelector('.nav-link.active');
-                if (activeTab) {
-                    new bootstrap.Tab(activeTab).show();
-                }
-            }
-            document.body.classList.remove('modal-open');
-            const modalBackdrop = document.querySelector('.modal-backdrop');
-            if (modalBackdrop) {
-                modalBackdrop.remove();
-            }
-        } catch (error) {
-            console.error('Error during modal cleanup:', error);
-        }
-    }
-
-    window.groceryModule = {
-        initGrocery: function() {
-            try {
-                if (!window.groceryTranslations || !window.apiUrls) {
-                    console.error('Grocery translations or API URLs not defined');
-                    showToast('{{ t('general_error', default='Initialization error: Translations or APIs not found') }}', 'danger');
-                    return;
-                }
-                if (typeof showToast !== 'function') {
-                    console.error('showToast function is not defined');
-                    return;
-                }
-                if (typeof bootstrap === 'undefined') {
-                    console.error('Bootstrap JavaScript is not defined');
-                    showToast('{{ t('bootstrap_required', default='Bootstrap JavaScript is required') }}', 'danger');
-                    return;
-                }
-                const tabEl = document.querySelector('#groceryTabs');
-                if (tabEl) {
-                    new bootstrap.Tab(tabEl.querySelector('.nav-link.active')).show();
-                }
-                modalElement = document.getElementById('successModal');
-                if (modalElement) {
-                    modalElement.addEventListener('hidden.bs.modal', cleanupModal);
-                }
-                loadGroceryLists();
-                loadOfflineData();
-            } catch (error) {
-                console.error('Error initializing grocery module:', error);
-                showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
-            }
-        },
-        createGroceryList,
-        editGroceryList,
-        confirmEditGroceryList,
-        saveGroceryList,
-        exportGroceryList,
-        initiateDeleteGroceryList,
-        addGroceryItem,
-        updateGroceryItem,
-        loadGroceryItems,
-        shareGroceryList,
-        showPriceHistory
-    };
-
-    document.addEventListener('DOMContentLoaded', () => {
-        setupCSRF();
-        window.apiUrls = {
-            groceryLists: "/personal/grocery/summary",
-            groceryItems: "/personal/grocery/lists/{list_id}/items",
-            groceryShare: "/personal/grocery/lists/{list_id}/share",
-            groceryPriceHistory: "/personal/grocery/price_history/{item_name}"
-        };
-        window.groceryModule.initGrocery();
-    });
-})();
-</script>
-{% endblock %}
+    </script>
+</body>
+</html>
