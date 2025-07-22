@@ -45,24 +45,24 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None):
                 'surplus_deficit': x.get('surplus_deficit', 0)
             }
         },
-        'grocery_lists': {
-            'collection': 'grocery_lists',
+        'shopping_lists': {
+            'collection': 'shopping_lists',
             'required_fields': ['created_at', 'name'],
-            'type': 'grocery_list',
+            'type': 'shopping_list',
             'icon': 'bi-cart',
-            'description_key': 'recent_activity_grocery_list_created',
-            'default_description': 'Created grocery list: {name}',
+            'description_key': 'recent_activity_shopping_list_created',
+            'default_description': 'Created shopping list: {name}',
             'details': lambda x: {
                 'budget': x.get('budget', 0),
                 'total_spent': x.get('total_spent', 0)
             }
         },
-        'grocery_items': {
-            'collection': 'grocery_items',
+        'shopping_items': {
+            'collection': 'shopping_items',
             'required_fields': ['updated_at', 'name', 'status'],
-            'type': 'grocery_item',
+            'type': 'shopping_item',
             'icon': 'bi-check-circle',
-            'description_key': 'recent_activity_grocery_item_bought',
+            'description_key': 'recent_activity_shopping_item_bought',
             'default_description': 'Bought item: {name}',
             'details': lambda x: {
                 'quantity': x.get('quantity', 1),
@@ -261,42 +261,42 @@ def bill_summary():
             'error': trans('bill_summary_error', default='Error fetching bill summary', module='budget')
         }), 500
 
-@summaries_bp.route('/grocery/summary')
+@summaries_bp.route('/shopping/summary')
 @login_required
 @requires_role(['personal', 'admin'])
-def grocery_summary():
-    """Fetch the summary of active grocery lists for the authenticated user."""
+def shopping_summary():
+    """Fetch the summary of active shopping lists for the authenticated user."""
     try:
         db = get_mongo_db()
-        grocery_lists = db.grocery_lists.find({'user_id': str(current_user.id), 'status': 'active'}).sort('updated_at', -1)
+        shopping_lists = db.shopping_lists.find({'user_id': str(current_user.id), 'status': 'active'}).sort('updated_at', -1)
         total_budget = 0.0
         total_spent = 0.0
         active_lists = 0
-        for grocery_list in grocery_lists:
+        for shopping_list in shopping_lists:
             try:
-                total_budget += float(grocery_list.get('budget', 0))
-                total_spent += float(grocery_list.get('total_spent', 0))
+                total_budget += float(shopping_list.get('budget', 0))
+                total_spent += float(shopping_list.get('total_spent', 0))
                 active_lists += 1
             except (ValueError, TypeError) as e:
-                logger.warning(f"Invalid grocery list data for list {grocery_list.get('_id')}: {str(e)}", 
+                logger.warning(f"Invalid shopping list data for list {shopping_list.get('_id')}: {str(e)}", 
                               extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
                 continue
         
-        logger.info(f"Fetched grocery summary for user {current_user.id}: budget={total_budget}, spent={total_spent}, active_lists={active_lists}", 
+        logger.info(f"Fetched shopping summary for user {current_user.id}: budget={total_budget}, spent={total_spent}, active_lists={active_lists}", 
                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
         return jsonify({
-            'total_grocery_budget': float(total_budget),
-            'total_grocery_spent': float(total_spent),
+            'total_shopping_budget': float(total_budget),
+            'total_shopping_spent': float(total_spent),
             'active_lists': active_lists
         }), 200
     except Exception as e:
-        logger.error(f"Error fetching grocery summary for user {current_user.id}: {str(e)}", 
+        logger.error(f"Error fetching shopping summary for user {current_user.id}: {str(e)}", 
                      extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
         return jsonify({
-            'total_grocery_budget': 0.0,
-            'total_grocery_spent': 0.0,
+            'total_shopping_budget': 0.0,
+            'total_shopping_spent': 0.0,
             'active_lists': 0,
-            'error': trans('grocery_summary_error', default='Error fetching grocery summary', module='grocery')
+            'error': trans('shopping_summary_error', default='Error fetching shopping summary', module='shopping')
         }), 500
 
 @summaries_bp.route('/food_order/summary')
