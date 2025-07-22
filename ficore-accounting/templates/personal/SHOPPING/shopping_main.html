@@ -27,8 +27,8 @@
         {% endwith %}
 
         <div class="tabs mb-4">
-            <button class="tab-button px-4 py-2 {% if active_tab == 'create-list' %}bg-blue-500 text-white{% else %}bg-gray-200{% endif %}" onclick="openTab('create-list')">Create List</button>
-            <button class="tab-button px-4 py-2 {% if active_tab == 'dashboard' %}bg-blue-500 text-white{% else %}bg-gray-200{% endif %}" onclick="openTab('dashboard')">Dashboard</button>
+            <button class="tab-button px-4 py-2 {% if active_tab == 'create-list' %}bg-blue-500 text-white{% else %}bg-gray-200{% endif %}" onclick="openTab('create-list')">{{ trans('shopping_create_list', default='Create List') }}</button>
+            <button class="tab-button px-4 py-2 {% if active_tab == 'dashboard' %}bg-blue-500 text-white{% else %}bg-gray-200{% endif %}" onclick="openTab('dashboard')">{{ trans('shopping_dashboard', default='Dashboard') }}</button>
         </div>
 
         <div id="create-list" class="tab-content {% if active_tab == 'create-list' %}active{% endif %}">
@@ -79,6 +79,7 @@
 
                 <div class="mb-4">
                     <h3 class="text-lg font-medium">{{ trans('shopping_add_item', default='Add Item to List') }}</h3>
+                    {% if latest_list.id %}
                     <form method="POST" action="{{ url_for('personal.shopping.main', tab='dashboard') }}">
                         {{ item_form.hidden_tag() }}
                         <input type="hidden" name="action" value="add_item">
@@ -134,10 +135,14 @@
                         </div>
                         {{ item_form.submit(class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600") }}
                     </form>
+                    {% else %}
+                        <p>{{ trans('shopping_no_list_selected', default='No list selected to add items.') }}</p>
+                    {% endif %}
                 </div>
 
                 <div class="mb-4">
                     <h3 class="text-lg font-medium">{{ trans('shopping_share_list', default='Share List') }}</h3>
+                    {% if latest_list.id %}
                     <form method="POST" action="{{ url_for('personal.shopping.main', tab='dashboard') }}">
                         {{ share_form.hidden_tag() }}
                         <input type="hidden" name="action" value="share_list">
@@ -151,11 +156,14 @@
                         </div>
                         {{ share_form.submit(class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600") }}
                     </form>
+                    {% else %}
+                        <p>{{ trans('shopping_no_list_selected', default='No list selected to share.') }}</p>
+                    {% endif %}
                 </div>
 
                 <div class="mb-4">
                     <h3 class="text-lg font-medium">{{ trans('shopping_items', default='Items') }}</h3>
-                    {% if latest_list.items %}
+                    {% if items %}
                         <table class="w-full border-collapse">
                             <thead>
                                 <tr class="bg-gray-200">
@@ -169,7 +177,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for item in latest_list.items %}
+                                {% for item in items %}
                                     <tr>
                                         <td class="border p-2">{{ item.name }}</td>
                                         <td class="border p-2">{{ item.quantity }}</td>
