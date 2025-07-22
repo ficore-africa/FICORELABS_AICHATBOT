@@ -152,7 +152,7 @@
 
                 <div class="mb-4">
                     <h3 class="text-lg font-medium">{{ trans('food_order_items', default='Items') }}</h3>
-                    {% if latest_order.items %}
+                    {% if items %}
                         <table class="w-full border-collapse">
                             <thead>
                                 <tr class="bg-gray-200">
@@ -164,7 +164,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for item in latest_order.items %}
+                                {% for item in items %}
                                     <tr>
                                         <td class="border p-2">{{ item.name }}</td>
                                         <td class="border p-2">
@@ -271,7 +271,7 @@
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('bg-blue-500', 'text-white'));
             document.querySelectorAll('.tab-button').forEach(button => button.classList.add('bg-gray-200'));
-            document.getElementById(tabName).classList.add('active');
+            document.querySelector(`#${tabName}`).classList.add('active');
             document.querySelector(`button[onclick="openTab('${tabName}')"]`).classList.add('bg-blue-500', 'text-white');
             window.history.pushState({}, '', '{{ url_for("personal.food_order.main") }}?tab=' + tabName);
         }
@@ -307,6 +307,7 @@
 
         async function updateFoodOrderItem(itemId, field, value) {
             try {
+                {% if latest_order.id %}
                 const response = await fetch('{{ url_for("personal.food_order.manage_items", order_id=latest_order.id) }}', {
                     method: 'PUT',
                     headers: {
@@ -322,6 +323,9 @@
                     alert('{{ trans("food_order_item_updated", default="Item updated successfully") }}');
                     window.location.reload();
                 }
+                {% else %}
+                alert('{{ trans("food_order_no_order", default="No order selected to update items.") }}');
+                {% endif %}
             } catch (error) {
                 console.error('Error updating food order item:', error);
                 alert('{{ trans("general_error", default="An error occurred") }}');
