@@ -1,6 +1,3 @@
-"""
-Translation system for the FiCore application
-"""
 import logging
 from flask import session, has_request_context, g, request
 from typing import Dict, Optional, Union
@@ -37,7 +34,7 @@ try:
     # Personal Finance Tools
     from .personal_finance.bill_translations import BILL_TRANSLATIONS
     from .personal_finance.budget_translations import BUDGET_TRANSLATIONS
-    from .personal_finance.grocery_translations import GROCERY_TRANSLATIONS
+    from .personal_finance.shopping_translations import SHOPPING_TRANSLATIONS
     from .personal_finance.food_order_translations import FOOD_ORDER_TRANSLATIONS
     
     # Accounting Tools
@@ -63,7 +60,7 @@ translation_modules = {
     # Personal Finance
     'bill': BILL_TRANSLATIONS,
     'budget': BUDGET_TRANSLATIONS,
-    'grocery': GROCERY_TRANSLATIONS,
+    'shopping': SHOPPING_TRANSLATIONS,
     'food_order': FOOD_ORDER_TRANSLATIONS,
     
     # Accounting Tools
@@ -86,7 +83,7 @@ KEY_PREFIX_TO_MODULE = {
     # Personal Finance prefixes
     'bill_': 'bill',
     'budget_': 'budget',
-    'grocery_': 'grocery',
+    'shopping_': 'shopping',
     'food_order_': 'food_order',
     
     # Accounting Tools prefixes
