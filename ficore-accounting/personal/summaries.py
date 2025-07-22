@@ -92,7 +92,7 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None):
             'default_description': 'Created food order: {name}',
             'details': lambda x: {
                 'vendor': x.get('vendor', 'Unknown'),
-                'total_cost': x.get('total_cost', 0)
+                'total_cost': float(x.get('total_cost', 0)) if x.get('total_cost') is not None else 0.0
             }
         }
     }
@@ -111,6 +111,18 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None):
                 # Apply additional filter if specified
                 if 'filter' in config and not config['filter'](record):
                     continue
+                # Log optional fields for food_orders
+                if config['collection'] == 'FoodOrder':
+                    if 'vendor' not in record:
+                        logger.warning(
+                            f"Missing vendor in food order record: {record.get('_id', 'unknown')}",
+                            extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr}
+                        )
+                    if 'total_cost' not in record:
+                        logger.warning(
+                            f"Missing total_cost in food order record: {record.get('_id', 'unknown')}",
+                            extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr}
+                        )
                 # Construct activity object
                 activity = {
                     'type': config['type'],
@@ -297,7 +309,8 @@ def food_order_summary():
         active_orders = 0
         for order in food_orders:
             try:
-                total_spent += float(order.get('total_cost', 0))
+                total_cost = float(order.get('total_cost', 0)) if order.get('total_cost') is not None else 0.0
+                total_spent += total_cost
                 active_orders += 1
             except (ValueError, TypeError) as e:
                 logger.warning(f"Invalid food order data for order {order.get('_id')}: {str(e)}", 
