@@ -301,7 +301,7 @@
                 if (currentOrderId === orderId) {
                     currentOrderId = null;
                     const foodOrderItemsEl = document.getElementById('foodOrderItems');
-                    if (foodOrderItems miscellaneousEl) foodOrderItemsEl.innerHTML = '';
+                    if (foodOrderItems) foodOrderItemsEl.innerHTML = '';
                 }
                 loadFoodOrders();
                 loadManageOrders();
