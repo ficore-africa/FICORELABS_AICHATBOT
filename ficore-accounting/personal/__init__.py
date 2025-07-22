@@ -14,19 +14,19 @@ personal_bp = Blueprint('personal', __name__, url_prefix='/personal', template_f
 from personal.bill import bill_bp
 from personal.budget import budget_bp
 from personal.summaries import summaries_bp
-from personal.grocery import grocery_bp
+from personal.shopping import shopping_bp
 from personal.food_order import food_order_bp
 
 personal_bp.register_blueprint(bill_bp)
 personal_bp.register_blueprint(budget_bp)
 personal_bp.register_blueprint(summaries_bp)
-personal_bp.register_blueprint(grocery_bp)
+personal_bp.register_blueprint(shopping_bp)
 personal_bp.register_blueprint(food_order_bp)
 
 def init_app(app):
     """Initialize all personal finance sub-blueprints."""
     try:
-        for blueprint in [bill_bp, budget_bp, summaries_bp, grocery_bp, food_order_bp]:
+        for blueprint in [bill_bp, budget_bp, summaries_bp, shopping_bp, food_order_bp]:
             if hasattr(blueprint, 'init_app'):
                 blueprint.init_app(app)
                 current_app.logger.info(f"Initialized {blueprint.name} blueprint", extra={'session_id': 'no-request-context'})
@@ -46,13 +46,13 @@ def index():
         # Define PERSONAL_TOOLS with dynamic URLs
         hardcoded_tools = [
             {
-                "endpoint": "personal.grocery.index",
-                "label": "Grocery Planner",
-                "label_key": "grocery_management",
-                "description_key": "grocery_management_desc",
-                "tooltip_key": "grocery_tooltip",
+                "endpoint": "personal.shopping.main",
+                "label": "Shopping Planner",
+                "label_key": "shopping_management",
+                "description_key": "shopping_management_desc",
+                "tooltip_key": "shopping_tooltip",
                 "icon": "bi-cart",
-                "url": url_for("personal.grocery.index", _external=True)
+                "url": url_for("personal.shopping.main", _external=True)
             },
             {
                 "endpoint": "personal.food_order.index",
@@ -86,13 +86,13 @@ def index():
                 "url": url_for("personal.bill.main", _external=True)
             },
             {
-                "endpoint": "personal.grocery.index",
-                "label": "Grocery Planner",
-                "label_key": "grocery_management",
-                "description_key": "grocery_management_desc",
-                "tooltip_key": "grocery_tooltip",
+                "endpoint": "personal.shopping.main",
+                "label": "Shopping Planner",
+                "label_key": "shopping_management",
+                "description_key": "shopping_management_desc",
+                "tooltip_key": "shopping_tooltip",
                 "icon": "bi-cart",
-                "url": url_for("personal.grocery.index", _external=True)
+                "url": url_for("personal.shopping.main", _external=True)
             },
             {
                 "endpoint": "personal.food_order.index",
