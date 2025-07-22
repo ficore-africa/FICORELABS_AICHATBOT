@@ -71,19 +71,6 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None):
             },
             'filter': lambda x: x.get('status') == 'bought'
         },
-        'learning_materials': {
-            'collection': 'learning_materials',
-            'required_fields': ['updated_at', 'course_id'],
-            'type': 'learning_hub',
-            'icon': 'bi-book',
-            'description_key': 'recent_activity_learning_hub_progress',
-            'default_description': 'Progress in course: {course_id}',
-            'details': lambda x: {
-                'course_id': x.get('course_id', 'N/A'),
-                'lessons_completed': len(x.get('lessons_completed', [])),
-                'current_lesson': x.get('current_lesson', 'N/A')
-            }
-        },
         'ficore_credit_transactions': {
             'collection': 'ficore_credit_transactions',
             'required_fields': ['timestamp', 'amount', 'action'],
@@ -133,8 +120,7 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None):
                         default=config['default_description'].format(**{
                             'name': record.get('name', 'Unknown'),
                             'amount': abs(record.get('amount', record.get('income', 0))),
-                            'action': record.get('action', 'Transaction'),
-                            'course_id': record.get('course_id', 'N/A')
+                            'action': record.get('action', 'Transaction')
                         }),
                         module=config['collection']
                     ),
