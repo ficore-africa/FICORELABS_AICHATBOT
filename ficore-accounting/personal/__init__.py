@@ -55,13 +55,13 @@ def index():
                 "url": url_for("personal.shopping.main", _external=True)
             },
             {
-                "endpoint": "personal.food_order.index",
+                "endpoint": "personal.food_order.main",
                 "label": "Food Order",
                 "label_key": "food_order",
                 "description_key": "food_order_desc",
                 "tooltip_key": "food_order_tooltip",
                 "icon": "bi-box-seam",
-                "url": url_for("personal.food_order.index", _external=True)
+                "url": url_for("personal.food_order.main", _external=True)
             },
         ]
 
@@ -95,13 +95,13 @@ def index():
                 "url": url_for("personal.shopping.main", _external=True)
             },
             {
-                "endpoint": "personal.food_order.index",
+                "endpoint": "personal.food_order.main",
                 "label": "Food Order",
                 "label_key": "food_order",
                 "description_key": "food_order_desc",
                 "tooltip_key": "food_order_tooltip",
                 "icon": "bi-box-seam",
-                "url": url_for("personal.food_order.index", _external=True)
+                "url": url_for("personal.food_order.main", _external=True)
             },
             {
                 "endpoint": "credits.request_credits",
