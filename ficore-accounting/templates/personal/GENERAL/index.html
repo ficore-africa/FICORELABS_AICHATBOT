@@ -66,7 +66,7 @@
                 <div class="summary-card food-order-card">
                     <div class="card-header d-flex align-items-center gap-3">
                         <i class="bi bi-box-seam card-icon text-primary"></i>
-                        <span class="fw-bold">{{ t('food_order_spending', default='Kashe Umurnin Abinci') }}</span>
+                        <span class="fw-bold">{{ t('food_order_spending', default='Kashe Odan Abinci') }}</span>
                     </div>
                     <div class="card-amount mt-3" id="foodOrderSpending">
                         <span class="currency-symbol">₦</span>
@@ -327,7 +327,7 @@ function loadFinancialSummary() {
             const foodOrderSpending = document.getElementById('foodOrderSpending');
             foodOrderSpending.querySelector('.amount-value').dataset.amount = data.total_food_order_spent;
             foodOrderSpending.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.total_food_order_spent) : '****';
-            document.getElementById('foodOrderStatusLabel').textContent = data.active_orders > 0 ? `${data.active_orders} ${window.t('active_orders', { context: 'foodOrder', default: 'Umurni Masu Aiki' })}` : window.t('no_active_orders', { context: 'foodOrder', default: 'Babu Umurni Masu Aiki' });
+            document.getElementById('foodOrderStatusLabel').textContent = data.active_orders > 0 ? `${data.active_orders} ${window.t('active_orders', { context: 'foodOrder', default: 'Oda Masu Aiki' })}` : window.t('no_active_orders', { context: 'foodOrder', default: 'Babu Oda Masu Aiki' });
         })
         .catch(error => {
             console.error('Error loading food order summary:', error);
