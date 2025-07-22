@@ -74,36 +74,11 @@
                     {% endwith %}
 
                     {% if latest_list.id %}
-                        <div class="row text-center mb-4">
-                            <div class="col-md-4 mb-3">
-                                <div class="card bg-success text-white">
-                                    <div class="card-body">
-                                        <h6>{{ t('general_budget', default='Budget') }}</h6>
-                                        <h4>{{ format_currency(latest_list.budget) }}</h4>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <div class="card bg-danger text-white">
-                                    <div class="card-body">
-                                        <h6>{{ t('general_total_spent', default='Total Spent') }}</h6>
-                                        <h4>{{ format_currency(latest_list.total_spent) }}</h4>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <div class="card bg-{{ 'success' if latest_list.budget - latest_list.total_spent >= 0 else 'warning' }} text-white">
-                                    <div class="card-body">
-                                        <h6>{{ t('shopping_remaining_budget', default='Remaining Budget') }}</h6>
-                                        <h4>{{ format_currency(latest_list.budget - latest_list.total_spent) }}</h4>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                         <div class="mb-4">
                             <h6>{{ t('shopping_latest_list', default='Latest Shopping List') }}</h6>
                             <p><strong>{{ t('general_list_name', default='List Name') }}:</strong> {{ latest_list.name }}</p>
+                            <p><strong>{{ t('general_budget', default='Budget') }}:</strong> {{ format_currency(latest_list.budget) }}</p>
+                            <p><strong>{{ t('general_total_spent', default='Total Spent') }}:</strong> {{ format_currency(latest_list.total_spent) }}</p>
                             <p><strong>{{ t('general_status', default='Status') }}:</strong> {{ t(latest_list.status, default=latest_list.status) }}</p>
                             <p><strong>{{ t('general_collaborators', default='Collaborators') }}:</strong> {{ latest_list.collaborators|join(', ') or t('general_none', default='None') }}</p>
                             <p><strong>{{ t('general_date', default='Created At') }}:</strong> {{ latest_list.created_at | format_datetime }}</p>
@@ -284,13 +259,14 @@
                     {% if categories %}
                         <div class="card mb-4">
                             <div class="card-header">
-                                <h6><i class="fas fa-chart-pie"></i> {{ t('shopping_categories', default='Spending by Category') }}</h6>
+                                <h6><i class="fas fa-tags"></i> {{ t('shopping_categories', default='Spending by Category') }}</h6>
                             </div>
                             <div class="card-body">
-                                <canvas id="categoryChart" height="200"></canvas>
-                                <div id="chartError" class="text-danger mt-2" style="display: none;">
-                                    {{ t('shopping_chart_error', default='Error rendering category chart. Please try again later.') }}
-                                </div>
+                                <ul class="list-unstyled">
+                                    {% for category, amount in categories.items() %}
+                                        <li>{{ category }}: {{ format_currency(amount) }}</li>
+                                    {% endfor %}
+                                </ul>
                             </div>
                         </div>
                     {% endif %}
@@ -420,26 +396,10 @@
             </div>
         </div>
     </div>
-
-    {% if current_user.is_authenticated %}
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5>{{ t('general_share_ficore', default='Share Ficore Africa with Friends') }}</h5>
-            </div>
-            <div class="card-body">
-                <p>{{ t('general_share_ficore_invite', default='Invite your friends to join Ficore Africa and manage their finances better!') }}</p>
-                <div class="input-group mb-3">
-                    <input type="text" class="form-control" id="referralLink" value="{{ url_for('users.signup', ref=current_user.referral_code, _external=True) if current_user.referral_code else t('general_profile_no_referral', default='No referral link available.') }}" readonly>
-                    <button class="btn btn-secondary" type="button" onclick="copyReferralLink()">{{ t('general_profile_copy_link', default='Copy') }}</button>
-                </div>
-            </div>
-        </div>
-    {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Translation map for help text
@@ -619,51 +579,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Chart.js rendering
-    const categoryChartCtx = document.getElementById('categoryChart');
-    if (categoryChartCtx) {
-        const categoriesData = {{ categories | tojson }};
-        if (categoriesData && Object.keys(categoriesData).length > 0) {
-            try {
-                const labels = Object.keys(categoriesData).map(key => key.charAt(0).toUpperCase() + key.slice(1));
-                const data = Object.values(categoriesData);
-
-                new Chart(categoryChartCtx, {
-                    type: 'pie',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            data: data,
-                            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
-                            borderColor: '#fff',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: { position: 'top' },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        let label = context.label || '';
-                                        if (label) label += ': ';
-                                        if (context.parsed !== null) label += formatForDisplay(context.parsed, false);
-                                        return label;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-                document.getElementById('chartError').style.display = 'none';
-            } catch (error) {
-                console.error("Error drawing chart:", error);
-                document.getElementById('chartError').style.display = 'block';
-            }
-        }
-    }
-
     // Load list details
     function loadListDetails(listId) {
         if (listId) {
@@ -700,44 +615,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-
-    // Copy referral link
-    window.copyReferralLink = function() {
-        const referralLink = document.getElementById('referralLink');
-        const value = referralLink.value;
-        if (value && value !== '{{ t('general_profile_no_referral', default='No referral link available.') | e }}') {
-            navigator.clipboard.writeText(value).then(() => {
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'alert alert-success alert-dismissible fade show';
-                alertDiv.innerHTML = `
-                    {{ t('general_profile_link_copied', default='Referral link copied to clipboard!') | e }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ t('general_close', default='Close') }}"></button>
-                `;
-                referralLink.parentNode.appendChild(alertDiv);
-                setTimeout(() => alertDiv.remove(), 3000);
-            }).catch(() => {
-                referralLink.select();
-                document.execCommand('copy');
-                const alertDiv = document.createElement('div');
-                alertDiv.className = 'alert alert-success alert-dismissible fade show';
-                alertDiv.innerHTML = `
-                    {{ t('general_profile_link_copied', default='Referral link copied to clipboard!') | e }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ t('general_close', default='Close') }}"></button>
-                `;
-                referralLink.parentNode.appendChild(alertDiv);
-                setTimeout(() => alertDiv.remove(), 3000);
-            });
-        } else {
-            const alertDiv = document.createElement('div');
-            alertDiv.className = 'alert alert-warning alert-dismissible fade show';
-            alertDiv.innerHTML = `
-                {{ t('general_profile_no_referral', default='No referral link available.') | e }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ t('general_close', default='Close') }}"></button>
-            `;
-            referralLink.parentNode.appendChild(alertDiv);
-            setTimeout(() => alertDiv.remove(), 3000);
-        }
-    };
 });
 </script>
 {% endblock %}
