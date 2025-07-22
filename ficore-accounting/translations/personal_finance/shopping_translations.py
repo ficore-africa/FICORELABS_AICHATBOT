@@ -1,5 +1,20 @@
 SHOPPING_TRANSLATIONS = {
     'en': {
+        # Shopping module
+        'shopping_name_required': 'Shopping list name is required',
+        'shopping_budget_required': 'Budget amount is required',
+        'shopping_budget_max': 'Budget exceeds maximum allowed amount',
+        'shopping_item_name_required': 'Item name is required',
+        'shopping_quantity_required': 'Quantity is required',
+        'shopping_quantity_range': 'Quantity must be between 1 and 100',
+        'shopping_price_required': 'Price is required',
+        'shopping_price_range': 'Price must be between 0 and 1,000,000',
+        'shopping_store_required': 'Store name is required',
+        'shopping_frequency_required': 'Purchase frequency is required',
+        'shopping_frequency_range': 'Frequency must be between 1 and 365 days',
+        'shopping_item_submit': 'Submit Item',
+        'shopping_email_required': 'Email address is required',
+        'shopping_title': 'Shopping List',
         'shopping_management': 'Shopping',
         'shopping_management_desc': 'Plan and manage your shopping lists',
         'shopping_modal_label': 'Smart Shopping Planner',
@@ -183,6 +198,21 @@ SHOPPING_TRANSLATIONS = {
         'reports_total_budget': 'Jimlar Kasafin Kuɗi',
         'reports_total_spent': 'Jimlar da Aka Kashe',
         'reports_total_price': 'Jimlar Farashi',
-        'reports_generated_on': 'An Ƙirƙira a'
+        'reports_generated_on': 'An Ƙirƙira a',
+        # Shopping module
+        'shopping_name_required': 'Sunan jerin sayayya ana buƙata',
+        'shopping_budget_required': 'Adadin kasafin kuɗi ana buƙata',
+        'shopping_budget_max': 'Kasafin kuɗi ya wuce adadin da aka yarda',
+        'shopping_item_name_required': 'Sunan abu ana buƙata',
+        'shopping_quantity_required': 'Yawa ana buƙata',
+        'shopping_quantity_range': 'Yawa dole ne ta kasance tsakanin 1 da 100',
+        'shopping_price_required': 'Farashin ana buƙata',
+        'shopping_price_range': 'Farashin dole ne ya kasance tsakanin 0 da 1,000,000',
+        'shopping_store_required': 'Sunan shago ana buƙata',
+        'shopping_frequency_required': 'Yawan sayayya ana buƙata',
+        'shopping_frequency_range': 'Yawan dole ne ya kasance tsakanin kwanaki 1 da 365',
+        'shopping_item_submit': 'Ƙaddamar da Abu',
+        'shopping_email_required': 'Adireshin imel ana buƙata',
+        'shopping_title': 'Jerin Sayayya',
     }
 }
