@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script>{% extends "base.html" %}
+{% extends "base.html" %}
 {% block title %}{{ t('food_order_title', default='Food Order') }} - FiCore{% endblock %}
 {% block content %}
 <div class="container mt-5">
@@ -71,12 +32,12 @@
                     <button class="btn btn-primary" onclick="foodOrderModule.createFoodOrder()">{{ t('food_order_create', default='Create') }}</button>
                 </div>
                 <div id="foodOrders">
-                    {% if orders|length > 0 %}
-                        {% for order in orders %}
+                    {% if orders_data|length > 0 %}
+                        {% for order in orders_data %}
                             <div class="food-order-item">
                                 <span class="fw-semibold">{{ order.name }} ({{ order.vendor }})</span>
                                 <div>
-                                    <span class="text-muted">{{ t('food_order_total', default='Total') }}: {{ format_currency(order.total_cost) }}</span>
+                                    <span class="text-muted">{{ t('food_order_total', default='Total') }}: {{ order.total_cost }}</span>
                                     <button class="btn btn-sm btn-outline-primary ms-2" onclick="foodOrderModule.loadFoodOrderItems('{{ order.id }}')">{{ t('general_view_all', default='View All') }}</button>
                                     <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('{{ order.id }}')">{{ t('food_order_reorder', default='Reorder') }}</button>
                                 </div>
@@ -87,8 +48,8 @@
                     {% endif %}
                 </div>
                 <div id="foodOrderItems" class="mt-3">
-                    {% if current_order_items|length > 0 %}
-                        {% for item in current_order_items %}
+                    {% if orders_data|length > 0 and orders_data[0].items|length > 0 %}
+                        {% for item in orders_data[0].items %}
                             <div class="food-order-item">
                                 <span class="fw-semibold">{{ item.name }}</span>
                                 <div class="d-flex align-items-center gap-2">
@@ -119,12 +80,12 @@
                 <div class="mb-3">
                     <h6>{{ t('general_view_all', default='View All') }}</h6>
                     <div id="manageFoodOrders">
-                        {% if orders|length > 0 %}
-                            {% for order in orders %}
+                        {% if orders_data|length > 0 %}
+                            {% for order in orders_data %}
                                 <div class="food-order-item">
                                     <span class="fw-semibold">{{ order.name }} ({{ order.vendor }})</span>
                                     <div>
-                                        <span class="text-muted">{{ t('food_order_total', default='Total') }}: {{ format_currency(order.total_cost) }}</span>
+                                        <span class="text-muted">{{ t('food_order_total', default='Total') }}: {{ order.total_cost }}</span>
                                         <button class="btn btn-sm btn-outline-danger ms-2" onclick="foodOrderModule.deleteFoodOrder('{{ order.id }}', '{{ order.name }}')">{{ t('food_order_delete', default='Delete') }}</button>
                                         <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('{{ order.id }}')">{{ t('food_order_reorder', default='Reorder') }}</button>
                                     </div>
@@ -133,6 +94,32 @@
                         {% else %}
                             <div class="text-muted">{{ t('no_orders', default='No food orders found') }}</div>
                         {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ t('food_order_total_orders', default='Total Orders') }}</h5>
+                        <p class="card-text">{{ total_orders }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ t('food_order_total_spent', default='Total Spent') }}</h5>
+                        <p class="card-text">{{ total_spent }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ t('food_order_pending', default='Pending Orders') }}</h5>
+                        <p class="card-text">{{ pending_orders }}</p>
                     </div>
                 </div>
             </div>
@@ -190,7 +177,6 @@
     transform: translateY(-2px);
 }
 </style>
-
 <script>
 (function () {
     let currentOrderId = null;
@@ -236,6 +222,8 @@
                         const data = await response.json();
                         if (data.vendor) {
                             document.getElementById('newOrderVendor').value = data.vendor;
+                        } else {
+                            showToast('{{ t('food_order_no_vendors', default='No vendors found nearby') }}', 'warning');
                         }
                     },
                     (error) => {
@@ -265,7 +253,7 @@
         try {
             const response = await fetchWithCSRF(window.apiUrls.manageFoodOrders);
             if (response.status === 403) {
-                showToast('{{ t('insufficient_credits', default='Insufficient credits') }}', 'error');
+                showToast('{{ t('food_order_insufficient_credits', default='Insufficient credits') }}', 'error');
                 throw new Error('Unauthorized');
             }
             const orders = await response.json();
@@ -274,7 +262,7 @@
             renderFoodOrders(orders);
         } catch (error) {
             console.error('Error loading food orders:', error);
-            renderFoodOrders([]);
+            renderFoodOrders(offlineData.orders);
         }
     }
 
@@ -286,7 +274,7 @@
                 <div class="food-order-item">
                     <span class="fw-semibold">${order.name} (${order.vendor})</span>
                     <div>
-                        <span class="text-muted">{{ t('food_order_total', default='Total') }}: ${format_currency(order.total_cost)}</span>
+                        <span class="text-muted">{{ t('food_order_total', default='Total') }}: ${order.total_cost}</span>
                         <button class="btn btn-sm btn-outline-primary ms-2" onclick="foodOrderModule.loadFoodOrderItems('${order.id}')">{{ t('general_view_all', default='View All') }}</button>
                         <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('${order.id}')">{{ t('food_order_reorder', default='Reorder') }}</button>
                     </div>
@@ -304,7 +292,7 @@
         try {
             const response = await fetchWithCSRF(window.apiUrls.manageFoodOrders);
             if (response.status === 403) {
-                showToast('{{ t('insufficient_credits', default='Insufficient credits') }}', 'error');
+                showToast('{{ t('food_order_insufficient_credits', default='Insufficient credits') }}', 'error');
                 throw new Error('Unauthorized');
             }
             const orders = await response.json();
@@ -313,7 +301,7 @@
             renderManageOrders(orders);
         } catch (error) {
             console.error('Error loading food orders for management:', error);
-            renderManageOrders([]);
+            renderManageOrders(offlineData.orders);
         }
     }
 
@@ -325,7 +313,7 @@
                 <div class="food-order-item">
                     <span class="fw-semibold">${order.name} (${order.vendor})</span>
                     <div>
-                        <span class="text-muted">{{ t('food_order_total', default='Total') }}: ${format_currency(order.total_cost)}</span>
+                        <span class="text-muted">{{ t('food_order_total', default='Total') }}: ${order.total_cost}</span>
                         <button class="btn btn-sm btn-outline-danger ms-2" onclick="foodOrderModule.deleteFoodOrder('${order.id}', '${order.name}')">{{ t('food_order_delete', default='Delete') }}</button>
                         <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('${order.id}')">{{ t('food_order_reorder', default='Reorder') }}</button>
                     </div>
@@ -341,11 +329,11 @@
             return;
         }
         try {
-            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrders + `/${orderId}`, {
+            const response = await fetchWithCSRF(`${window.apiUrls.manageFoodOrders}/${orderId}`, {
                 method: 'DELETE'
             });
             if (response.status === 403) {
-                showToast('{{ t('insufficient_credits', default='Insufficient credits') }}', 'error');
+                showToast('{{ t('food_order_insufficient_credits', default='Insufficient credits') }}', 'error');
                 throw new Error('Unauthorized');
             }
             const data = await response.json();
@@ -375,7 +363,7 @@
         try {
             const response = await fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', orderId));
             if (response.status === 403) {
-                showToast('{{ t('insufficient_credits', default='Insufficient credits') }}', 'error');
+                showToast('{{ t('food_order_insufficient_credits', default='Insufficient credits') }}', 'error');
                 throw new Error('Unauthorized');
             }
             const items = await response.json();
@@ -384,7 +372,7 @@
             renderFoodOrderItems(items);
         } catch (error) {
             console.error('Error loading food order items:', error);
-            renderFoodOrderItems([]);
+            renderFoodOrderItems(offlineData.items[orderId] || []);
         }
     }
 
@@ -426,7 +414,7 @@
                 body: JSON.stringify({ name, vendor, phone, location })
             });
             if (response.status === 403) {
-                showToast('{{ t('insufficient_credits', default='Insufficient credits') }}', 'error');
+                showToast('{{ t('food_order_insufficient_credits', default='Insufficient credits') }}', 'error');
                 throw new Error('Unauthorized');
             }
             const data = await response.json();
@@ -470,7 +458,7 @@
                 body: JSON.stringify({ name, quantity, price, notes })
             });
             if (response.status === 403) {
-                showToast('{{ t('insufficient_credits', default='Insufficient credits') }}', 'error');
+                showToast('{{ t('food_order_insufficient_credits', default='Insufficient credits') }}', 'error');
                 throw new Error('Unauthorized');
             }
             const data = await response.json();
@@ -483,6 +471,7 @@
                 document.getElementById('newOrderItemPrice').value = '';
                 document.getElementById('newOrderItemNotes').value = '';
                 loadFoodOrderItems(currentOrderId);
+                loadFoodOrders();
                 if (typeof loadFinancialSummary === 'function') {
                     loadFinancialSummary();
                 }
@@ -500,7 +489,7 @@
                 body: JSON.stringify({ item_id: itemId, [field]: value })
             });
             if (response.status === 403) {
-                showToast('{{ t('insufficient_credits', default='Insufficient credits') }}', 'error');
+                showToast('{{ t('food_order_insufficient_credits', default='Insufficient credits') }}', 'error');
                 throw new Error('Unauthorized');
             }
             const data = await response.json();
@@ -509,6 +498,7 @@
             } else {
                 showToast('{{ t('item_updated', default='Item updated') }}', 'success');
                 loadFoodOrderItems(currentOrderId);
+                loadFoodOrders();
                 if (typeof loadFinancialSummary === 'function') {
                     loadFinancialSummary();
                 }
@@ -525,7 +515,7 @@
                 method: 'POST'
             });
             if (response.status === 403) {
-                showToast('{{ t('insufficient_credits', default='Insufficient credits') }}', 'error');
+                showToast('{{ t('food_order_insufficient_credits', default='Insufficient credits') }}', 'error');
                 throw new Error('Unauthorized');
             }
             const data = await response.json();
@@ -627,12 +617,13 @@
                 if (tabEl) {
                     new bootstrap.Tab(tabEl.querySelector('.nav-link.active')).show();
                 }
-                modalElement = document.getElementById('foodOrderModal');
+                modalElement = document.getElementById('successModal');
                 if (modalElement) {
                     modalElement.addEventListener('hidden.bs.modal', cleanupModal);
                 }
                 loadFoodOrders();
                 loadManageOrders();
+                loadOfflineData();
             } catch (error) {
                 console.error('Error initializing food order:', error);
                 showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
