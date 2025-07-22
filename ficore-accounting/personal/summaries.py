@@ -84,7 +84,7 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None):
             }
         },
         'food_orders': {
-            'collection': 'food_orders',
+            'collection': 'FoodOrder',
             'required_fields': ['created_at', 'name'],
             'type': 'food_order',
             'icon': 'bi-box-seam',
@@ -292,7 +292,7 @@ def food_order_summary():
     """Fetch the summary of active food orders for the authenticated user."""
     try:
         db = get_mongo_db()
-        food_orders = db.food_orders.find({'user_id': str(current_user.id)}).sort('updated_at', -1)
+        food_orders = db.FoodOrder.find({'user_id': str(current_user.id)}).sort('updated_at', -1)
         total_spent = 0.0
         active_orders = 0
         for order in food_orders:
