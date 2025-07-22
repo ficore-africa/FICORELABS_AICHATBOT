@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
-{% block title %}Personal Finance Home{% endblock %}
+{% block title %}{{ t('page_title', default='Gida na Kuɗaɗen Kai Tsaye') }}{% endblock %}
 
 {% block content %}
 <div class="page-container">
     <noscript>
         <div style="padding: 1rem; background: #ffebee; border: 1px solid #ef5350; margin-bottom: 1rem;">
-            JavaScript is required to use this dashboard. Please enable it in your browser.
+            {{ t('javascript_required', default='Ana buƙatar JavaScript don amfani da wannan dashboard. Da fatan za a kunna shi a cikin burauzarka.') }}
         </div>
     </noscript>
 
@@ -15,27 +15,27 @@
 
         <!-- Daily Tools -->
         <section class="section-card daily-tools">
-            <h3 class="section-title">Popular Tools</h3>
+            <h3 class="section-title">{{ t('popular_tools', default='Kayan Aiki na Yau da Kullum') }}</h3>
             <div class="quick-actions">
-                <a href="javascript:void(0)" class="quick-action-card grocery-management text-decoration-none" data-bs-toggle="modal" data-bs-target="#groceryModal" aria-label="Smart Grocery Planner">
+                <a href="javascript:void(0)" class="quick-action-card grocery-management text-decoration-none" data-bs-toggle="modal" data-bs-target="#groceryModal" aria-label="{{ t('grocery_modal_label', default='Mai Shirya Kayan Miya Mai Wayo') }}">
                     <i class="bi bi-cart action-icon text-info"></i>
-                    <div class="action-label">Smart Grocery Planner</div>
+                    <div class="action-label">{{ t('grocery_modal_label', default='Mai Shirya Kayan Miya Mai Wayo') }}</div>
                 </a>
-                <a href="javascript:void(0)" class="quick-action-card food-order text-decoration-none" data-bs-toggle="modal" data-bs-target="#foodOrderModal" aria-label="Food Order">
+                <a href="javascript:void(0)" class="quick-action-card food-order text-decoration-none" data-bs-toggle="modal" data-bs-target="#foodOrderModal" aria-label="{{ t('food_order_modal_label', default='Umurnin Abinci') }}">
                     <i class="bi bi-box-seam action-icon text-primary"></i>
-                    <div class="action-label">Order Food</div>
+                    <div class="action-label">{{ t('food_order_modal_label', default='Umurnin Abinci') }}</div>
                 </a>
             </div>
         </section>
 
         <!-- Financial Snapshots -->
         <div class="section-card financial-snapshots">
-            <h3 class="section-title">Financial Snapshots</h3>
+            <h3 class="section-title">{{ t('financial_snapshots', default='Bayanan Kuɗaɗe') }}</h3>
             <div class="summary-cards">
                 <div class="summary-card budget-card">
                     <div class="card-header d-flex align-items-center gap-3">
                         <i class="bi bi-pie-chart card-icon text-primary"></i>
-                        <span class="fw-bold">Budget Status</span>
+                        <span class="fw-bold">{{ t('budget_status', default='Matsayin Kasafin Kuɗi') }}</span>
                     </div>
                     <div class="card-amount mt-3" id="budgetStatus">
                         <span class="currency-symbol">₦</span>
@@ -46,7 +46,7 @@
                 <div class="summary-card bills-card">
                     <div class="card-header d-flex align-items-center gap-3">
                         <i class="bi bi-receipt card-icon text-warning"></i>
-                        <span class="fw-bold">Upcoming Bills</span>
+                        <span class="fw-bold">{{ t('upcoming_bills', default='Kuɗin da ke Jiran Biya') }}</span>
                     </div>
                     <div class="card-amount mt-3" id="upcomingBills">
                         <span class="currency-symbol">₦</span>
@@ -57,7 +57,7 @@
                 <div class="summary-card grocery-card">
                     <div class="card-header d-flex align-items-center gap-3">
                         <i class="bi bi-cart card-icon text-info"></i>
-                        <span class="fw-bold">Grocery Spending</span>
+                        <span class="fw-bold">{{ t('grocery_spending', default='Kashe Kayan Miya') }}</span>
                     </div>
                     <div class="card-amount mt-3" id="grocerySpending">
                         <span class="currency-symbol">₦</span>
@@ -68,7 +68,7 @@
                 <div class="summary-card food-order-card">
                     <div class="card-header d-flex align-items-center gap-3">
                         <i class="bi bi-box-seam card-icon text-primary"></i>
-                        <span class="fw-bold">Food Order Spending</span>
+                        <span class="fw-bold">{{ t('food_order_spending', default='Kashe Umurnin Abinci') }}</span>
                     </div>
                     <div class="card-amount mt-3" id="foodOrderSpending">
                         <span class="currency-symbol">₦</span>
@@ -78,7 +78,7 @@
                 </div>
             </div>
             <div class="mt-3 text-end">
-                <button class="btn btn-link" onclick="toggleAmountVisibility()" data-bs-toggle="tooltip" data-bs-title="Toggle amount visibility">
+                <button class="btn btn-link" onclick="toggleAmountVisibility()" data-bs-toggle="tooltip" data-bs-title="{{ t('toggle_amount_visibility', default='Canja ganin adadin kuɗi') }}">
                     <i id="visibilityIcon" class="bi bi-eye"></i>
                 </button>
             </div>
@@ -86,12 +86,12 @@
 
         <!-- Balance Overview -->
         <div class="section-card balance-overview">
-            <h3 class="section-title">Balance Overview</h3>
+            <h3 class="section-title">{{ t('balance_overview', default='Bayanin Ma\'auni') }}</h3>
             <div class="summary-cards">
                 <div class="summary-card wallet-balance">
                     <div class="card-header d-flex align-items-center gap-3">
                         <i class="bi bi-wallet2 card-icon text-success"></i>
-                        <span class="fw-bold">Ficore Credits</span>
+                        <span class="fw-bold">{{ t('ficore_credits', default='Ƙididdigar Ficore') }}</span>
                     </div>
                     <div class="card-amount text-success mt-3" id="walletBalance">
                         <span class="currency-symbol">₦</span>
@@ -104,9 +104,9 @@
         <!-- Recent Activity -->
         <div class="section-card recent-activity">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="section-title mb-0">Recent Activity</h3>
+                <h3 class="section-title mb-0">{{ t('recent_activity', default='Ayyukan Kwanan Nan') }}</h3>
                 <a href="#" class="btn btn-link btn-sm p-0 text-decoration-none" id="viewAllActivities" onclick="toggleRecentActivities()">
-                    View All
+                    {{ t('view_all', default='Duba Duk') }}
                 </a>
             </div>
             <div id="recentActivityListLimited">
@@ -116,8 +116,8 @@
                             <i class="bi bi-info-circle text-muted"></i>
                         </div>
                         <div class="activity-content">
-                            <div class="activity-description fw-semibold">No recent activity</div>
-                            <div class="activity-time text-muted">Start by adding a budget or bill</div>
+                            <div class="activity-description fw-semibold">{{ t('no_recent_activity', default='Babu ayyukan kwanan nan') }}</div>
+                            <div class="activity-time text-muted">{{ t('start_activity', default='Fara da ƙara kasafin kuɗi ko kuɗi') }}</div>
                         </div>
                     </div>
                 </div>
@@ -129,8 +129,8 @@
                             <i class="bi bi-info-circle text-muted"></i>
                         </div>
                         <div class="activity-content">
-                            <div class="activity-description fw-semibold">No recent activity</div>
-                            <div class="activity-time text-muted">Start by adding a budget or bill</div>
+                            <div class="activity-description fw-semibold">{{ t('no_recent_activity', default='Babu ayyukan kwanan nan') }}</div>
+                            <div class="activity-time text-muted">{{ t('start_activity', default='Fara da ƙara kasafin kuɗi ko kuɗi') }}</div>
                         </div>
                     </div>
                 </div>
@@ -140,7 +140,7 @@
         <!-- Notifications -->
         <div class="section-card notifications">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="section-title mb-0">Notifications</h3>
+                <h3 class="section-title mb-0">{{ t('notifications', default='Sanarwa') }}</h3>
                 <span class="badge bg-primary rounded-pill" id="notificationCount">0</span>
             </div>
             <div id="notificationList">
@@ -150,8 +150,8 @@
                             <i class="bi bi-info-circle text-muted"></i>
                         </div>
                         <div class="notification-content">
-                            <div class="notification-description fw-semibold">No notifications</div>
-                            <div class="notification-time text-muted">Check back later</div>
+                            <div class="notification-description fw-semibold">{{ t('no_notifications', default='Babu sanarwa') }}</div>
+                            <div class="notification-time text-muted">{{ t('check_later', default='Duba baya') }}</div>
                         </div>
                     </div>
                 </div>
@@ -160,15 +160,15 @@
 
         <!-- Explore Features -->
         <div class="section-card explore-section">
-            <h3 class="section-title">Explore Features</h3>
+            <h3 class="section-title">{{ t('explore_features', default='Bincika Abubuwan Haɗin') }}</h3>
             {% for feature in explore_features_for_template %}
-            <a href="{{ feature.get('url', '#') | e }}" class="explore-card text-decoration-none" aria-label="{{ t(feature.get('label_key', ''), default=feature.get('label', 'Feature')) | e }}">
+            <a href="{{ feature.get('url', '#') | e }}" class="explore-card text-decoration-none" aria-label="{{ t(feature.get('label_key', ''), default=feature.get('label', 'Abun Haɗi')) | e }}">
                 <div class="explore-card-icon">
                     <i class="bi {{ feature.get('icon', 'bi-circle') | e }} text-primary"></i>
                 </div>
                 <div class="explore-card-text">
-                    <h4>{{ t(feature.get('label_key', ''), default=feature.get('label', 'Feature')) | e }}</h4>
-                    <p class="text-muted">{{ t(feature.get('description_key', ''), default=feature.get('description', 'Description not available')) | e }}</p>
+                    <h4>{{ t(feature.get('label_key', ''), default=feature.get('label', 'Abun Haɗi')) | e }}</h4>
+                    <p class="text-muted">{{ t(feature.get('description_key', ''), default=feature.get('description', 'Bayanin ba ya samuwa')) | e }}</p>
                 </div>
             </a>
             {% endfor %}
@@ -179,19 +179,19 @@
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="groceryModalLabel">Smart Grocery Planner</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="groceryModalLabel">{{ t('grocery_modal_label', default='Mai Shirya Kayan Miya Mai Wayo') }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t('close', default='Rufe') }}"></button>
                     </div>
                     <div class="modal-body">
                         <noscript>
                             <div style="padding: 1rem; background: #ffebee; border: 1px solid #ef5350;">
-                                JavaScript is required to use the Grocery Planner. Please enable it in your browser.
+                                {{ t('javascript_required_grocery', default='Ana buƙatar JavaScript don amfani da Mai Shirya Kayan Miya. Da fatan za a kunna shi a cikin burauzarka.') }}
                             </div>
                         </noscript>
                         <div id="grocery-planner-root"></div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('close', default='Rufe') }}</button>
                     </div>
                 </div>
             </div>
@@ -202,19 +202,19 @@
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="foodOrderModalLabel">Food Order</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="foodOrderModalLabel">{{ t('food_order_modal_label', default='Umurnin Abinci') }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t('close', default='Rufe') }}"></button>
                     </div>
                     <div class="modal-body">
                         <noscript>
                             <div style="padding: 1rem; background: #ffebee; border: 1px solid #ef5350;">
-                                JavaScript is required to use the Food Order feature. Please enable it in your browser.
+                                {{ t('javascript_required_food_order', default='Ana buƙatar JavaScript don amfani da fasalin Umurnin Abinci. Da fatan za a kunna shi a cikin burauzarka.') }}
                             </div>
                         </noscript>
                         <div id="food-order-root"></div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('close', default='Rufe') }}</button>
                     </div>
                 </div>
             </div>
@@ -284,12 +284,12 @@ function formatTimeAgo(timestamp) {
     const time = new Date(timestamp);
     const diff = now - time;
     const minutes = Math.floor(diff / 60000);
-    if (minutes < 1) return window.groceryTranslations.just_now;
-    if (minutes < 60) return minutes + " " + window.groceryTranslations.minutes_ago;
+    if (minutes < 1) return window.groceryTranslations.just_now || '{{ t('just_now', default='Yanzu') }}';
+    if (minutes < 60) return minutes + " " + (window.groceryTranslations.minutes_ago || '{{ t('minutes_ago', default='mintuna da suka wuce') }}');
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return hours + " " + window.groceryTranslations.hours_ago;
+    if (hours < 24) return hours + " " + (window.groceryTranslations.hours_ago || '{{ t('hours_ago', default='awanni da suka wuce') }}');
     const days = Math.floor(hours / 24);
-    return days + " " + window.groceryTranslations.days_ago;
+    return days + " " + (window.groceryTranslations.days_ago || '{{ t('days_ago', default='kwanaki da suka wuce') }}');
 }
 
 function toggleAmountVisibility() {
@@ -310,7 +310,7 @@ function toggleRecentActivities() {
     isActivityExpanded = !isActivityExpanded;
     limitedList.style.display = isActivityExpanded ? 'none' : 'block';
     fullList.style.display = isActivityExpanded ? 'block' : 'none';
-    viewAllButton.textContent = isActivityExpanded ? 'View Less' : 'View All';
+    viewAllButton.textContent = isActivityExpanded ? '{{ t('view_less', default='Duba Ƙasa') }}' : '{{ t('view_all', default='Duba Duk') }}';
 }
 
 function loadFinancialSummary() {
@@ -319,17 +319,17 @@ function loadFinancialSummary() {
         .then(data => {
             if (data.error) {
                 console.error('Budget summary error:', data.error);
-                showToast(window.groceryTranslations.not_found, 'danger');
+                showToast(window.groceryTranslations.not_found || '{{ t('not_found', default='Ba a sami albarkatu ba') }}', 'danger');
                 return;
             }
             const budgetStatus = document.getElementById('budgetStatus');
             budgetStatus.querySelector('.amount-value').dataset.amount = data.totalBudget;
             budgetStatus.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.totalBudget) : '****';
-            document.getElementById('budgetStatusLabel').textContent = data.totalBudget >= 0 ? 'On Track' : 'Over Budget';
+            document.getElementById('budgetStatusLabel').textContent = data.totalBudget >= 0 ? '{{ t('on_track', default='A Kan Hanya') }}' : '{{ t('over_budget', default='Fiye da Kasafin Kuɗi') }}';
         })
         .catch(error => {
             console.error('Error loading budget summary:', error);
-            showToast(window.groceryTranslations.not_found, 'danger');
+            showToast(window.groceryTranslations.not_found || '{{ t('not_found', default='Ba a sami albarkatu ba') }}', 'danger');
         });
 
     fetch(window.apiUrls.billSummary)
@@ -337,17 +337,17 @@ function loadFinancialSummary() {
         .then(data => {
             if (data.error) {
                 console.error('Bill summary error:', data.error);
-                showToast(window.groceryTranslations.not_found, 'danger');
+                showToast(window.groceryTranslations.not_found || '{{ t('not_found', default='Ba a sami albarkatu ba') }}', 'danger');
                 return;
             }
             const upcomingBills = document.getElementById('upcomingBills');
             upcomingBills.querySelector('.amount-value').dataset.amount = data.pending_amount;
             upcomingBills.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.pending_amount) : '****';
-            document.getElementById('billsStatusLabel').textContent = data.overdue_amount > 0 ? 'Overdue' : 'On Time';
+            document.getElementById('billsStatusLabel').textContent = data.overdue_amount > 0 ? '{{ t('overdue', default='Ya Wuce Lokaci') }}' : '{{ t('on_time', default='A Kan Lokaci') }}';
         })
         .catch(error => {
             console.error('Error loading bill summary:', error);
-            showToast(window.groceryTranslations.not_found, 'danger');
+            showToast(window.groceryTranslations.not_found || '{{ t('not_found', default='Ba a sami albarkatu ba') }}', 'danger');
         });
 
     fetch(window.apiUrls.grocerySummary)
@@ -355,17 +355,17 @@ function loadFinancialSummary() {
         .then(data => {
             if (data.error) {
                 console.error('Grocery summary error:', data.error);
-                showToast(window.groceryTranslations.not_found, 'danger');
+                showToast(window.groceryTranslations.not_found || '{{ t('not_found', default='Ba a sami albarkatu ba') }}', 'danger');
                 return;
             }
             const grocerySpending = document.getElementById('grocerySpending');
             grocerySpending.querySelector('.amount-value').dataset.amount = data.total_grocery_spent;
             grocerySpending.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.total_grocery_spent) : '****';
-            document.getElementById('groceryStatusLabel').textContent = data.total_grocery_spent <= data.total_grocery_budget ? 'Within Budget' : 'Over Budget';
+            document.getElementById('groceryStatusLabel').textContent = data.total_grocery_spent <= data.total_grocery_budget ? '{{ t('within_budget', default='Cikin Kasafin Kuɗi') }}' : '{{ t('over_budget', default='Fiye da Kasafin Kuɗi') }}';
         })
         .catch(error => {
             console.error('Error loading grocery summary:', error);
-            showToast(window.groceryTranslations.not_found, 'danger');
+            showToast(window.groceryTranslations.not_found || '{{ t('not_found', default='Ba a sami albarkatu ba') }}', 'danger');
         });
 
     fetch(window.apiUrls.foodOrderSummary)
@@ -373,17 +373,17 @@ function loadFinancialSummary() {
         .then(data => {
             if (data.error) {
                 console.error('Food order summary error:', data.error);
-                showToast(window.foodOrderTranslations.not_found, 'danger');
+                showToast(window.foodOrderTranslations.not_found || '{{ t('not_found', default='Ba a sami albarkatu ba') }}', 'danger');
                 return;
             }
             const foodOrderSpending = document.getElementById('foodOrderSpending');
             foodOrderSpending.querySelector('.amount-value').dataset.amount = data.total_food_order_spent;
             foodOrderSpending.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.total_food_order_spent) : '****';
-            document.getElementById('foodOrderStatusLabel').textContent = data.active_orders > 0 ? `${data.active_orders} Active Orders` : 'No Active Orders';
+            document.getElementById('foodOrderStatusLabel').textContent = data.active_orders > 0 ? `${data.active_orders} {{ t('active_orders', default='Umurni Masu Aiki') }}` : '{{ t('no_active_orders', default='Babu Umurni Masu Aiki') }}';
         })
         .catch(error => {
             console.error('Error loading food order summary:', error);
-            showToast(window.foodOrderTranslations.not_found, 'danger');
+            showToast(window.foodOrderTranslations.not_found || '{{ t('not_found', default='Ba a sami albarkatu ba') }}', 'danger');
         });
 
     fetch(window.apiUrls.ficoreBalance)
@@ -391,7 +391,7 @@ function loadFinancialSummary() {
         .then(data => {
             if (data.error) {
                 console.error('Ficore balance error:', data.error);
-                showToast(window.groceryTranslations.not_found, 'danger');
+                showToast(window.groceryTranslations.not_found || '{{ t('not_found', default='Ba a sami albarkatu ba') }}', 'danger');
                 return;
             }
             const walletBalance = document.getElementById('walletBalance');
@@ -400,7 +400,7 @@ function loadFinancialSummary() {
         })
         .catch(error => {
             console.error('Error loading ficore balance:', error);
-            showToast(window.groceryTranslations.not_found, 'danger');
+            showToast(window.groceryTranslations.not_found || '{{ t('not_found', default='Ba a sami albarkatu ba') }}', 'danger');
         });
 }
 
@@ -420,7 +420,7 @@ function loadRecentActivity() {
                             <i class="${activity.icon} text-${activity.type}"></i>
                         </div>
                         <div class="activity-content">
-                            <div class="activity-description fw-semibold">${activity.description}</div>
+                            <div class="activity-description fw-semibold">{{ t(activity.description_key, default=activity.description) }}</div>
                             <div class="activity-time text-muted">${formatTimeAgo(activity.timestamp)}</div>
                         </div>
                     </div>
@@ -432,8 +432,8 @@ function loadRecentActivity() {
                             <i class="bi bi-info-circle text-muted"></i>
                         </div>
                         <div class="activity-content">
-                            <div class="activity-description fw-semibold">No recent activity</div>
-                            <div class="activity-time text-muted">Start by adding a budget or bill</div>
+                            <div class="activity-description fw-semibold">{{ t('no_recent_activity', default='Babu ayyukan kwanan nan') }}</div>
+                            <div class="activity-time text-muted">{{ t('start_activity', default='Fara da ƙara kasafin kuɗi ko kuɗi') }}</div>
                         </div>
                     </div>
                 </div>
@@ -447,7 +447,7 @@ function loadRecentActivity() {
                             <i class="${activity.icon} text-${activity.type}"></i>
                         </div>
                         <div class="activity-content">
-                            <div class="activity-description fw-semibold">${activity.description}</div>
+                            <div class="activity-description fw-semibold">{{ t(activity.description_key, default=activity.description) }}</div>
                             <div class="activity-time text-muted">${formatTimeAgo(activity.timestamp)}</div>
                         </div>
                     </div>
@@ -459,8 +459,8 @@ function loadRecentActivity() {
                             <i class="bi bi-info-circle text-muted"></i>
                         </div>
                         <div class="activity-content">
-                            <div class="activity-description fw-semibold">No recent activity</div>
-                            <div class="activity-time text-muted">Start by adding a budget or bill</div>
+                            <div class="activity-description fw-semibold">{{ t('no_recent_activity', default='Babu ayyukan kwanan nan') }}</div>
+                            <div class="activity-time text-muted">{{ t('start_activity', default='Fara da ƙara kasafin kuɗi ko kuɗi') }}</div>
                         </div>
                     </div>
                 </div>
@@ -477,8 +477,8 @@ function loadRecentActivity() {
                             <i class="bi bi-info-circle text-muted"></i>
                         </div>
                         <div class="activity-content">
-                            <div class="activity-description fw-semibold">Error loading activities</div>
-                            <div class="activity-time text-muted">Please try again later</div>
+                            <div class="activity-description fw-semibold">{{ t('error_loading_activities', default='Kuskure wajen loda ayyukan') }}</div>
+                            <div class="activity-time text-muted">{{ t('try_again_later', default='Sake gwadawa daga baya') }}</div>
                         </div>
                     </div>
                 </div>
@@ -499,7 +499,7 @@ function loadNotifications() {
                             <i class="${notification.icon} text-${notification.type}"></i>
                         </div>
                         <div class="notification-content">
-                            <div class="notification-description fw-semibold">${notification.message}</div>
+                            <div class="notification-description fw-semibold">{{ t(notification.message_key, default=notification.message) }}</div>
                             <div class="notification-time text-muted">${formatTimeAgo(notification.timestamp)}</div>
                         </div>
                     </div>
@@ -511,8 +511,8 @@ function loadNotifications() {
                             <i class="bi bi-info-circle text-muted"></i>
                         </div>
                         <div class="notification-content">
-                            <div class="notification-description fw-semibold">No notifications</div>
-                            <div class="notification-time text-muted">Check back later</div>
+                            <div class="notification-description fw-semibold">{{ t('no_notifications', default='Babu sanarwa') }}</div>
+                            <div class="notification-time text-muted">{{ t('check_later', default='Duba baya') }}</div>
                         </div>
                     </div>
                 </div>
@@ -531,7 +531,7 @@ function showToast(message, type) {
     toast.innerHTML = `
         <div class="d-flex">
             <div class="toast-body">${message}</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="{{ t('close', default='Rufe') }}"></button>
         </div>
     `;
     document.getElementById('toastContainer')?.appendChild(toast) || document.body.appendChild(toast);
@@ -543,7 +543,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Verify Bootstrap is loaded
     if (typeof bootstrap === 'undefined') {
         console.error('Bootstrap JavaScript is not loaded');
-        showToast('Bootstrap JavaScript failed to load', 'danger');
+        showToast('{{ t('bootstrap_failed', default='Ba a loda Bootstrap JavaScript ba') }}', 'danger');
     } else {
         console.log('Bootstrap JavaScript loaded successfully');
     }
@@ -608,11 +608,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('foodOrderModule initialized successfully');
             } else {
                 console.error('foodOrderModule.initFoodOrder is not defined');
-                showToast('Failed to initialize Food Order feature', 'danger');
+                showToast('{{ t('food_order_init_failed', default='Ba a iya fara fasalin Umurnin Abinci ba') }}', 'danger');
             }
         } catch (error) {
             console.error('Error initializing modules:', error);
-            showToast('Error initializing application', 'danger');
+            showToast('{{ t('app_init_error', default='Kuskure wajen fara aikace-aikace') }}', 'danger');
         }
     }
 
@@ -626,7 +626,7 @@ document.addEventListener('DOMContentLoaded', function() {
             foodOrderScript.onload = initializeModules;
             foodOrderScript.onerror = () => {
                 console.error('Failed to load food-order.js');
-                showToast('Failed to load Food Order script', 'danger');
+                showToast('{{ t('food_order_script_failed', default='Ba a iya loda rubutun Umurnin Abinci ba') }}', 'danger');
             };
         }
     } else {
@@ -637,7 +637,7 @@ document.addEventListener('DOMContentLoaded', function() {
         script.onload = initializeModules;
         script.onerror = () => {
             console.error('Failed to load food-order.js');
-            showToast('Failed to load Food Order script', 'danger');
+            showToast('{{ t('food_order_script_failed', default='Ba a iya loda rubutun Umurnin Abinci ba') }}', 'danger');
         };
         document.body.appendChild(script);
     }
