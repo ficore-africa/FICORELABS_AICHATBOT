@@ -30,14 +30,14 @@
         const root = document.getElementById('grocery-planner-root');
         if (!root) {
             console.error('Grocery planner root element not found');
-            showToast(window.groceryTranslations.general_error || 'Kuskuren farawa na shirin kayan miya', 'danger');
+            showToast(window.groceryTranslations.general_error || 'Kuskuren farawa na shirin Sayayya', 'danger');
             return;
         }
 
         root.innerHTML = `
             <ul class="nav nav-tabs mb-3" id="groceryTabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="lists-tab" data-bs-toggle="tab" data-bs-target="#lists" type="button" role="tab">${window.groceryTranslations.grocery_lists || 'Jerin Kayan Miya'}</button>
+                    <button class="nav-link active" id="lists-tab" data-bs-toggle="tab" data-bs-target="#lists" type="button" role="tab">${window.groceryTranslations.grocery_lists || 'Jerin Sayayya'}</button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="manage-list-tab" data-bs-toggle="tab" data-bs-target="#manage-list" type="button" role="tab">${window.groceryTranslations.grocery_manage_list || 'Sarrafa Jerin'}</button>
