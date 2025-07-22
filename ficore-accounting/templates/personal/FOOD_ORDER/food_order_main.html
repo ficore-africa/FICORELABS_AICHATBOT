@@ -1,0 +1,656 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script>{% extends "base.html" %}
+{% block title %}{{ t('food_order_title', default='Food Order') }} - FiCore{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="page-title">
+        <h1>{{ t('food_order_title', default='Food Order') }}</h1>
+        <small class="subtext">{{ t('food_order_subtitle', default='Manage Your Food Orders') }}</small>
+    </div>
+    <div id="food-order-root">
+        <ul class="nav nav-tabs mb-3" id="foodOrderTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab">{{ t('food_order_create', default='Create Food Order') }}</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="manage-orders-tab" data-bs-toggle="tab" data-bs-target="#manage-orders" type="button" role="tab">{{ t('general_view_all', default='View All') }}</button>
+            </li>
+        </ul>
+        <div class="tab-content" id="foodOrderTabContent">
+            <div class="tab-pane fade show active" id="orders" role="tabpanel" aria-labelledby="orders-tab">
+                <div class="mb-3">
+                    <h6>{{ t('food_order_create', default='Create Food Order') }}</h6>
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" id="newOrderName" placeholder="{{ t('food_order_name', default='Order Name') }}">
+                        <input type="text" class="form-control" id="newOrderVendor" placeholder="{{ t('food_order_vendor', default='Vendor') }}">
+                    </div>
+                    <div class="input-group mb-2">
+                        <input type="tel" class="form-control" id="newOrderPhone" placeholder="{{ t('food_order_phone', default='Phone Number') }}">
+                        <input type="text" class="form-control" id="newOrderLocation" placeholder="{{ t('food_order_location', default='Delivery Location') }}">
+                        <button class="btn btn-outline-secondary" onclick="foodOrderModule.getUserLocation()">{{ t('food_order_auto_detect', default='Auto Detect Location') }}</button>
+                    </div>
+                    <div class="alert alert-info">{{ t('food_order_cost_note', default='Note: Creating and submitting this order will deduct 0.1 FC from your balance.') }}</div>
+                    <button class="btn btn-primary" onclick="foodOrderModule.createFoodOrder()">{{ t('food_order_create', default='Create') }}</button>
+                </div>
+                <div id="foodOrders">
+                    {% if orders|length > 0 %}
+                        {% for order in orders %}
+                            <div class="food-order-item">
+                                <span class="fw-semibold">{{ order.name }} ({{ order.vendor }})</span>
+                                <div>
+                                    <span class="text-muted">{{ t('food_order_total', default='Total') }}: {{ format_currency(order.total_cost) }}</span>
+                                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="foodOrderModule.loadFoodOrderItems('{{ order.id }}')">{{ t('general_view_all', default='View All') }}</button>
+                                    <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('{{ order.id }}')">{{ t('food_order_reorder', default='Reorder') }}</button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-muted">{{ t('no_orders', default='No food orders found') }}</div>
+                    {% endif %}
+                </div>
+                <div id="foodOrderItems" class="mt-3">
+                    {% if current_order_items|length > 0 %}
+                        {% for item in current_order_items %}
+                            <div class="food-order-item">
+                                <span class="fw-semibold">{{ item.name }}</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <input type="number" class="form-control" value="{{ item.quantity }}" min="1" onchange="foodOrderModule.updateFoodOrderItem('{{ item.item_id }}', 'quantity', this.value)">
+                                    <input type="number" class="form-control" value="{{ item.price }}" min="0" step="0.01" onchange="foodOrderModule.updateFoodOrderItem('{{ item.item_id }}', 'price', this.value)">
+                                    <input type="text" class="form-control" value="{{ item.notes|default('') }}" placeholder="{{ t('food_order_item_notes', default='Item Notes') }}" onchange="foodOrderModule.updateFoodOrderItem('{{ item.item_id }}', 'notes', this.value)">
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-muted">{{ t('no_items', default='No items in this order') }}</div>
+                    {% endif %}
+                </div>
+                <div class="mt-3">
+                    <h6>{{ t('food_order_add_item', default='Add Item') }}</h6>
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" id="newOrderItemName" placeholder="{{ t('food_order_item_name', default='Item Name') }}">
+                        <input type="number" class="form-control" id="newOrderItemQuantity" placeholder="{{ t('food_order_quantity', default='Quantity') }}" min="1">
+                        <input type="number" class="form-control" id="newOrderItemPrice" placeholder="{{ t('food_order_price', default='Price') }}" min="0" step="0.01">
+                    </div>
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" id="newOrderItemNotes" placeholder="{{ t('food_order_item_notes', default='Item Notes (e.g., No Pepper)') }}">
+                        <button class="btn btn-primary" onclick="foodOrderModule.addFoodOrderItem()">{{ t('food_order_add', default='Add') }}</button>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="manage-orders" role="tabpanel" aria-labelledby="manage-orders-tab">
+                <div class="mb-3">
+                    <h6>{{ t('general_view_all', default='View All') }}</h6>
+                    <div id="manageFoodOrders">
+                        {% if orders|length > 0 %}
+                            {% for order in orders %}
+                                <div class="food-order-item">
+                                    <span class="fw-semibold">{{ order.name }} ({{ order.vendor }})</span>
+                                    <div>
+                                        <span class="text-muted">{{ t('food_order_total', default='Total') }}: {{ format_currency(order.total_cost) }}</span>
+                                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="foodOrderModule.deleteFoodOrder('{{ order.id }}', '{{ order.name }}')">{{ t('food_order_delete', default='Delete') }}</button>
+                                        <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('{{ order.id }}')">{{ t('food_order_reorder', default='Reorder') }}</button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-muted">{{ t('no_orders', default='No food orders found') }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="successModalLabel">{{ t('food_order_success_title', default='Order Submitted') }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t('general_close', default='Close') }}"></button>
+                    </div>
+                    <div class="modal-body">
+                        {{ t('food_order_success_message', default='Your order has been submitted. The vendor will contact you shortly.') }}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">{{ t('food_order_ok', default='OK') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<style>
+.modal-footer .btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: clamp(0.875rem, 2vw, 0.9375rem);
+    box-shadow: var(--card-shadow);
+    transition: var(--transition-base);
+}
+.modal-footer.two-buttons .btn:first-child:not([data-bs-dismiss="modal"]) {
+    background: var(--button-primary-bg);
+    color: #ffffff;
+    border: none;
+}
+.modal-footer.two-buttons .btn:first-child:not([data-bs-dismiss="modal"]):hover,
+.modal-footer.two-buttons .btn:first-child:not([data-bs-dismiss="modal"]):focus {
+    background: var(--button-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--card-shadow-hover);
+}
+.modal-footer.two-buttons .btn:last-child {
+    background: var(--button-secondary-bg);
+    color: var(--button-secondary-border);
+    border: 2px solid var(--button-secondary-border);
+}
+.modal-footer.two-buttons .btn:last-child:hover,
+.modal-footer.two-buttons .btn:last-child:focus {
+    background: var(--button-secondary-hover);
+    color: var(--text-color);
+    transform: translateY(-2px);
+}
+</style>
+
+<script>
+(function () {
+    let currentOrderId = null;
+    let offlineData = { orders: [], items: {} };
+    let modalElement = null;
+    const FC_COST = 0.1;
+    const ORDER_COOLDOWN_MINUTES = 5;
+
+    let csrfToken = null;
+    function setupCSRF() {
+        const metaTag = document.querySelector('meta[name="csrf-token"]');
+        if (metaTag) {
+            csrfToken = metaTag.getAttribute('content');
+        } else {
+            console.warn('CSRF token not found in meta tag');
+        }
+    }
+
+    async function fetchWithCSRF(url, options = {}) {
+        try {
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken,
+                ...options.headers
+            };
+            const response = await fetch(url, { ...options, headers });
+            return response;
+        } catch (error) {
+            console.error('Fetch error:', error);
+            throw error;
+        }
+    }
+
+    async function getUserLocation() {
+        try {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        const { latitude, longitude } = position.coords;
+                        const location = `${latitude},${longitude}`;
+                        document.getElementById('newOrderLocation').value = location;
+                        const response = await fetchWithCSRF(`${window.apiUrls.getNearestVendor}?location=${location}`);
+                        const data = await response.json();
+                        if (data.vendor) {
+                            document.getElementById('newOrderVendor').value = data.vendor;
+                        }
+                    },
+                    (error) => {
+                        console.error('Error getting location:', error);
+                        showToast('{{ t('food_order_location_error', default='Unable to auto-detect location. Please enter manually.') }}', 'warning');
+                    }
+                );
+            } else {
+                showToast('{{ t('food_order_geolocation_unsupported', default='Geolocation is not supported by this browser.') }}', 'warning');
+            }
+        } catch (error) {
+            console.error('Error in getUserLocation:', error);
+            showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
+        }
+    }
+
+    function canCreateOrder() {
+        const lastOrderTime = localStorage.getItem('lastOrderTime');
+        if (!lastOrderTime) return true;
+        const lastTime = new Date(lastOrderTime);
+        const now = new Date();
+        const diffMinutes = (now - lastTime) / 1000 / 60;
+        return diffMinutes >= ORDER_COOLDOWN_MINUTES;
+    }
+
+    async function loadFoodOrders() {
+        try {
+            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrders);
+            if (response.status === 403) {
+                showToast('{{ t('insufficient_credits', default='Insufficient credits') }}', 'error');
+                throw new Error('Unauthorized');
+            }
+            const orders = await response.json();
+            offlineData.orders = orders;
+            localStorage.setItem('foodOrders', JSON.stringify(orders));
+            renderFoodOrders(orders);
+        } catch (error) {
+            console.error('Error loading food orders:', error);
+            renderFoodOrders([]);
+        }
+    }
+
+    function renderFoodOrders(orders) {
+        const foodOrdersEl = document.getElementById('foodOrders');
+        if (!foodOrdersEl) return;
+        if (orders && orders.length > 0) {
+            foodOrdersEl.innerHTML = orders.map(order => `
+                <div class="food-order-item">
+                    <span class="fw-semibold">${order.name} (${order.vendor})</span>
+                    <div>
+                        <span class="text-muted">{{ t('food_order_total', default='Total') }}: ${format_currency(order.total_cost)}</span>
+                        <button class="btn btn-sm btn-outline-primary ms-2" onclick="foodOrderModule.loadFoodOrderItems('${order.id}')">{{ t('general_view_all', default='View All') }}</button>
+                        <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('${order.id}')">{{ t('food_order_reorder', default='Reorder') }}</button>
+                    </div>
+                </div>
+            `).join('');
+            if (!currentOrderId && orders[0]) {
+                loadFoodOrderItems(orders[0].id);
+            }
+        } else {
+            foodOrdersEl.innerHTML = `<div class="text-muted">{{ t('no_orders', default='No food orders found') }}</div>`;
+        }
+    }
+
+    async function loadManageOrders() {
+        try {
+            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrders);
+            if (response.status === 403) {
+                showToast('{{ t('insufficient_credits', default='Insufficient credits') }}', 'error');
+                throw new Error('Unauthorized');
+            }
+            const orders = await response.json();
+            offlineData.orders = orders;
+            localStorage.setItem('foodOrders', JSON.stringify(orders));
+            renderManageOrders(orders);
+        } catch (error) {
+            console.error('Error loading food orders for management:', error);
+            renderManageOrders([]);
+        }
+    }
+
+    function renderManageOrders(orders) {
+        const manageOrdersEl = document.getElementById('manageFoodOrders');
+        if (!manageOrdersEl) return;
+        if (orders && orders.length > 0) {
+            manageOrdersEl.innerHTML = orders.map(order => `
+                <div class="food-order-item">
+                    <span class="fw-semibold">${order.name} (${order.vendor})</span>
+                    <div>
+                        <span class="text-muted">{{ t('food_order_total', default='Total') }}: ${format_currency(order.total_cost)}</span>
+                        <button class="btn btn-sm btn-outline-danger ms-2" onclick="foodOrderModule.deleteFoodOrder('${order.id}', '${order.name}')">{{ t('food_order_delete', default='Delete') }}</button>
+                        <button class="btn btn-sm btn-outline-success ms-2" onclick="foodOrderModule.reorder('${order.id}')">{{ t('food_order_reorder', default='Reorder') }}</button>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            manageOrdersEl.innerHTML = `<div class="text-muted">{{ t('no_orders', default='No food orders found') }}</div>`;
+        }
+    }
+
+    async function deleteFoodOrder(orderId, orderName) {
+        if (!confirm(`{{ t('food_order_confirm_delete', default='Delete food order') }} "${orderName}"?`)) {
+            return;
+        }
+        try {
+            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrders + `/${orderId}`, {
+                method: 'DELETE'
+            });
+            if (response.status === 403) {
+                showToast('{{ t('insufficient_credits', default='Insufficient credits') }}', 'error');
+                throw new Error('Unauthorized');
+            }
+            const data = await response.json();
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast('{{ t('food_order_deleted', default='Food order deleted') }}', 'success');
+                if (currentOrderId === orderId) {
+                    currentOrderId = null;
+                    const foodOrderItemsEl = document.getElementById('foodOrderItems');
+                    if (foodOrderItemsEl) foodOrderItemsEl.innerHTML = '';
+                }
+                loadFoodOrders();
+                loadManageOrders();
+                if (typeof loadFinancialSummary === 'function') {
+                    loadFinancialSummary();
+                }
+            }
+        } catch (error) {
+            console.error('Error deleting food order:', error);
+            showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
+        }
+    }
+
+    async function loadFoodOrderItems(orderId) {
+        currentOrderId = orderId;
+        try {
+            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', orderId));
+            if (response.status === 403) {
+                showToast('{{ t('insufficient_credits', default='Insufficient credits') }}', 'error');
+                throw new Error('Unauthorized');
+            }
+            const items = await response.json();
+            offlineData.items[orderId] = items;
+            localStorage.setItem('foodOrderItems', JSON.stringify(offlineData.items));
+            renderFoodOrderItems(items);
+        } catch (error) {
+            console.error('Error loading food order items:', error);
+            renderFoodOrderItems([]);
+        }
+    }
+
+    function renderFoodOrderItems(items) {
+        const foodOrderItemsEl = document.getElementById('foodOrderItems');
+        if (!foodOrderItemsEl) return;
+        if (items && items.length > 0) {
+            foodOrderItemsEl.innerHTML = items.map(item => `
+                <div class="food-order-item">
+                    <span class="fw-semibold">${item.name}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="number" class="form-control" value="${item.quantity}" min="1" onchange="foodOrderModule.updateFoodOrderItem('${item.item_id}', 'quantity', this.value)">
+                        <input type="number" class="form-control" value="${item.price}" min="0" step="0.01" onchange="foodOrderModule.updateFoodOrderItem('${item.item_id}', 'price', this.value)">
+                        <input type="text" class="form-control" value="${item.notes || ''}" placeholder="{{ t('food_order_item_notes', default='Item Notes') }}" onchange="foodOrderModule.updateFoodOrderItem('${item.item_id}', 'notes', this.value)">
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            foodOrderItemsEl.innerHTML = `<div class="text-muted">{{ t('no_items', default='No items in this order') }}</div>`;
+        }
+    }
+
+    async function createFoodOrder() {
+        if (!canCreateOrder()) {
+            showToast(`{{ t('food_order_duplicate', default='Please wait ${ORDER_COOLDOWN_MINUTES} minutes before creating another order') }}`, 'warning');
+            return;
+        }
+        const name = document.getElementById('newOrderName').value;
+        const vendor = document.getElementById('newOrderVendor').value;
+        const phone = document.getElementById('newOrderPhone').value;
+        const location = document.getElementById('newOrderLocation').value;
+        if (!name || !vendor || !phone || !location) {
+            showToast('{{ t('general_please_provide', default='Please provide all required fields') }}', 'warning');
+            return;
+        }
+        try {
+            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrders, {
+                method: 'POST',
+                body: JSON.stringify({ name, vendor, phone, location })
+            });
+            if (response.status === 403) {
+                showToast('{{ t('insufficient_credits', default='Insufficient credits') }}', 'error');
+                throw new Error('Unauthorized');
+            }
+            const data = await response.json();
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                localStorage.setItem('lastOrderTime', new Date().toISOString());
+                showSuccessModal();
+                document.getElementById('newOrderName').value = '';
+                document.getElementById('newOrderVendor').value = '';
+                document.getElementById('newOrderPhone').value = '';
+                document.getElementById('newOrderLocation').value = '';
+                loadFoodOrders();
+                loadManageOrders();
+                if (typeof loadFinancialSummary === 'function') {
+                    loadFinancialSummary();
+                }
+            }
+        } catch (error) {
+            console.error('Error creating food order:', error);
+            showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
+        }
+    }
+
+    async function addFoodOrderItem() {
+        if (!currentOrderId) {
+            showToast('{{ t('general_select_order', default='Please select an order') }}', 'warning');
+            return;
+        }
+        const name = document.getElementById('newOrderItemName').value;
+        const quantity = document.getElementById('newOrderItemQuantity').value;
+        const price = document.getElementById('newOrderItemPrice').value;
+        const notes = document.getElementById('newOrderItemNotes').value;
+        if (!name || !quantity || !price) {
+            showToast('{{ t('general_please_provide', default='Please provide all required fields') }}', 'warning');
+            return;
+        }
+        try {
+            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', currentOrderId), {
+                method: 'POST',
+                body: JSON.stringify({ name, quantity, price, notes })
+            });
+            if (response.status === 403) {
+                showToast('{{ t('insufficient_credits', default='Insufficient credits') }}', 'error');
+                throw new Error('Unauthorized');
+            }
+            const data = await response.json();
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast('{{ t('item_added', default='Item added to order') }}', 'success');
+                document.getElementById('newOrderItemName').value = '';
+                document.getElementById('newOrderItemQuantity').value = '';
+                document.getElementById('newOrderItemPrice').value = '';
+                document.getElementById('newOrderItemNotes').value = '';
+                loadFoodOrderItems(currentOrderId);
+                if (typeof loadFinancialSummary === 'function') {
+                    loadFinancialSummary();
+                }
+            }
+        } catch (error) {
+            console.error('Error adding food order item:', error);
+            showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
+        }
+    }
+
+    async function updateFoodOrderItem(itemId, field, value) {
+        try {
+            const response = await fetchWithCSRF(window.apiUrls.manageFoodOrderItems.replace('{order_id}', currentOrderId), {
+                method: 'PUT',
+                body: JSON.stringify({ item_id: itemId, [field]: value })
+            });
+            if (response.status === 403) {
+                showToast('{{ t('insufficient_credits', default='Insufficient credits') }}', 'error');
+                throw new Error('Unauthorized');
+            }
+            const data = await response.json();
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                showToast('{{ t('item_updated', default='Item updated') }}', 'success');
+                loadFoodOrderItems(currentOrderId);
+                if (typeof loadFinancialSummary === 'function') {
+                    loadFinancialSummary();
+                }
+            }
+        } catch (error) {
+            console.error('Error updating food order item:', error);
+            showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
+        }
+    }
+
+    async function reorder(orderId) {
+        try {
+            const response = await fetchWithCSRF(window.apiUrls.reorderFoodOrder.replace('{order_id}', orderId), {
+                method: 'POST'
+            });
+            if (response.status === 403) {
+                showToast('{{ t('insufficient_credits', default='Insufficient credits') }}', 'error');
+                throw new Error('Unauthorized');
+            }
+            const data = await response.json();
+            if (data.error) {
+                showToast(data.error, 'danger');
+            } else {
+                localStorage.setItem('lastOrderTime', new Date().toISOString());
+                showSuccessModal();
+                loadFoodOrders();
+                loadManageOrders();
+                if (typeof loadFinancialSummary === 'function') {
+                    loadFinancialSummary();
+                }
+            }
+        } catch (error) {
+            console.error('Error reordering food order:', error);
+            showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
+        }
+    }
+
+    function showSuccessModal() {
+        const successModalEl = document.getElementById('successModal');
+        if (successModalEl && typeof bootstrap !== 'undefined') {
+            const successModal = new bootstrap.Modal(successModalEl);
+            successModal.show();
+        } else {
+            console.error('Success modal element or Bootstrap not found');
+            showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
+        }
+    }
+
+    function loadOfflineData() {
+        const cachedOrders = localStorage.getItem('foodOrders');
+        const cachedItems = localStorage.getItem('foodOrderItems');
+        if (cachedOrders) {
+            offlineData.orders = JSON.parse(cachedOrders);
+            renderFoodOrders(offlineData.orders);
+            renderManageOrders(offlineData.orders);
+        }
+        if (cachedItems) {
+            offlineData.items = JSON.parse(cachedItems);
+            if (currentOrderId && offlineData.items[currentOrderId]) {
+                renderFoodOrderItems(offlineData.items[currentOrderId]);
+            }
+        }
+    }
+
+    function format_currency(value) {
+        if (!value && value !== 0) return '₦0.00';
+        value = parseFloat(value);
+        if (isNaN(value)) return '₦0.00';
+        return value.toLocaleString('en-NG', { style: 'currency', currency: 'NGN' });
+    }
+
+    function cleanupModal() {
+        try {
+            currentOrderId = null;
+            const foodOrdersEl = document.getElementById('foodOrders');
+            const foodOrderItemsEl = document.getElementById('foodOrderItems');
+            const manageOrdersEl = document.getElementById('manageFoodOrders');
+            if (foodOrdersEl) foodOrdersEl.innerHTML = '';
+            if (foodOrderItemsEl) foodOrderItemsEl.innerHTML = '';
+            if (manageOrdersEl) manageOrdersEl.innerHTML = '';
+            const tabEl = document.querySelector('#foodOrderTabs');
+            if (tabEl) {
+                const activeTab = tabEl.querySelector('.nav-link.active');
+                if (activeTab) {
+                    new bootstrap.Tab(activeTab).show();
+                }
+            }
+            document.body.classList.remove('modal-open');
+            const modalBackdrop = document.querySelector('.modal-backdrop');
+            if (modalBackdrop) {
+                modalBackdrop.remove();
+            }
+        } catch (error) {
+            console.error('Error during modal cleanup:', error);
+        }
+    }
+
+    window.foodOrderModule = {
+        initFoodOrder: function() {
+            try {
+                if (!window.foodOrderTranslations || !window.apiUrls) {
+                    console.error('Food order translations or API URLs not defined');
+                    showToast('{{ t('general_error', default='Initialization error: Translations or APIs not found') }}', 'danger');
+                    return;
+                }
+                if (typeof showToast !== 'function') {
+                    console.error('showToast function is not defined');
+                    return;
+                }
+                if (typeof bootstrap === 'undefined') {
+                    console.error('Bootstrap JavaScript is not defined');
+                    showToast('{{ t('bootstrap_required', default='Bootstrap JavaScript is required') }}', 'danger');
+                    return;
+                }
+                const tabEl = document.querySelector('#foodOrderTabs');
+                if (tabEl) {
+                    new bootstrap.Tab(tabEl.querySelector('.nav-link.active')).show();
+                }
+                modalElement = document.getElementById('foodOrderModal');
+                if (modalElement) {
+                    modalElement.addEventListener('hidden.bs.modal', cleanupModal);
+                }
+                loadFoodOrders();
+                loadManageOrders();
+            } catch (error) {
+                console.error('Error initializing food order:', error);
+                showToast('{{ t('general_error', default='An error occurred') }}', 'danger');
+            }
+        },
+        createFoodOrder,
+        addFoodOrderItem,
+        updateFoodOrderItem,
+        loadFoodOrderItems,
+        deleteFoodOrder,
+        getUserLocation,
+        reorder
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setupCSRF();
+        window.foodOrderModule.initFoodOrder();
+    });
+})();
+</script>
+{% endblock %}
