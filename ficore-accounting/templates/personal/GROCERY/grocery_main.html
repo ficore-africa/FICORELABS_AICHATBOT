@@ -759,6 +759,12 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         setupCSRF();
+        window.apiUrls = {
+            groceryLists: "/personal/grocery/summary",
+            groceryItems: "/personal/grocery/lists/{list_id}/items",
+            groceryShare: "/personal/grocery/lists/{list_id}/share",
+            groceryPriceHistory: "/personal/grocery/price_history/{item_name}"
+        };
         window.groceryModule.initGrocery();
     });
 })();
