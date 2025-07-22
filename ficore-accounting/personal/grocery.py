@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, current_app, session, Response
+from flask import Blueprint, jsonify, request, current_app, session, Response, render_template
 from flask_login import current_user, login_required
 from datetime import datetime, date, timedelta
 from helpers.branding_helpers import draw_ficore_pdf_header
@@ -135,6 +135,30 @@ def process_delayed_deletion(list_id, user_id):
                      extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
 
 @grocery_bp.route('/', methods=['GET'])
+@login_required
+@requires_role(['personal', 'admin'])
+def render_grocery_page():
+    try:
+        db = get_mongo_db()
+        lists = db.grocery_lists.find({'user_id': str(current_user.id), 'status': 'active'}).sort('updated_at', -1).limit(5)
+        summary = {
+            'recent_lists': [{
+                'id': str(l['_id']),
+                'name': l.get('name'),
+                'budget': float(l.get('budget', 0)),
+                'total_spent': float(l.get('total_spent', 0)),
+                'status': l.get('status', 'active')
+            } for l in lists]
+        }
+        logger.info(f"Rendering grocery page for user {current_user.id}", 
+                    extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
+        return render_template('grocery.html', recent_lists=summary['recent_lists'])
+    except Exception as e:
+        logger.error(f"Error rendering grocery page for user {current_user.id}: {str(e)}", 
+                     extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr, 'stack_trace': traceback.format_exc()})
+        return jsonify({'error': trans('grocery_error', default='Error rendering grocery page. Please try again later.')}), 500
+
+@grocery_bp.route('/summary', methods=['GET'])
 @login_required
 @requires_role(['personal', 'admin'])
 def index():
