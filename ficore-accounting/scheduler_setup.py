@@ -1,5 +1,9 @@
+import atexit
+import signal
+import sys
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.memory import MemoryJobStore
+from apscheduler.executors.pool import ThreadPoolExecutor
 from datetime import datetime, date, timedelta
 from flask import url_for
 from mailersend_email import send_email, trans, EMAIL_CONFIG
@@ -213,15 +217,43 @@ def cleanup_expired_sessions(app):
             logger.error(f"Failed to clean up expired sessions: {str(e)}")
             raise
 
+def handle_shutdown(signum, frame):
+    """Handle shutdown signals."""
+    logger.info(f"Received signal {signum}, shutting down scheduler")
+    scheduler = app.config.get('SCHEDULER')
+    if scheduler:
+        scheduler.shutdown()
+        logger.info("Scheduler shut down gracefully")
+    sys.exit(0)
+
+def safe_job_wrapper(job_func, app):
+    """Wrap job execution to handle executor shutdown errors."""
+    def wrapper():
+        try:
+            job_func(app)
+        except RuntimeError as e:
+            if "cannot schedule new futures after shutdown" in str(e):
+                logger.warning(f"Executor shutdown detected for {job_func.__name__}, skipping job")
+            else:
+                raise
+    return wrapper
+
 def init_scheduler(app, mongo):
     """Initialize the background scheduler."""
+    if os.environ.get('WERKZEUG_RUN_MAIN') != 'true' and not app.config.get('TESTING'):
+        logger.info("Skipping scheduler initialization in worker process")
+        return None
+
     try:
         jobstores = {
             'default': MemoryJobStore()
         }
-        scheduler = BackgroundScheduler(jobstores=jobstores)
+        executors = {
+            'default': ThreadPoolExecutor(max_workers=10)
+        }
+        scheduler = BackgroundScheduler(jobstores=jobstores, executors=executors)
         scheduler.add_job(
-            func=lambda: update_overdue_status(app),
+            func=safe_job_wrapper(update_overdue_status, app),
             trigger='interval',
             days=1,
             id='overdue_status',
@@ -230,7 +262,7 @@ def init_scheduler(app, mongo):
             max_instances=1
         )
         scheduler.add_job(
-            func=lambda: send_bill_reminders(app),
+            func=safe_job_wrapper(send_bill_reminders, app),
             trigger='interval',
             days=1,
             id='bill_reminders',
@@ -239,7 +271,7 @@ def init_scheduler(app, mongo):
             max_instances=1
         )
         scheduler.add_job(
-            func=lambda: cleanup_expired_sessions(app),
+            func=safe_job_wrapper(cleanup_expired_sessions, app),
             trigger='interval',
             hours=6,
             id='cleanup_expired_sessions',
@@ -249,7 +281,13 @@ def init_scheduler(app, mongo):
         )
         scheduler.start()
         app.config['SCHEDULER'] = scheduler
-        logger.info("Bill reminder, overdue status, and session cleanup scheduler started successfully")
+        logger.info("Scheduler started with jobs: %s", scheduler.get_jobs())
+
+        # Register shutdown handlers
+        atexit.register(lambda: scheduler.shutdown() if app.config.get('SCHEDULER') else None)
+        signal.signal(signal.SIGTERM, handle_shutdown)
+        signal.signal(signal.SIGINT, handle_shutdown)
+
         return scheduler
     except Exception as e:
         logger.error(f"Failed to initialize scheduler: {str(e)}", exc_info=True)
