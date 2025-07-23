@@ -202,7 +202,7 @@ _PERSONAL_EXPLORE_FEATURES = [
         "icon": "bi-calculator"
     },
     {
-        "endpoint": "reports.budget_performance",
+        "endpoint": "reports.index",
         "label": "Reports",
         "label_key": "personal_reports",
         "description_key": "personal_reports_desc",
