@@ -47,7 +47,7 @@ def index():
         hardcoded_tools = [
             {
                 "endpoint": "personal.shopping.main",
-                "label": "Shopping Planner",
+                "label": "Shopping",
                 "label_key": "shopping_management",
                 "description_key": "shopping_management_desc",
                 "tooltip_key": "shopping_tooltip",
@@ -87,7 +87,7 @@ def index():
             },
             {
                 "endpoint": "personal.shopping.main",
-                "label": "Shopping Planner",
+                "label": "Shopping",
                 "label_key": "shopping_management",
                 "description_key": "shopping_management_desc",
                 "tooltip_key": "shopping_tooltip",
