@@ -467,12 +467,12 @@ h4 { font-size: clamp(1rem, 2.5vw, 1.25rem); }
 }
 
 .summary-card {
-    background: var(--card-bg);
+    background: #f8f9fc;
     border-radius: 16px;
     padding: 1.5rem;
-    border: 1px solid var(--card-border);
-    box-shadow: var(--card-shadow);
-    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+    border: 1px solid #e1e7f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: background 0.3s ease;
     text-align: left;
     position: relative;
     overflow: hidden;
@@ -496,7 +496,7 @@ h4 { font-size: clamp(1rem, 2.5vw, 1.25rem); }
 .summary-card:hover {
     transform: translateY(-8px);
     box-shadow: var(--card-shadow-hover);
-    background: var(--gradient-accent);
+    background: #eef2f9;
 }
 
 .summary-card.debt-card::before {
@@ -508,11 +508,33 @@ h4 { font-size: clamp(1rem, 2.5vw, 1.25rem); }
 }
 .card-header {
     display: flex;
+    color: #333;
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 1rem;
 }
-
+.amount-value {
+  font-size: 22px;
+  font-weight: bold;
+  color: #007bff;
+}
+.bi.bi-bar-chart {
+  color: #17a2b8;
+}
+.bi.bi-calendar-event {
+  color: #ffc107;
+}
+.bi.bi-cart {
+  color: #28a745;
+}
+.bi.bi-box-seam {
+  color: #6f42c1;
+}
+.currency-symbol {
+  font-size: 16px;
+  margin-right: 4px;
+  color: #6c757d;
+}
 .card-icon {
     font-size: 1.5rem;
     color: var(--accent-blue);
@@ -708,25 +730,25 @@ h4 { font-size: clamp(1rem, 2.5vw, 1.25rem); }
 }
 
 .quick-action-card {
-    background: var(--card-bg);
+    background: #f9fbff;
     border-radius: 12px;
     padding: 1rem;
     border: 1px solid var(--card-border);
-    box-shadow: var(--card-shadow);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: all 0.2s ease-in-out;
     min-height: 120px;
     word-break: break-word;
     flex-grow: 1;
 }
 
 .quick-action-card:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--card-shadow-hover);
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
 }
 
 .quick-action-card.deposit {
@@ -753,17 +775,24 @@ h4 { font-size: clamp(1rem, 2.5vw, 1.25rem); }
     background: linear-gradient(135deg, #0c2040, #1e3a8a);
 }
 
+.card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .action-icon {
-    font-size: 2rem;
-    color: var(--accent-blue);
+    font-size:  24px;
+    color: #007bff;
     background: rgba(58, 134, 255, 0.2);
     border-radius: 50%;
+    padding: 10px;
     width: 3.5rem;
     height: 3.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1rem;
+    margin-bottom: 8px;
 }
 
 .dark-mode .action-icon {
@@ -773,7 +802,7 @@ h4 { font-size: clamp(1rem, 2.5vw, 1.25rem); }
 .action-label {
     font-size: clamp(0.875rem, 2vw, 1rem);
     font-weight: 600;
-    color: var(--text-color);
+    color: #333;
     white-space: normal;
     word-break: break-word;
     overflow-wrap: anywhere;
