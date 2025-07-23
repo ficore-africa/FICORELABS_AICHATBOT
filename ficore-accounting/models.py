@@ -174,7 +174,7 @@ def initialize_app_data(app):
                             'properties': {
                                 'user_id': {'bsonType': 'string'},
                                 'amount': {'bsonType': 'int'},
-                                'type': {'enum': ['add', 'spend', 'purchase', 'admin_credit', 'create_grocery_list']},
+                                'type': {'enum': ['add', 'spend', 'purchase', 'admin_credit', 'create_shopping_list']},
                                 'ref': {'bsonType': ['string', 'null']},
                                 'date': {'bsonType': 'date'},
                                 'facilitated_by_agent': {'bsonType': ['string', 'null']},
@@ -338,6 +338,7 @@ def initialize_app_data(app):
                             'bsonType': 'object',
                             'required': ['deadline_date', 'description', 'created_at'],
                             'properties': {
+                                'deadline_date': {'bsonType': 'date'},
                                 'description': {'bsonType': 'string'},
                                 'created_at': {'bsonType': 'date'},
                                 'session_id': {'bsonType': ['string', 'null']},
@@ -354,7 +355,7 @@ def initialize_app_data(app):
                         {'key': [('updated_at', DESCENDING)]}
                     ]
                 },
-                'grocery_items': {
+                'shopping_items': {
                     'validator': {
                         '$jsonSchema': {
                             'bsonType': 'object',
@@ -366,7 +367,7 @@ def initialize_app_data(app):
                                 'quantity': {'bsonType': 'int', 'minimum': 1},
                                 'price': {'bsonType': 'double', 'minimum': 0},
                                 'category': {'enum': ['fruits', 'vegetables', 'dairy', 'meat', 'grains', 'beverages', 'household', 'other']},
-                                'status': {'enum': ['to_buy', 'in_pantry', 'bought']},
+                                'status': {'enum': ['to_buy', 'bought']},
                                 'created_at': {'bsonType': 'date'},
                                 'updated_at': {'bsonType': 'date'},
                                 'store': {'bsonType': ['string', 'null']},
@@ -379,58 +380,47 @@ def initialize_app_data(app):
                         {'key': [('created_at', DESCENDING)]}
                     ]
                 },
-                'grocery_suggestions': {
+                'shopping_lists': {
                     'validator': {
                         '$jsonSchema': {
                             'bsonType': 'object',
-                            'required': ['user_id', 'list_id', 'name', 'quantity', 'price', 'category', 'status', 'created_at'],
+                            'required': ['name', 'session_id', 'budget', 'created_at', 'updated_at', 'total_spent', 'status'],
                             'properties': {
-                                'user_id': {'bsonType': 'string'},
-                                'list_id': {'bsonType': 'string'},
                                 'name': {'bsonType': 'string'},
-                                'quantity': {'bsonType': 'int', 'minimum': 1},
-                                'price': {'bsonType': 'double', 'minimum': 0},
-                                'category': {'enum': ['fruits', 'vegetables', 'dairy', 'meat', 'grains', 'beverages', 'household', 'other']},
-                                'status': {'enum': ['pending', 'approved', 'rejected']},
+                                'user_id': {'bsonType': ['string', 'null']},
+                                'session_id': {'bsonType': 'string'},
+                                'budget': {'bsonType': 'double', 'minimum': 0},
                                 'created_at': {'bsonType': 'date'},
-                                'updated_at': {'bsonType': ['date', 'null']}
+                                'updated_at': {'bsonType': 'date'},
+                                'collaborators': {
+                                    'bsonType': 'array',
+                                    'items': {'bsonType': 'string'}
+                                },
+                                'total_spent': {'bsonType': 'double', 'minimum': 0},
+                                'status': {'enum': ['active', 'saved']}
                             }
                         }
                     },
                     'indexes': [
-                        {'key': [('user_id', ASCENDING), ('list_id', ASCENDING)]},
-                        {'key': [('created_at', DESCENDING)]}
+                        {'key': [('user_id', ASCENDING), ('status', ASCENDING), ('updated_at', DESCENDING)]},
+                        {'key': [('session_id', ASCENDING), ('status', ASCENDING), ('updated_at', DESCENDING)]}
                     ]
                 },
-                'meal_plans': {
+                'pending_deletions': {
                     'validator': {
                         '$jsonSchema': {
                             'bsonType': 'object',
-                            'required': ['user_id', 'name', 'ingredients', 'created_at', 'updated_at'],
+                            'required': ['list_id', 'created_at', 'expires_at'],
                             'properties': {
-                                'user_id': {'bsonType': 'string'},
-                                'name': {'bsonType': 'string'},
-                                'ingredients': {
-                                    'bsonType': 'array',
-                                    'items': {
-                                        'bsonType': 'object',
-                                        'required': ['name', 'quantity', 'category', 'price'],
-                                        'properties': {
-                                            'name': {'bsonType': 'string'},
-                                            'quantity': {'bsonType': 'int', 'minimum': 1},
-                                            'category': {'enum': ['fruits', 'vegetables', 'dairy', 'meat', 'grains', 'beverages', 'household', 'other']},
-                                            'price': {'bsonType': 'double', 'minimum': 0}
-                                        }
-                                    }
-                                },
+                                'list_id': {'bsonType': 'string'},
+                                'user_id': {'bsonType': ['string', 'null']},
                                 'created_at': {'bsonType': 'date'},
-                                'updated_at': {'bsonType': 'date'}
+                                'expires_at': {'bsonType': 'date'}
                             }
                         }
                     },
                     'indexes': [
-                        {'key': [('user_id', ASCENDING)]},
-                        {'key': [('created_at', DESCENDING)]}
+                        {'key': [('list_id', ASCENDING), ('user_id', ASCENDING)]}
                     ]
                 },
                 'feedback': {
@@ -1867,50 +1857,50 @@ def to_dict_tax_deadline(record):
         'created_at': record.get('created_at')
     }
 
-def create_grocery_item(db, item_data):
+def create_shopping_item(db, item_data):
     """
-    Create a new grocery item in the grocery_items collection.
+    Create a new shopping item in the shopping_items collection.
     
     Args:
         db: MongoDB database instance
-        item_data: Dictionary containing grocery item information
+        item_data: Dictionary containing shopping item information
     
     Returns:
-        str: ID of the created grocery item
+        str: ID of the created shopping item
     """
     try:
         required_fields = ['user_id', 'list_id', 'name', 'quantity', 'price', 'category', 'status', 'created_at', 'updated_at']
         if not all(field in item_data for field in required_fields):
-            raise ValueError(trans('general_missing_grocery_item_fields', default='Missing required grocery item fields'))
-        result = db.grocery_items.insert_one(item_data)
-        logger.info(f"{trans('general_grocery_item_created', default='Created grocery item with ID')}: {result.inserted_id}", 
+            raise ValueError(trans('general_missing_shopping_item_fields', default='Missing required shopping item fields'))
+        result = db.shopping_items.insert_one(item_data)
+        logger.info(f"{trans('general_shopping_item_created', default='Created shopping item with ID')}: {result.inserted_id}", 
                    extra={'session_id': item_data.get('session_id', 'no-session-id')})
         return str(result.inserted_id)
     except Exception as e:
-        logger.error(f"{trans('general_grocery_item_creation_error', default='Error creating grocery item')}: {str(e)}", 
+        logger.error(f"{trans('general_shopping_item_creation_error', default='Error creating shopping item')}: {str(e)}", 
                     exc_info=True, extra={'session_id': item_data.get('session_id', 'no-session-id')})
         raise
 
-def get_grocery_items(db, filter_kwargs):
+def get_shopping_items(db, filter_kwargs):
     """
-    Retrieve grocery item records based on filter criteria.
+    Retrieve shopping item records based on filter criteria.
     
     Args:
         db: MongoDB database instance
         filter_kwargs: Dictionary of filter criteria
     
     Returns:
-        list: List of grocery item records
+        list: List of shopping item records
     """
     try:
-        return list(db.grocery_items.find(filter_kwargs).sort('created_at', DESCENDING))
+        return list(db.shopping_items.find(filter_kwargs).sort('created_at', DESCENDING))
     except Exception as e:
-        logger.error(f"{trans('general_grocery_items_fetch_error', default='Error getting grocery items')}: {str(e)}", 
+        logger.error(f"{trans('general_shopping_items_fetch_error', default='Error getting shopping items')}: {str(e)}", 
                     exc_info=True, extra={'session_id': 'no-session-id'})
         raise
 
-def to_dict_grocery_item(record):
-    """Convert grocery item record to dictionary."""
+def to_dict_shopping_item(record):
+    """Convert shopping item record to dictionary."""
     if not record:
         return {'name': None, 'quantity': None}
     return {
@@ -1928,127 +1918,13 @@ def to_dict_grocery_item(record):
         'frequency': record.get('frequency', 1)
     }
 
-def create_grocery_suggestion(db, suggestion_data):
+def update_shopping_item(db, item_id, update_data):
     """
-    Create a new grocery suggestion in the grocery_suggestions collection.
+    Update a shopping item in the shopping_items collection.
     
     Args:
         db: MongoDB database instance
-        suggestion_data: Dictionary containing grocery suggestion information
-    
-    Returns:
-        str: ID of the created grocery suggestion
-    """
-    try:
-        required_fields = ['user_id', 'list_id', 'name', 'quantity', 'price', 'category', 'status', 'created_at']
-        if not all(field in suggestion_data for field in required_fields):
-            raise ValueError(trans('general_missing_grocery_suggestion_fields', default='Missing required grocery suggestion fields'))
-        result = db.grocery_suggestions.insert_one(suggestion_data)
-        logger.info(f"{trans('general_grocery_suggestion_created', default='Created grocery suggestion with ID')}: {result.inserted_id}", 
-                   extra={'session_id': suggestion_data.get('session_id', 'no-session-id')})
-        return str(result.inserted_id)
-    except Exception as e:
-        logger.error(f"{trans('general_grocery_suggestion_creation_error', default='Error creating grocery suggestion')}: {str(e)}", 
-                    exc_info=True, extra={'session_id': suggestion_data.get('session_id', 'no-session-id')})
-        raise
-
-def get_grocery_suggestions(db, filter_kwargs):
-    """
-    Retrieve grocery suggestion records based on filter criteria.
-    
-    Args:
-        db: MongoDB database instance
-        filter_kwargs: Dictionary of filter criteria
-    
-    Returns:
-        list: List of grocery suggestion records
-    """
-    try:
-        return list(db.grocery_suggestions.find(filter_kwargs).sort('created_at', DESCENDING))
-    except Exception as e:
-        logger.error(f"{trans('general_grocery_suggestions_fetch_error', default='Error getting grocery suggestions')}: {str(e)}", 
-                    exc_info=True, extra={'session_id': 'no-session-id'})
-        raise
-
-def to_dict_grocery_suggestion(record):
-    """Convert grocery suggestion record to dictionary."""
-    if not record:
-        return {'name': None, 'quantity': None}
-    return {
-        'id': str(record.get('_id', '')),
-        'user_id': record.get('user_id', ''),
-        'list_id': record.get('list_id', ''),
-        'name': record.get('name', ''),
-        'quantity': record.get('quantity', 0),
-        'price': record.get('price', 0.0),
-        'category': record.get('category', ''),
-        'status': record.get('status', ''),
-        'created_at': record.get('created_at'),
-        'updated_at': record.get('updated_at')
-    }
-
-def create_meal_plan(db, meal_plan_data):
-    """
-    Create a new meal plan in the meal_plans collection.
-    
-    Args:
-        db: MongoDB database instance
-        meal_plan_data: Dictionary containing meal plan information
-    
-    Returns:
-        str: ID of the created meal plan
-    """
-    try:
-        required_fields = ['user_id', 'name', 'ingredients', 'created_at', 'updated_at']
-        if not all(field in meal_plan_data for field in required_fields):
-            raise ValueError(trans('general_missing_meal_plan_fields', default='Missing required meal plan fields'))
-        result = db.meal_plans.insert_one(meal_plan_data)
-        logger.info(f"{trans('general_meal_plan_created', default='Created meal plan with ID')}: {result.inserted_id}", 
-                   extra={'session_id': meal_plan_data.get('session_id', 'no-session-id')})
-        return str(result.inserted_id)
-    except Exception as e:
-        logger.error(f"{trans('general_meal_plan_creation_error', default='Error creating meal plan')}: {str(e)}", 
-                    exc_info=True, extra={'session_id': meal_plan_data.get('session_id', 'no-session-id')})
-        raise
-
-def get_meal_plans(db, filter_kwargs):
-    """
-    Retrieve meal plan records based on filter criteria.
-    
-    Args:
-        db: MongoDB database instance
-        filter_kwargs: Dictionary of filter criteria
-    
-    Returns:
-        list: List of meal plan records
-    """
-    try:
-        return list(db.meal_plans.find(filter_kwargs).sort('created_at', DESCENDING))
-    except Exception as e:
-        logger.error(f"{trans('general_meal_plans_fetch_error', default='Error getting meal plans')}: {str(e)}", 
-                    exc_info=True, extra={'session_id': 'no-session-id'})
-        raise
-
-def to_dict_meal_plan(record):
-    """Convert meal plan record to dictionary."""
-    if not record:
-        return {'name': None, 'ingredients': []}
-    return {
-        'id': str(record.get('_id', '')),
-        'user_id': record.get('user_id', ''),
-        'name': record.get('name', ''),
-        'ingredients': record.get('ingredients', []),
-        'created_at': record.get('created_at'),
-        'updated_at': record.get('updated_at')
-    }
-
-def update_grocery_item(db, item_id, update_data):
-    """
-    Update a grocery item in the grocery_items collection.
-    
-    Args:
-        db: MongoDB database instance
-        item_id: The ID of the grocery item to update
+        item_id: The ID of the shopping item to update
         update_data: Dictionary containing fields to update
     
     Returns:
@@ -2056,79 +1932,19 @@ def update_grocery_item(db, item_id, update_data):
     """
     try:
         update_data['updated_at'] = datetime.utcnow()
-        result = db.grocery_items.update_one(
+        result = db.shopping_items.update_one(
             {'_id': ObjectId(item_id)},
             {'$set': update_data}
         )
         if result.modified_count > 0:
-            logger.info(f"{trans('general_grocery_item_updated', default='Updated grocery item with ID')}: {item_id}", 
+            logger.info(f"{trans('general_shopping_item_updated', default='Updated shopping item with ID')}: {item_id}", 
                        extra={'session_id': 'no-session-id'})
             return True
-        logger.info(f"{trans('general_grocery_item_no_change', default='No changes made to grocery item with ID')}: {item_id}", 
+        logger.info(f"{trans('general_shopping_item_no_change', default='No changes made to shopping item with ID')}: {item_id}", 
                    extra={'session_id': 'no-session-id'})
         return False
     except Exception as e:
-        logger.error(f"{trans('general_grocery_item_update_error', default='Error updating grocery item with ID')} {item_id}: {str(e)}", 
-                    exc_info=True, extra={'session_id': 'no-session-id'})
-        raise
-
-def update_grocery_suggestion(db, suggestion_id, update_data):
-    """
-    Update a grocery suggestion in the grocery_suggestions collection.
-    
-    Args:
-        db: MongoDB database instance
-        suggestion_id: The ID of the grocery suggestion to update
-        update_data: Dictionary containing fields to update
-    
-    Returns:
-        bool: True if updated, False if not found or no changes made
-    """
-    try:
-        update_data['updated_at'] = datetime.utcnow()
-        result = db.grocery_suggestions.update_one(
-            {'_id': ObjectId(suggestion_id)},
-            {'$set': update_data}
-        )
-        if result.modified_count > 0:
-            logger.info(f"{trans('general_grocery_suggestion_updated', default='Updated grocery suggestion with ID')}: {suggestion_id}", 
-                       extra={'session_id': 'no-session-id'})
-            return True
-        logger.info(f"{trans('general_grocery_suggestion_no_change', default='No changes made to grocery suggestion with ID')}: {suggestion_id}", 
-                   extra={'session_id': 'no-session-id'})
-        return False
-    except Exception as e:
-        logger.error(f"{trans('general_grocery_suggestion_update_error', default='Error updating grocery suggestion with ID')} {suggestion_id}: {str(e)}", 
-                    exc_info=True, extra={'session_id': 'no-session-id'})
-        raise
-
-def update_meal_plan(db, meal_plan_id, update_data):
-    """
-    Update a meal plan in the meal_plans collection.
-    
-    Args:
-        db: MongoDB database instance
-        meal_plan_id: The ID of the meal plan to update
-        update_data: Dictionary containing fields to update
-    
-    Returns:
-        bool: True if updated, False if not found or no changes made
-    """
-    try:
-        update_data['updated_at'] = datetime.utcnow()
-        result = db.meal_plans.update_one(
-            {'_id': ObjectId(meal_plan_id)},
-            {'$set': update_data}
-        )
-        if result.modified_count > 0:
-            logger.info(f"{trans('general_meal_plan_updated', default='Updated meal plan with ID')}: {meal_plan_id}", 
-                       extra={'session_id': 'no-session-id'})
-            return True
-        logger.info(f"{trans('general_meal_plan_no_change', default='No changes made to meal plan with ID')}: {meal_plan_id}", 
-                   extra={'session_id': 'no-session-id'})
-        return False
-    except Exception as e:
-        logger.error(f"{trans('general_meal_plan_update_error', default='Error updating meal plan with ID')} {meal_plan_id}: {str(e)}", 
+        logger.error(f"{trans('general_shopping_item_update_error', default='Error updating shopping item with ID')} {item_id}: {str(e)}", 
                     exc_info=True, extra={'session_id': 'no-session-id'})
         raise
 
@@ -2424,78 +2240,28 @@ def update_tax_deadline(db, deadline_id, update_data):
                     exc_info=True, extra={'session_id': 'no-session-id'})
         raise
 
-def delete_grocery_item(db, item_id):
+def delete_shopping_item(db, item_id):
     """
-    Delete a grocery item from the grocery_items collection.
+    Delete a shopping item from the shopping_items collection.
     
     Args:
         db: MongoDB database instance
-        item_id: The ID of the grocery item to delete
+        item_id: The ID of the shopping item to delete
     
     Returns:
         bool: True if deleted, False if not found
     """
     try:
-        result = db.grocery_items.delete_one({'_id': ObjectId(item_id)})
+        result = db.shopping_items.delete_one({'_id': ObjectId(item_id)})
         if result.deleted_count > 0:
-            logger.info(f"{trans('general_grocery_item_deleted', default='Deleted grocery item with ID')}: {item_id}", 
+            logger.info(f"{trans('general_shopping_item_deleted', default='Deleted shopping item with ID')}: {item_id}", 
                        extra={'session_id': 'no-session-id'})
             return True
-        logger.info(f"{trans('general_grocery_item_not_found', default='Grocery item not found with ID')}: {item_id}", 
+        logger.info(f"{trans('general_shopping_item_not_found', default='Shopping item not found with ID')}: {item_id}", 
                    extra={'session_id': 'no-session-id'})
         return False
     except Exception as e:
-        logger.error(f"{trans('general_grocery_item_delete_error', default='Error deleting grocery item with ID')} {item_id}: {str(e)}", 
-                    exc_info=True, extra={'session_id': 'no-session-id'})
-        raise
-
-def delete_grocery_suggestion(db, suggestion_id):
-    """
-    Delete a grocery suggestion from the grocery_suggestions collection.
-    
-    Args:
-        db: MongoDB database instance
-        suggestion_id: The ID of the grocery suggestion to delete
-    
-    Returns:
-        bool: True if deleted, False if not found
-    """
-    try:
-        result = db.grocery_suggestions.delete_one({'_id': ObjectId(suggestion_id)})
-        if result.deleted_count > 0:
-            logger.info(f"{trans('general_grocery_suggestion_deleted', default='Deleted grocery suggestion with ID')}: {suggestion_id}", 
-                       extra={'session_id': 'no-session-id'})
-            return True
-        logger.info(f"{trans('general_grocery_suggestion_not_found', default='Grocery suggestion not found with ID')}: {suggestion_id}", 
-                   extra={'session_id': 'no-session-id'})
-        return False
-    except Exception as e:
-        logger.error(f"{trans('general_grocery_suggestion_delete_error', default='Error deleting grocery suggestion with ID')} {suggestion_id}: {str(e)}", 
-                    exc_info=True, extra={'session_id': 'no-session-id'})
-        raise
-
-def delete_meal_plan(db, meal_plan_id):
-    """
-    Delete a meal plan from the meal_plans collection.
-    
-    Args:
-        db: MongoDB database instance
-        meal_plan_id: The ID of the meal plan to delete
-    
-    Returns:
-        bool: True if deleted, False if not found
-    """
-    try:
-        result = db.meal_plans.delete_one({'_id': ObjectId(meal_plan_id)})
-        if result.deleted_count > 0:
-            logger.info(f"{trans('general_meal_plan_deleted', default='Deleted meal plan with ID')}: {meal_plan_id}", 
-                       extra={'session_id': 'no-session-id'})
-            return True
-        logger.info(f"{trans('general_meal_plan_not_found', default='Meal plan not found with ID')}: {meal_plan_id}", 
-                   extra={'session_id': 'no-session-id'})
-        return False
-    except Exception as e:
-        logger.error(f"{trans('general_meal_plan_delete_error', default='Error deleting meal plan with ID')} {meal_plan_id}: {str(e)}", 
+        logger.error(f"{trans('general_shopping_item_delete_error', default='Error deleting shopping item with ID')} {item_id}: {str(e)}", 
                     exc_info=True, extra={'session_id': 'no-session-id'})
         raise
 
@@ -2851,6 +2617,202 @@ def delete_tax_deadline(db, deadline_id):
                     exc_info=True, extra={'session_id': 'no-session-id'})
         raise
 
+def create_shopping_list(db, list_data):
+    """
+    Create a new shopping list in the shopping_lists collection.
+    
+    Args:
+        db: MongoDB database instance
+        list_data: Dictionary containing shopping list information
+    
+    Returns:
+        str: ID of the created shopping list
+    """
+    try:
+        required_fields = ['name', 'session_id', 'budget', 'created_at', 'updated_at', 'total_spent', 'status']
+        if not all(field in list_data for field in required_fields):
+            raise ValueError(trans('general_missing_shopping_list_fields', default='Missing required shopping list fields'))
+        list_data['_id'] = str(uuid.uuid4())
+        result = db.shopping_lists.insert_one(list_data)
+        logger.info(f"{trans('general_shopping_list_created', default='Created shopping list with ID')}: {list_data['_id']}", 
+                   extra={'session_id': list_data.get('session_id', 'no-session-id')})
+        return str(list_data['_id'])
+    except Exception as e:
+        logger.error(f"{trans('general_shopping_list_creation_error', default='Error creating shopping list')}: {str(e)}", 
+                    exc_info=True, extra={'session_id': list_data.get('session_id', 'no-session-id')})
+        raise
+
+def update_shopping_list(db, list_id, update_data):
+    """
+    Update a shopping list in the shopping_lists collection.
+    
+    Args:
+        db: MongoDB database instance
+        list_id: The ID of the shopping list to update
+        update_data: Dictionary containing fields to update
+    
+    Returns:
+        bool: True if updated, False if not found or no changes made
+    """
+    try:
+        update_data['updated_at'] = datetime.utcnow()
+        result = db.shopping_lists.update_one(
+            {'_id': list_id},
+            {'$set': update_data}
+        )
+        if result.modified_count > 0:
+            logger.info(f"{trans('general_shopping_list_updated', default='Updated shopping list with ID')}: {list_id}", 
+                       extra={'session_id': 'no-session-id'})
+            return True
+        logger.info(f"{trans('general_shopping_list_no_change', default='No changes made to shopping list with ID')}: {list_id}", 
+                   extra={'session_id': 'no-session-id'})
+        return False
+    except Exception as e:
+        logger.error(f"{trans('general_shopping_list_update_error', default='Error updating shopping list with ID')} {list_id}: {str(e)}", 
+                    exc_info=True, extra={'session_id': 'no-session-id'})
+        raise
+
+def delete_shopping_list(db, list_id):
+    """
+    Delete a shopping list from the shopping_lists collection and related items.
+    
+    Args:
+        db: MongoDB database instance
+        list_id: The ID of the shopping list to delete
+    
+    Returns:
+        bool: True if deleted, False if not found
+    """
+    try:
+        # Delete associated shopping items
+        db.shopping_items.delete_many({'list_id': list_id})
+        result = db.shopping_lists.delete_one({'_id': list_id})
+        if result.deleted_count > 0:
+            logger.info(f"{trans('general_shopping_list_deleted', default='Deleted shopping list with ID')}: {list_id}", 
+                       extra={'session_id': 'no-session-id'})
+            return True
+        logger.info(f"{trans('general_shopping_list_not_found', default='Shopping list not found with ID')}: {list_id}", 
+                   extra={'session_id': 'no-session-id'})
+        return False
+    except Exception as e:
+        logger.error(f"{trans('general_shopping_list_delete_error', default='Error deleting shopping list with ID')} {list_id}: {str(e)}", 
+                    exc_info=True, extra={'session_id': 'no-session-id'})
+        raise
+
+def get_shopping_lists(db, filter_kwargs):
+    """
+    Retrieve shopping list records based on filter criteria.
+    
+    Args:
+        db: MongoDB database instance
+        filter_kwargs: Dictionary of filter criteria
+    
+    Returns:
+        list: List of shopping list records
+    """
+    try:
+        return list(db.shopping_lists.find(filter_kwargs).sort('updated_at', DESCENDING))
+    except Exception as e:
+        logger.error(f"{trans('general_shopping_lists_fetch_error', default='Error getting shopping lists')}: {str(e)}", 
+                    exc_info=True, extra={'session_id': 'no-session-id'})
+        raise
+
+def to_dict_shopping_list(record):
+    """Convert shopping list record to dictionary."""
+    if not record:
+        return {'name': None, 'budget': None}
+    return {
+        'id': str(record.get('_id', '')),
+        'name': record.get('name', ''),
+        'user_id': record.get('user_id', ''),
+        'session_id': record.get('session_id', ''),
+        'budget': record.get('budget', 0.0),
+        'created_at': record.get('created_at'),
+        'updated_at': record.get('updated_at'),
+        'collaborators': record.get('collaborators', []),
+        'total_spent': record.get('total_spent', 0.0),
+        'status': record.get('status', '')
+    }
+
+def create_pending_deletion(db, deletion_data):
+    """
+    Create a new pending deletion record in the pending_deletions collection.
+    
+    Args:
+        db: MongoDB database instance
+        deletion_data: Dictionary containing pending deletion information
+    
+    Returns:
+        str: ID of the created pending deletion
+    """
+    try:
+        required_fields = ['list_id', 'created_at', 'expires_at']
+        if not all(field in deletion_data for field in required_fields):
+            raise ValueError(trans('general_missing_pending_deletion_fields', default='Missing required pending deletion fields'))
+        result = db.pending_deletions.insert_one(deletion_data)
+        logger.info(f"{trans('general_pending_deletion_created', default='Created pending deletion with ID')}: {result.inserted_id}", 
+                   extra={'session_id': deletion_data.get('session_id', 'no-session-id')})
+        return str(result.inserted_id)
+    except Exception as e:
+        logger.error(f"{trans('general_pending_deletion_creation_error', default='Error creating pending deletion')}: {str(e)}", 
+                    exc_info=True, extra={'session_id': deletion_data.get('session_id', 'no-session-id')})
+        raise
+
+def get_pending_deletions(db, filter_kwargs):
+    """
+    Retrieve pending deletion records based on filter criteria.
+    
+    Args:
+        db: MongoDB database instance
+        filter_kwargs: Dictionary of filter criteria
+    
+    Returns:
+        list: List of pending deletion records
+    """
+    try:
+        return list(db.pending_deletions.find(filter_kwargs).sort('created_at', DESCENDING))
+    except Exception as e:
+        logger.error(f"{trans('general_pending_deletions_fetch_error', default='Error getting pending deletions')}: {str(e)}", 
+                    exc_info=True, extra={'session_id': 'no-session-id'})
+        raise
+
+def delete_pending_deletion(db, deletion_id):
+    """
+    Delete a pending deletion from the pending_deletions collection.
+    
+    Args:
+        db: MongoDB database instance
+        deletion_id: The ID of the pending deletion to delete
+    
+    Returns:
+        bool: True if deleted, False if not found
+    """
+    try:
+        result = db.pending_deletions.delete_one({'_id': ObjectId(deletion_id)})
+        if result.deleted_count > 0:
+            logger.info(f"{trans('general_pending_deletion_deleted', default='Deleted pending deletion with ID')}: {deletion_id}", 
+                       extra={'session_id': 'no-session-id'})
+            return True
+        logger.info(f"{trans('general_pending_deletion_not_found', default='Pending deletion not found with ID')}: {deletion_id}", 
+                   extra={'session_id': 'no-session-id'})
+        return False
+    except Exception as e:
+        logger.error(f"{trans('general_pending_deletion_delete_error', default='Error deleting pending deletion with ID')} {deletion_id}: {str(e)}", 
+                    exc_info=True, extra={'session_id': 'no-session-id'})
+        raise
+
+def to_dict_pending_deletion(record):
+    """Convert pending deletion record to dictionary."""
+    if not record:
+        return {'list_id': None, 'created_at': None}
+    return {
+        'id': str(record.get('_id', '')),
+        'list_id': record.get('list_id', ''),
+        'user_id': record.get('user_id', ''),
+        'created_at': record.get('created_at'),
+        'expires_at': record.get('expires_at')
+    }
+
 def create_food_order(db, order_data):
     """
     Create a new food order in the food_orders collection.
@@ -2866,8 +2828,7 @@ def create_food_order(db, order_data):
         required_fields = ['user_id', 'name', 'vendor', 'total_cost', 'created_at', 'updated_at', 'shared_with', 'items']
         if not all(field in order_data for field in required_fields):
             raise ValueError(trans('general_missing_food_order_fields', default='Missing required food order fields'))
-        for item in order_data.get('items', []):
-            item['item_id'] = str(uuid.uuid4())  # Generate unique ID for each item
+        order_data['_id'] = ObjectId()
         result = db.food_orders.insert_one(order_data)
         logger.info(f"{trans('general_food_order_created', default='Created food order with ID')}: {result.inserted_id}", 
                    extra={'session_id': order_data.get('session_id', 'no-session-id')})
@@ -2895,30 +2856,6 @@ def get_food_orders(db, filter_kwargs):
                     exc_info=True, extra={'session_id': 'no-session-id'})
         raise
 
-def to_dict_food_order(record):
-    """Convert food order record to dictionary."""
-    if not record:
-        return {'name': None, 'total_cost': None}
-    return {
-        'id': str(record.get('_id', '')),
-        'user_id': record.get('user_id', ''),
-        'name': record.get('name', ''),
-        'vendor': record.get('vendor', ''),
-        'total_cost': record.get('total_cost', 0.0),
-        'created_at': record.get('created_at'),
-        'updated_at': record.get('updated_at'),
-        'shared_with': record.get('shared_with', []),
-        'items': [
-            {
-                'item_id': item.get('item_id', ''),
-                'name': item.get('name', ''),
-                'quantity': item.get('quantity', 0),
-                'price': item.get('price', 0.0),
-                'category': item.get('category', '')
-            } for item in record.get('items', [])
-        ]
-    }
-
 def update_food_order(db, order_id, update_data):
     """
     Update a food order in the food_orders collection.
@@ -2933,9 +2870,6 @@ def update_food_order(db, order_id, update_data):
     """
     try:
         update_data['updated_at'] = datetime.utcnow()
-        for item in update_data.get('items', []):
-            if 'item_id' not in item:
-                item['item_id'] = str(uuid.uuid4())  # Ensure each item has a unique ID
         result = db.food_orders.update_one(
             {'_id': ObjectId(order_id)},
             {'$set': update_data}
@@ -2976,3 +2910,19 @@ def delete_food_order(db, order_id):
         logger.error(f"{trans('general_food_order_delete_error', default='Error deleting food order with ID')} {order_id}: {str(e)}", 
                     exc_info=True, extra={'session_id': 'no-session-id'})
         raise
+
+def to_dict_food_order(record):
+    """Convert food order record to dictionary."""
+    if not record:
+        return {'name': None, 'vendor': None}
+    return {
+        'id': str(record.get('_id', '')),
+        'user_id': record.get('user_id', ''),
+        'name': record.get('name', ''),
+        'vendor': record.get('vendor', ''),
+        'total_cost': record.get('total_cost', 0.0),
+        'created_at': record.get('created_at'),
+        'updated_at': record.get('updated_at'),
+        'shared_with': record.get('shared_with', []),
+        'items': record.get('items', [])
+    }
