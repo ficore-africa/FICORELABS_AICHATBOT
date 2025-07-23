@@ -54,16 +54,16 @@
                     </div>
                     <div class="status-label" id="billsStatusLabel"></div>
                 </div>
-                <div class="summary-card grocery-card">
+                <div class="summary-card shopping-card">
                     <div class="card-header d-flex align-items-center gap-3">
                         <i class="bi bi-cart card-icon text-info"></i>
-                        <span class="fw-bold">{{ t('grocery_spending', default='Kashe Siyayya') }}</span>
+                        <span class="fw-bold">{{ t('shopping_spending', default='Kashe Siyayya') }}</span>
                     </div>
-                    <div class="card-amount mt-3" id="grocerySpending">
+                    <div class="card-amount mt-3" id="shoppingSpending">
                         <span class="currency-symbol">₦</span>
                         <span class="amount-value" data-amount="0">0.00</span>
                     </div>
-                    <div class="status-label" id="groceryStatusLabel"></div>
+                    <div class="status-label" id="shoppingStatusLabel"></div>
                 </div>
                 <div class="summary-card food-order-card">
                     <div class="card-header d-flex align-items-center gap-3">
@@ -306,15 +306,15 @@
 window.apiUrls = {
     budgetSummary: "/personal/summaries/budget/summary",
     billSummary: "/personal/summaries/bill/summary",
-    grocerySummary: "/personal/shopping/summary",
+    shoppingSummary: "/personal/shopping/summary",
     foodOrderSummary: "/personal/summaries/food_order/summary",
     ficoreBalance: "/personal/summaries/ficore_balance",
     recentActivity: "/personal/summaries/recent_activity",
     notifications: "/personal/summaries/notifications",
-    manageGroceryLists: "/personal/shopping/main",
-    manageGroceryItems: "/personal/shopping/lists/{list_id}/items",
-    shareGroceryList: "/personal/shopping/lists/{list_id}/share",
-    groceryPriceHistory: "/personal/shopping/price_history/{item_name}",
+    manageshoppingLists: "/personal/shopping/main",
+    manageshoppingItems: "/personal/shopping/lists/{list_id}/items",
+    shareshoppingList: "/personal/shopping/lists/{list_id}/share",
+    shoppingPriceHistory: "/personal/shopping/price_history/{item_name}",
     predictiveSuggestions: "/personal/shopping/suggestions",
     manageFoodOrders: "/personal/food_order/main",
     manageFoodOrderItems: "/personal/food_order/manage_items/{order_id}",
@@ -403,21 +403,21 @@ function loadFinancialSummary() {
             showToast(window.t('not_found', { default: 'Ba a sami albarkatu ba' }), 'danger');
         });
 
-    fetch(window.apiUrls.grocerySummary)
+    fetch(window.apiUrls.shoppingSummary)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
-                console.error('Grocery summary error:', data.error);
+                console.error('shopping summary error:', data.error);
                 showToast(window.t('not_found', { default: 'Ba a sami albarkatu ba' }), 'danger');
                 return;
             }
-            const grocerySpending = document.getElementById('grocerySpending');
-            grocerySpending.querySelector('.amount-value').dataset.amount = data.total_shopping_spent;
-            grocerySpending.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.total_shopping_spent) : '****';
-            document.getElementById('groceryStatusLabel').textContent = data.total_shopping_spent <= data.total_shopping_budget ? window.t('within_budget', { default: 'Cikin Kasafin Kuɗi' }) : window.t('over_budget', { default: 'Fiye da Kasafin Kuɗi' });
+            const shoppingSpending = document.getElementById('shoppingSpending');
+            shoppingSpending.querySelector('.amount-value').dataset.amount = data.total_shopping_spent;
+            shoppingSpending.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.total_shopping_spent) : '****';
+            document.getElementById('shoppingStatusLabel').textContent = data.total_shopping_spent <= data.total_shopping_budget ? window.t('within_budget', { default: 'Cikin Kasafin Kuɗi' }) : window.t('over_budget', { default: 'Fiye da Kasafin Kuɗi' });
         })
         .catch(error => {
-            console.error('Error loading grocery summary:', error);
+            console.error('Error loading shopping summary:', error);
             showToast(window.t('not_found', { default: 'Ba a sami albarkatu ba' }), 'danger');
         });
 
