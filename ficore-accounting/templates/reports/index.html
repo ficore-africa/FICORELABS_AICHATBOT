@@ -9,18 +9,18 @@
     </div>
     
     <div class="row g-4">
-        <!-- Grocery Report Card (for personal users) -->
+        <!-- shopping Report Card (for personal users) -->
         {% if current_user.role == 'personal' %}
         <div class="col-md-6 col-lg-4">
-            <a href="{{ url_for('reports.grocery') }}" class="text-decoration-none">
+            <a href="{{ url_for('reports.shopping') }}" class="text-decoration-none">
                 <div class="card h-100 report-card">
                     <div class="card-body d-flex flex-column">
                         <div class="report-icon mb-3">
                             <i class="fas fa-cart-shopping text-primary"></i>
                         </div>
-                        <h5 class="card-title">{{ t('reports_grocery', default='Grocery Report') }}</h5>
+                        <h5 class="card-title">{{ t('reports_shopping', default='Shopping Report') }}</h5>
                         <p class="card-text text-muted flex-grow-1">
-                            {{ t('grocery_report_description', default='Review your grocery lists, items, and suggestions for budgeting.') }}
+                            {{ t('shopping_report_description', default='Review your shopping lists, items, and suggestions for budgeting.') }}
                         </p>
                         <div class="mt-auto">
                             <span class="btn btn-outline-primary btn-sm">{{ t('view_report', default='View Report') }} <i class="fas fa-arrow-right ms-1"></i></span>
