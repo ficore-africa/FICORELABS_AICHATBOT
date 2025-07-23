@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-container">
     <noscript>
-        <div style="padding: 1rem; background: #ffebee; border: 1px solid #ef5350; margin-bottom: 1rem;">
+        <div class="no-js-warning">
             {{ t('javascript_required', default='Ana buƙatar JavaScript don amfani da wannan dashboard. Da fatan za a kunna shi a cikin burauzarka.') }}
         </div>
     </noscript>
@@ -131,7 +131,7 @@
                     </div>
                 </div>
             </div>
-            <div id="recentActivityListFull" style="display: none;">
+            <div id="recentActivityListFull" class="d-none">
                 <div class="recent-activity-card">
                     <div class="activity-item">
                         <div class="activity-icon">
@@ -149,7 +149,7 @@
         <!-- Notifications -->
         <div class="section-card notifications">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="section-title mb-0">{{ t(' fontes', default='Sanarwa') }}</h3>
+                <h3 class="section-title mb-0">{{ t('notifications', default='Sanarwa') }}</h3>
                 <span class="badge bg-primary rounded-pill" id="notificationCount">0</span>
             </div>
             <div id="notificationList">
@@ -184,122 +184,12 @@
         </div>
     {% endif %}
 </div>
-
-<style>
-.spacer { margin: 1.5rem 0; }
-.notification-card, .recent-activity-card { border-bottom: 1px solid #e9ecef; padding: 0.75rem 0; }
-.notification-item, .activity-item { display: flex; align-items: center; gap: 0.75rem; }
-.notification-icon, .activity-icon { font-size: 1.25rem; }
-.notification-content, .activity-content { flex-grow: 1; }
-.notification-description, .activity-description { font-size: 0.9rem; font-weight: 500; }
-.notification-time, .activity-time { font-size: 0.8rem; }
-.summary-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-}
-.summary-card { 
-    padding: 0.75rem; 
-    border: 1px solid #e9ecef; 
-    border-radius: 0.25rem; 
-    margin-bottom: 0.5rem; 
-}
-.card-header { font-size: 1rem; }
-.card-amount { font-size: 1.25rem; font-weight: 500; }
-.card-action { font-size: 1rem; font-weight: 500; }
-.status-label { font-size: 0.8rem; font-weight: 500; margin-top: 0.25rem; }
-
-/* Enhanced Popular Tools Section */
-.quick-actions {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-    padding: 1rem 0;
-}
-
-.quick-action-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
-    border-radius: 1rem;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    text-decoration: none;
-    position: relative;
-    overflow: hidden;
-}
-
-.quick-action-card:hover {
-    transform: scale(1.05);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-}
-
-.quick-action-card:active {
-    transform: scale(0.95);
-}
-
-.quick-action-card .card-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-}
-
-.quick-action-card .action-icon {
-    font-size: 2.5rem;
-    margin-bottom: 0.75rem;
-    color: #ffffff;
-    -webkit-text-stroke: 1px #1a3c34;
-}
-
-.quick-action-card .action-label {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #1a3c34;
-}
-
-/* Specific background gradients for each card */
-.quick-action-card.shopping-management {
-    background: linear-gradient(135deg, #e6f0fa 0%, #b3d4fc 100%);
-}
-
-.quick-action-card.food_order {
-    background: linear-gradient(135deg, #e6f4ea 0%, #b3e2c2 100%);
-}
-
-/* Dark mode adjustments */
-.dark-mode .quick-action-card {
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-}
-
-.dark-mode .quick-action-card:hover {
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
-}
-
-.dark-mode .quick-action-card .action-label {
-    color: #e0e0e0;
-}
-
-.dark-mode .quick-action-card .action-icon {
-    color: #e0e0e0;
-    -webkit-text-stroke: 1px #000000;
-}
-
-.dark-mode .quick-action-card.shopping-management {
-    background: linear-gradient(135deg, #2a4365 0%, #1a3650 100%);
-}
-
-.dark-mode .quick-action-card.food_order {
-    background: linear-gradient(135deg, #2a573a 0%, #1a3c28 100%);
-}
-</style>
 {% endblock %}
 
 {% block extra_scripts %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+<link rel="stylesheet" href="/static/css/dashboard.css">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/static/js/translations.js"></script>
 <script>
