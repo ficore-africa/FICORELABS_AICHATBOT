@@ -79,6 +79,48 @@
                         </div>
                     </div>
                     {% endif %}
+
+                    {% if personal_finance_summary.total_shopping_lists > 0 %}
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <div class="text-info mb-2">
+                                    <i class="fas fa-cart-plus fa-2x"></i>
+                                </div>
+                                <h6 class="card-title">{{ t('shopping_title', default='Shopping Lists') }}</h6>
+                                <p class="card-text">
+                                    <span class="h5 text-primary">{{ personal_finance_summary.total_shopping_lists }}</span><br>
+                                    <small class="text-muted">
+                                        {% if personal_finance_summary.total_shopping_spent > personal_finance_summary.total_shopping_budget %}
+                                            <span class="text-danger">{{ t('shopping_over_budget', default='Over budget') }}</span>
+                                        {% else %}
+                                            {{ t('shopping_within_budget', default='Within budget') }}
+                                        {% endif %}
+                                    </small>
+                                </p>
+                                <a href="{{ url_for('personal.shopping.main') }}" class="btn btn-outline-info btn-sm">{{ t('general_view', default='View') }}</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if personal_finance_summary.total_food_orders > 0 %}
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <div class="text-success mb-2">
+                                    <i class="fas fa-utensils fa-2x"></i>
+                                </div>
+                                <h6 class="card-title">{{ t('food_order_title', default='Food Orders') }}</h6>
+                                <p class="card-text">
+                                    <span class="h5 text-primary">{{ personal_finance_summary.total_food_orders }}</span><br>
+                                    <small class="text-muted">{{ t('food_order_active_orders', default='Active orders') }}</small>
+                                </p>
+                                <a href="{{ url_for('personal.food_order.main') }}" class="btn btn-outline-success btn-sm">{{ t('general_view', default='View') }}</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
 
                 <!-- Personal Finance Quick Actions -->
@@ -98,6 +140,18 @@
                                 <a href="{{ url_for('personal.bill.main') }}" class="btn btn-outline-warning w-100">
                                     <i class="fas fa-file-invoice d-block mb-1"></i>
                                     <small>{{ t('bill_title', default='Bills') }}</small>
+                                </a>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <a href="{{ url_for('personal.shopping.main') }}" class="btn btn-outline-info w-100">
+                                    <i class="fas fa-cart-plus d-block mb-1"></i>
+                                    <small>{{ t('shopping_title', default='Shopping Lists') }}</small>
+                                </a>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <a href="{{ url_for('personal.food_order.main') }}" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-utensils d-block mb-1"></i>
+                                    <small>{{ t('food_order_title', default='Food Orders') }}</small>
                                 </a>
                             </div>
                         </div>
@@ -123,6 +177,18 @@
                                 <a href="{{ url_for('personal.bill.main') }}" class="btn btn-outline-primary w-100">
                                     <i class="fas fa-file-invoice d-block mb-1"></i>
                                     <small>{{ t('bill_add_first', default='Add Bills') }}</small>
+                                </a>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <a href="{{ url_for('personal.shopping.main') }}" class="btn btn-outline-info w-100">
+                                    <i class="fas fa-cart-plus d-block mb-1"></i>
+                                    <small>{{ t('shopping_create_first', default='Create Shopping List') }}</small>
+                                </a>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <a href="{{ url_for('personal.food_order.main') }}" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-utensils d-block mb-1"></i>
+                                    <small>{{ t('food_order_create_first', default='Create Food Order') }}</small>
                                 </a>
                             </div>
                         </div>
@@ -476,6 +542,77 @@
         </div>
     </div>
 
+    <!-- Shopping List Actions Modal -->
+    <div class="modal fade" id="shoppingActionsModal" tabindex="-1" aria-labelledby="shoppingActionsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="shoppingActionsModalLabel">{{ t('shopping_title', default='Shopping Lists') }}</h5>
+                    <button class="btn-close" data-bs-dismiss="modal" aria-label="{{ t('general_close', default='Close') }}"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>{{ t('general_name', default='Name') }}:</strong> <span id="shoppingModalName"></span></p>
+                            <p><strong>{{ t('general_amount', default='Amount') }}:</strong> <span id="shoppingModalAmount"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>{{ t('general_description', default='Description') }}:</strong> <span id="shoppingModalDescription"></span></p>
+                            <p><strong>{{ t('general_date', default='Date') }}:</strong> <span id="shoppingModalDate"></span></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a id="shoppingViewBtn" class="btn btn-info" href="#">{{ t('general_view', default='View') }}</a>
+                    <a id="shoppingEditBtn" class="btn btn-primary" href="#">{{ t('general_edit', default='Edit') }}</a>
+                    <form id="shoppingDeleteForm" action="#" method="POST" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('{{ t('general_confirm_delete', default='Are you sure?') }}')">
+                            {{ t('general_delete', default='Delete') }}
+                        </button>
+                    </form>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('general_close', default='Close') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Food Order Actions Modal -->
+    <div class="modal fade" id="foodOrderActionsModal" tabindex="-1" aria-labelledby="foodOrderActionsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="foodOrderActionsModalLabel">{{ t('food_order_title', default='Food Orders') }}</h5>
+                    <button class="btn-close" data-bs-dismiss="modal" aria-label="{{ t('general_close', default='Close') }}"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>{{ t('general_name', default='Name') }}:</strong> <span id="foodOrderModalName"></span></p>
+                            <p><strong>{{ t('general_amount', default='Amount') }}:</strong> <span id="foodOrderModalAmount"></span></p>
+                            <p><strong>{{ t('food_order_vendor', default='Vendor') }}:</strong> <span id="foodOrderModalVendor"></span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>{{ t('general_description', default='Description') }}:</strong> <span id="foodOrderModalDescription"></span></p>
+                            <p><strong>{{ t('general_date', default='Date') }}:</strong> <span id="foodOrderModalDate"></span></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a id="foodOrderViewBtn" class="btn btn-info" href="#">{{ t('general_view', default='View') }}</a>
+                    <a id="foodOrderEditBtn" class="btn btn-primary" href="#">{{ t('general_edit', default='Edit') }}</a>
+                    <form id="foodOrderDeleteForm" action="#" method="POST" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('{{ t('general_confirm_delete', default='Are you sure?') }}')">
+                            {{ t('general_delete', default='Delete') }}
+                        </button>
+                    </form>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t('general_close', default='Close') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Reminder Modal -->
     <div class="modal fade" id="reminderModal" tabindex="-1" aria-labelledby="reminderModalLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -718,6 +855,58 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('receiptViewBtn').href = `/receipts/view/${currentData._id}`;
             document.getElementById('receiptEditBtn').href = `/receipts/edit/${currentData._id}`;
             document.getElementById('receiptDeleteForm').action = `/receipts/delete/${currentData._id}`;
+        });
+    });
+
+    // Shopping List Actions
+    document.querySelectorAll('#shoppingActionsModal').forEach(modal => {
+        modal.addEventListener('show.bs.modal', (event) => {
+            const button = event.relatedTarget;
+            currentData = {
+                _id: button.dataset.id,
+                name: button.dataset.name,
+                amount: parseFloat(button.dataset.amount).toLocaleString(),
+                date: button.dataset.date,
+                description: button.dataset.description
+            };
+
+            // Populate modal
+            document.getElementById('shoppingModalName').textContent = currentData.name;
+            document.getElementById('shoppingModalAmount').textContent = `{{ t('general_currency_symbol', default='₦') }}${currentData.amount}`;
+            document.getElementById('shoppingModalDescription').textContent = currentData.description || '-';
+            document.getElementById('shoppingModalDate').textContent = currentData.date;
+
+            // Update action buttons
+            document.getElementById('shoppingViewBtn').href = `/personal/shopping/view/${currentData._id}`;
+            document.getElementById('shoppingEditBtn').href = `/personal/shopping/edit/${currentData._id}`;
+            document.getElementById('shoppingDeleteForm').action = `/personal/shopping/delete/${currentData._id}`;
+        });
+    });
+
+    // Food Order Actions
+    document.querySelectorAll('#foodOrderActionsModal').forEach(modal => {
+        modal.addEventListener('show.bs.modal', (event) => {
+            const button = event.relatedTarget;
+            currentData = {
+                _id: button.dataset.id,
+                name: button.dataset.name,
+                amount: parseFloat(button.dataset.amount).toLocaleString(),
+                vendor: button.dataset.vendor,
+                date: button.dataset.date,
+                description: button.dataset.description
+            };
+
+            // Populate modal
+            document.getElementById('foodOrderModalName').textContent = currentData.name;
+            document.getElementById('foodOrderModalAmount').textContent = `{{ t('general_currency_symbol', default='₦') }}${currentData.amount}`;
+            document.getElementById('foodOrderModalVendor').textContent = currentData.vendor || '-';
+            document.getElementById('foodOrderModalDescription').textContent = currentData.description || '-';
+            document.getElementById('foodOrderModalDate').textContent = currentData.date;
+
+            // Update action buttons
+            document.getElementById('foodOrderViewBtn').href = `/personal/food_order/view/${currentData._id}`;
+            document.getElementById('foodOrderEditBtn').href = `/personal/food_order/edit/${currentData._id}`;
+            document.getElementById('foodOrderDeleteForm').action = `/personal/food_order/delete/${currentData._id}`;
         });
     });
 
