@@ -105,16 +105,16 @@ def index():
             },
             {
                 "endpoint": "credits.request_credits",
-                "label": "Ficore Credits",
-                "label_key": "credits_dashboard",
-                "description_key": "credits_dashboard_desc",
-                "tooltip_key": "credits_tooltip",
+                "label": "Request Credits",
+                "label_key": "credits_request",
+                "description_key": "credits_request_desc",
+                "tooltip_key": "credits_request_tooltip",
                 "icon": "bi-coin",
                 "url": url_for("credits.request_credits", _external=True)
             },
             {
                 "endpoint": "credits.history",
-                "label": "Ficore Credits",
+                "label": "Credits History",
                 "label_key": "credits_your_wallet",
                 "description_key": "credits_your_wallet_desc",
                 "tooltip_key": "credits_your_wallet_tooltip",
