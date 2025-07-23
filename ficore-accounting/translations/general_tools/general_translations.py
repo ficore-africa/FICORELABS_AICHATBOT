@@ -10,6 +10,9 @@ GENERAL_TRANSLATIONS = {
         'general_select': 'Select',
         'shopping_management': 'Shopping Management',
         # General module
+        'view_history': 'View History',
+        'fontes': 'Fontes',
+        # General module
         'general_list_name': 'List Name',
         'general_budget': 'Budget',
         'general_total_spent': 'Total Spent',
@@ -1838,6 +1841,9 @@ GENERAL_TRANSLATIONS = {
         'general_cash': 'Kuɗi',
         'general_bank_transfer': 'Canja wurin Banki',
         'general_payment_method_required': 'Ana buƙatar hanyar biya',
+        # General module
+        'view_history': 'Duba Tarihi',
+        'fontes': 'Fontes',
         'general_invalid_payment_method': 'Hanyar biya da aka zaɓa ba daidai ba ne',
         'general_something_went_wrong': 'Kuskure ya faru',
         # General module
