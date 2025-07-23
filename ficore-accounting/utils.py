@@ -14,6 +14,7 @@ from translations import trans
 import requests
 from werkzeug.routing import BuildError
 import time
+from wtforms import ValidationError
 
 # Flask extensions
 from flask_login import LoginManager
@@ -168,6 +169,14 @@ _PERSONAL_EXPLORE_FEATURES = [
         "tooltip_key": "shopping_tooltip",
         "icon": "bi-cart"
     },  
+    {
+        "endpoint": "personal.food_order.main",
+        "label": "Food Order",
+        "label_key": "food_order",
+        "description_key": "food_order_desc",
+        "tooltip_key": "food_order_tooltip",
+        "icon": "bi-box-seam",    
+    }
     {
         "endpoint": "credits.request_credits",
         "label": "Ficore Credits",
@@ -541,11 +550,21 @@ def get_explore_features():
                 },
                 {
                     "endpoint": "personal.shopping.main",
-                    "label": "shopping Planner",
+                    "label": "Shopping",
                     "label_key": "shopping_management",
                     "description_key": "shopping_management_desc",
                     "tooltip_key": "shopping_tooltip",
                     "icon": "bi-cart",
+                    "category": "Personal"
+                },
+                
+                {
+                    "endpoint": "personal.food_order.main",
+                    "label": "Food Order",
+                    "label_key": "food_order",
+                    "description_key": "food_order_desc",
+                    "tooltip_key": "food_order_tooltip",
+                    "icon": "bi-box-seam",
                     "category": "Personal"
                 },
                 {
@@ -809,51 +828,81 @@ def create_anonymous_session():
 
 def clean_currency(value):
     """
-    Clean currency input by removing non-numeric characters, including NGN prefix and currency symbols.
+    Clean currency input by removing non-numeric characters, handling various currency formats and edge cases.
     
     Args:
         value: Input value to clean (str, int, float, or None)
     
     Returns:
-        float: Cleaned numeric value, or 0.0 if invalid
+        float: Cleaned numeric value
+    
+    Raises:
+        ValidationError: If the input cannot be converted to a valid float for form validation
     """
     try:
-        # Handle None or non-string inputs
-        if value is None or value == '':
+        # Handle None or empty inputs
+        if value is None or str(value).strip() == '':
             logger.debug(
                 "clean_currency received empty or None input, returning 0.0",
                 extra={'session_id': session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'}
             )
             return 0.0
+
+        # Handle numeric inputs (int or float)
         if isinstance(value, (int, float)):
             return float(value)
 
-        # Convert to string and remove NGN prefix, currency symbols (₦), commas, and spaces
+        # Convert to string and normalize
         value_str = str(value).strip()
-        cleaned = re.sub(r'[^0-9.]', '', value_str.replace('NGN', '').replace('₦', ''))
+
+        # Remove common currency symbols, prefixes, and formatting characters
+        cleaned = re.sub(r'[^\d.-]', '', value_str.replace('NGN', '').replace('₦', '').replace('$', '').replace('€', '').replace('£', ''))
 
         # Validate the cleaned string
-        if not cleaned or cleaned.count('.') > 1:
+        if not cleaned:
             logger.warning(
-                f"Invalid currency format after cleaning: {value_str}, cleaned: {cleaned}, returning 0.0",
+                f"Invalid currency format after cleaning: original='{value_str}', cleaned='{cleaned}'",
                 extra={'session_id': session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'}
             )
-            return 0.0
+            raise ValidationError(trans('invalid_currency_format', default='Invalid currency format', lang=get_user_language()))
 
-        # Convert to float
-        result = float(cleaned)
-        logger.debug(
-            f"clean_currency processed {value_str} to {result}",
+        # Check for multiple decimal points or negative signs
+        if cleaned.count('.') > 1 or cleaned.count('-') > 1 or (cleaned.count('-') == 1 and not cleaned.startswith('-')):
+            logger.warning(
+                f"Invalid currency format: original='{value_str}', cleaned='{cleaned}', multiple decimals or misplaced negative sign",
+                extra={'session_id': session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'}
+            )
+            raise ValidationError(trans('invalid_currency_format', default='Invalid currency format', lang=get_user_language()))
+
+        # Handle negative numbers
+        try:
+            result = float(cleaned)
+            if result < 0:
+                logger.warning(
+                    f"Negative currency value not allowed: original='{value_str}', cleaned='{cleaned}', result={result}",
+                    extra={'session_id': session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'}
+                )
+                raise ValidationError(trans('negative_currency_not_allowed', default='Negative currency values are not allowed', lang=get_user_language()))
+            logger.debug(
+                f"clean_currency processed '{value_str}' to {result}",
+                extra={'session_id': session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'}
+            )
+            return result
+        except ValueError as e:
+            logger.warning(
+                f"Currency format error: original='{value_str}', cleaned='{cleaned}', error='{str(e)}'",
+                extra={'session_id': session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'}
+            )
+            raise ValidationError(trans('invalid_currency_format', default='Invalid currency format', lang=get_user_language()))
+    except ValidationError as e:
+        raise  # Re-raise ValidationError for form validation
+    except Exception as e:
+        logger.error(
+            f"Unexpected error in clean_currency for value '{value}': {str(e)}",
             extra={'session_id': session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'}
         )
-        return result
-    except (ValueError, TypeError) as e:
-        logger.warning(
-            f"Currency format error for value '{value}': {str(e)}, returning 0.0",
-            extra={'session_id': session.get('sid', 'no-session-id') if has_request_context() else 'no-session-id'}
-        )
-        return 0.0
-        
+        raise ValidationError(trans('invalid_currency_format', default='Invalid currency format', lang=get_user_language()))
+
 def trans_function(key, lang=None, **kwargs):
     """
     Translation function wrapper for backward compatibility.
