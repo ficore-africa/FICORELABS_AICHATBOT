@@ -84,10 +84,10 @@ _PERSONAL_TOOLS = [
     },
     {
         "endpoint": "personal.shopping.main",
-        "label": "Grocery Planner",
-        "label_key": "grocery_management",
-        "description_key": "grocery_management_desc",
-        "tooltip_key": "grocery_tooltip",
+        "label": "Shopping",
+        "label_key": "shopping_management",
+        "description_key": "shopping_management_desc",
+        "tooltip_key": "shopping_tooltip",
         "icon": "bi-cart"
     },
     {
@@ -127,10 +127,10 @@ _PERSONAL_NAV = [
     },   
     {
         "endpoint": "personal.shopping.main",
-        "label": "Grocery Planner",
-        "label_key": "grocery_management",
-        "description_key": "grocery_management_desc",
-        "tooltip_key": "grocery_tooltip",
+        "label": "Shopping",
+        "label_key": "shopping_management",
+        "description_key": "shopping_management_desc",
+        "tooltip_key": "shopping_tooltip",
         "icon": "bi-cart"
     },
     {
@@ -162,10 +162,10 @@ _PERSONAL_EXPLORE_FEATURES = [
     },
     {
         "endpoint": "personal.shopping.main",
-        "label": "Grocery Planner",
-        "label_key": "grocery_management",
-        "description_key": "grocery_management_desc",
-        "tooltip_key": "grocery_tooltip",
+        "label": "Shopping",
+        "label_key": "shopping_management",
+        "description_key": "shopping_management_desc",
+        "tooltip_key": "shopping_tooltip",
         "icon": "bi-cart"
     },  
     {
@@ -541,10 +541,10 @@ def get_explore_features():
                 },
                 {
                     "endpoint": "personal.shopping.main",
-                    "label": "Grocery Planner",
-                    "label_key": "grocery_management",
-                    "description_key": "grocery_management_desc",
-                    "tooltip_key": "grocery_tooltip",
+                    "label": "shopping Planner",
+                    "label_key": "shopping_management",
+                    "description_key": "shopping_management_desc",
+                    "tooltip_key": "shopping_tooltip",
                     "icon": "bi-cart",
                     "category": "Personal"
                 },
@@ -1348,12 +1348,12 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None, session_id
                 'icon': 'bi-cash-coin'
             })
 
-        # Fetch recent grocery lists
-        grocery_lists = db.grocery_lists.find(query).sort('created_at', -1).limit(5)
-        for list_item in grocery_lists:
+        # Fetch recent shopping lists
+        shopping_lists = db.shopping_lists.find(query).sort('created_at', -1).limit(5)
+        for list_item in shopping_lists:
             activities.append({
-                'type': 'grocery_list',
-                'description': trans('recent_activity_grocery_list_created', default='Created grocery list: {name}', name=list_item.get('name', 'Unknown')),
+                'type': 'shopping_list',
+                'description': trans('recent_activity_shopping_list_created', default='Created shopping list: {name}', name=list_item.get('name', 'Unknown')),
                 'timestamp': list_item.get('created_at', datetime.utcnow()).isoformat(),
                 'details': {
                     'budget': list_item.get('budget', 0),
@@ -1362,12 +1362,12 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None, session_id
                 'icon': 'bi-cart'
             })
 
-        # Fetch recent grocery items
-        grocery_items = db.grocery_items.find(query).sort('created_at', -1).limit(5)
-        for item in grocery_items:
+        # Fetch recent shopping items
+        shopping_items = db.shopping_items.find(query).sort('created_at', -1).limit(5)
+        for item in shopping_items:
             activities.append({
-                'type': 'grocery_item',
-                'description': trans('recent_activity_grocery_item_added', default='Added grocery item: {name}', name=item.get('name', 'Unknown')),
+                'type': 'shopping_item',
+                'description': trans('recent_activity_shopping_item_added', default='Added shopping item: {name}', name=item.get('name', 'Unknown')),
                 'timestamp': item.get('created_at', datetime.utcnow()).isoformat(),
                 'details': {
                     'quantity': item.get('quantity', 0),
