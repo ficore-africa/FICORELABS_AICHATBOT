@@ -19,8 +19,10 @@
             <div class="quick-actions">
                 {% for tool in tools_for_template %}
                 <a href="{{ tool.url | e }}" class="quick-action-card {{ tool.label_key }}-management text-decoration-none" aria-label="{{ t(tool.label_key, default=tool.label) | e }}">
-                    <i class="bi {{ tool.icon | e }} action-icon text-{{ 'info' if tool.label_key == 'grocery_management' else 'primary' }}"></i>
-                    <div class="action-label">{{ t(tool.label_key, default=tool.label) | e }}</div>
+                    <div class="card-content">
+                        <i class="bi {{ tool.icon | e }} action-icon"></i>
+                        <div class="action-label">{{ t(tool.label_key, default=tool.label) | e }}</div>
+                    </div>
                 </a>
                 {% endfor %}
             </div>
@@ -96,6 +98,15 @@
                         <span class="amount-value" data-amount="0">0.00</span>
                     </div>
                 </div>
+                <a href="{{ url_for('credits.history', _external=True) | e }}" class="summary-card credits-history text-decoration-none" aria-label="{{ t('credits_your_wallet', default='Credits History') | e }}">
+                    <div class="card-header d-flex align-items-center gap-3">
+                        <i class="bi bi-coin card-icon text-primary"></i>
+                        <span class="fw-bold">{{ t('credits_your_wallet', default='Credits History') }}</span>
+                    </div>
+                    <div class="card-action mt-3">
+                        <span class="action-label">{{ t('view_history', default='View History') }}</span>
+                    </div>
+                </a>
             </div>
         </div>
 
@@ -110,7 +121,7 @@
             <div id="recentActivityListLimited">
                 <div class="recent-activity-card">
                     <div class="activity-item">
-                        <div class="activity-icon">
+                        <div class="action-icon">
                             <i class="bi bi-info-circle text-muted"></i>
                         </div>
                         <div class="activity-content">
@@ -128,7 +139,7 @@
                         </div>
                         <div class="activity-content">
                             <div class="activity-description fw-semibold">{{ t('no_recent_activity', default='Babu ayyukan kwanan nan') }}</div>
-                            <div class="activity-time text-muted">{{ t('start_activity', default='Fara da ƙara kasafin kuɗi ko kuɗi') }}</div>
+                            <div class="activity-time text-muted">{{ t('start_activity', default='Fara da ƙara kasafin kuɗi ko kuɗilanan nan') }}</div>
                         </div>
                     </div>
                 </div>
@@ -138,7 +149,7 @@
         <!-- Notifications -->
         <div class="section-card notifications">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="section-title mb-0">{{ t('notifications', default='Sanarwa') }}</h3>
+                <h3 class="section-title mb-0">{{ t(' fontes', default='Sanarwa') }}</h3>
                 <span class="badge bg-primary rounded-pill" id="notificationCount">0</span>
             </div>
             <div id="notificationList">
@@ -182,10 +193,107 @@
 .notification-content, .activity-content { flex-grow: 1; }
 .notification-description, .activity-description { font-size: 0.9rem; font-weight: 500; }
 .notification-time, .activity-time { font-size: 0.8rem; }
-.summary-card { padding: 0.75rem; border: 1px solid #e9ecef; border-radius: 0.25rem; margin-bottom: 0.5rem; }
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+.summary-card { 
+    padding: 0.75rem; 
+    border: 1px solid #e9ecef; 
+    border-radius: 0.25rem; 
+    margin-bottom: 0.5rem; 
+}
 .card-header { font-size: 1rem; }
 .card-amount { font-size: 1.25rem; font-weight: 500; }
+.card-action { font-size: 1rem; font-weight: 500; }
 .status-label { font-size: 0.8rem; font-weight: 500; margin-top: 0.25rem; }
+
+/* Enhanced Popular Tools Section */
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+.quick-action-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.quick-action-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.quick-action-card:active {
+    transform: scale(0.95);
+}
+
+.quick-action-card .card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.quick-action-card .action-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    color: #ffffff;
+    -webkit-text-stroke: 1px #1a3c34;
+}
+
+.quick-action-card .action-label {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1a3c34;
+}
+
+/* Specific background gradients for each card */
+.quick-action-card.shopping-management {
+    background: linear-gradient(135deg, #e6f0fa 0%, #b3d4fc 100%);
+}
+
+.quick-action-card.food_order {
+    background: linear-gradient(135deg, #e6f4ea 0%, #b3e2c2 100%);
+}
+
+/* Dark mode adjustments */
+.dark-mode .quick-action-card {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .quick-action-card:hover {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+}
+
+.dark-mode .quick-action-card .action-label {
+    color: #e0e0e0;
+}
+
+.dark-mode .quick-action-card .action-icon {
+    color: #e0e0e0;
+    -webkit-text-stroke: 1px #000000;
+}
+
+.dark-mode .quick-action-card.shopping-management {
+    background: linear-gradient(135deg, #2a4365 0%, #1a3650 100%);
+}
+
+.dark-mode .quick-action-card.food_order {
+    background: linear-gradient(135deg, #2a573a 0%, #1a3c28 100%);
+}
 </style>
 {% endblock %}
 
@@ -297,22 +405,21 @@ function loadFinancialSummary() {
 
     fetch(window.apiUrls.grocerySummary)
         .then(response => response.json())
-        .thenjęcia
-            .then(data => {
-                if (data.error) {
-                    console.error('Grocery summary error:', data.error);
-                    showToast(window.t('not_found', { default: 'Ba a sami albarkatu ba' }), 'danger');
-                    return;
-                }
-                const grocerySpending = document.getElementById('grocerySpending');
-                grocerySpending.querySelector('.amount-value').dataset.amount = data.total_shopping_spent;
-                grocerySpending.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.total_shopping_spent) : '****';
-                document.getElementById('groceryStatusLabel').textContent = data.total_shopping_spent <= data.total_shopping_budget ? window.t('within_budget', { default: 'Cikin Kasafin Kuɗi' }) : window.t('over_budget', { default: 'Fiye da Kasafin Kuɗi' });
-            })
-            .catch(error => {
-                console.error('Error loading grocery summary:', error);
+        .then(data => {
+            if (data.error) {
+                console.error('Grocery summary error:', data.error);
                 showToast(window.t('not_found', { default: 'Ba a sami albarkatu ba' }), 'danger');
-            });
+                return;
+            }
+            const grocerySpending = document.getElementById('grocerySpending');
+            grocerySpending.querySelector('.amount-value').dataset.amount = data.total_shopping_spent;
+            grocerySpending.querySelector('.amount-value').textContent = amountsVisible ? formatCurrency(data.total_shopping_spent) : '****';
+            document.getElementById('groceryStatusLabel').textContent = data.total_shopping_spent <= data.total_shopping_budget ? window.t('within_budget', { default: 'Cikin Kasafin Kuɗi' }) : window.t('over_budget', { default: 'Fiye da Kasafin Kuɗi' });
+        })
+        .catch(error => {
+            console.error('Error loading grocery summary:', error);
+            showToast(window.t('not_found', { default: 'Ba a sami albarkatu ba' }), 'danger');
+        });
 
     fetch(window.apiUrls.foodOrderSummary)
         .then(response => response.json())
@@ -351,12 +458,29 @@ function loadFinancialSummary() {
 }
 
 function loadRecentActivity() {
+    const limitedList = document.getElementById('recentActivityListLimited');
+    const fullList = document.getElementById('recentActivityListFull');
+    
+    // Show loading state
+    limitedList.innerHTML = `
+        <div class="recent-activity-card">
+            <div class="activity-item">
+                <div class="activity-content">
+                    <div class="activity-description fw-semibold">${window.t('loading', { default: 'Ana loda...' })}</div>
+                </div>
+            </div>
+        </div>
+    `;
+    fullList.innerHTML = limitedList.innerHTML;
+
     fetch(window.apiUrls.recentActivity)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(activities => {
-            const limitedList = document.getElementById('recentActivityListLimited');
-            const fullList = document.getElementById('recentActivityListFull');
-            
             if (!Array.isArray(activities)) {
                 console.error('Recent activities is not an array:', activities);
                 throw new Error('Invalid activities data');
@@ -372,7 +496,16 @@ function loadRecentActivity() {
             );
 
             if (validActivities.length < activities.length) {
-                console.warn(`Filtered out ${activities.length - validActivities.length} invalid activities`);
+                console.warn(`Filtered out ${activities.length - validActivities.length} invalid activities`, {
+                    invalid: activities.filter(a => !(
+                        a && 
+                        typeof a === 'object' &&
+                        (a.description || a.description_key) &&
+                        a.icon &&
+                        a.type &&
+                        a.timestamp
+                    ))
+                });
             }
 
             const limitedActivities = validActivities.slice(0, 2);
@@ -431,8 +564,9 @@ function loadRecentActivity() {
         })
         .catch(error => {
             console.error('Error loading recent activity:', error);
-            const limitedList = document.getElementById('recentActivityListLimited');
-            const fullList = document.getElementById('recentActivityListFull');
+            const errorMessage = error.message.includes('NetworkError') || error.message.includes('Failed to fetch')
+                ? window.t('network_error', { default: 'Kuskuren sadarwa' })
+                : window.t('error_loading_activities', { default: 'Kuskure wajen loda ayyukan' });
             limitedList.innerHTML = `
                 <div class="recent-activity-card">
                     <div class="activity-item">
@@ -440,14 +574,14 @@ function loadRecentActivity() {
                             <i class="bi bi-info-circle text-muted"></i>
                         </div>
                         <div class="activity-content">
-                            <div class="activity-description fw-semibold">${window.t('error_loading_activities', { default: 'Kuskure wajen loda ayyukan') }}</div>
+                            <div class="activity-description fw-semibold">${errorMessage}</div>
                             <div class="activity-time text-muted">${window.t('try_again_later', { default: 'Sake gwadawa daga baya') }}</div>
                         </div>
                     </div>
                 </div>
             `;
             fullList.innerHTML = limitedList.innerHTML;
-            showToast(window.t('error_loading_activities', { default: 'Kuskure wajen loda ayyukan') }, 'danger');
+            showToast(errorMessage, 'danger');
         });
 }
 
@@ -485,7 +619,7 @@ function loadNotifications() {
         })
         .catch(error => {
             console.error('Error loading notifications:', error);
-            showToast(window.t('general_error', { default: 'Kuskure ya faru') }, 'danger');
+            showToast(window.t('general_error', { default: 'Kuskure ya faru' }), 'danger');
         });
 }
 
@@ -536,6 +670,20 @@ document.addEventListener('DOMContentLoaded', function() {
     loadFinancialSummary();
     loadRecentActivity();
     loadNotifications();
+
+    // Add click animation to quick action cards
+    document.querySelectorAll('.quick-action-card').forEach(card => {
+        card.addEventListener('click', () => {
+            card.classList.add('animate-click');
+            setTimeout(() => {
+                card.classList.remove('animate-click');
+            }, 200);
+            // Trigger haptic feedback if supported
+            if (navigator.vibrate) {
+                navigator.vibrate(50); // Short vibration
+            }
+        });
+    });
 });
 </script>
 {% endblock %}
