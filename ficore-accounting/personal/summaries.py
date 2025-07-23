@@ -8,6 +8,24 @@ from bson import ObjectId
 summaries_bp = Blueprint('summaries', __name__, url_prefix='/summaries')
 
 # --- HELPER FUNCTION ---
+def parse_currency(value):
+    """Parse a currency string to a float, removing symbols and thousand separators."""
+    if value is None:
+        return 0.0
+    if isinstance(value, (int, float)):
+        return float(value)
+    try:
+        # Remove currency symbol (₦) and commas
+        cleaned_value = str(value).replace('₦', '').replace(',', '')
+        return float(cleaned_value)
+    except (ValueError, TypeError) as e:
+        logger.warning(
+            f"Currency Format Error {value}: could not convert string to float: {str(e)}",
+            extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr}
+        )
+        return 0.0
+
+# --- HELPER FUNCTION ---
 def get_recent_activities(user_id=None, is_admin_user=False, db=None):
     if db is None:
         db = get_mongo_db()
@@ -92,7 +110,7 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None):
             'default_description': 'Created food order: {name}',
             'details': lambda x: {
                 'vendor': x.get('vendor', 'Unknown'),
-                'total_cost': float(x.get('total_cost', 0)) if x.get('total_cost') is not None else 0.0
+                'total_cost': parse_currency(x.get('total_cost', 0))
             }
         }
     }
@@ -290,8 +308,8 @@ def shopping_summary():
         active_lists = 0
         for shopping_list in shopping_lists:
             try:
-                total_budget += float(shopping_list.get('budget', 0))
-                total_spent += float(shopping_list.get('total_spent', 0))
+                total_budget += parse_currency(shopping_list.get('budget', 0))
+                total_spent += parse_currency(shopping_list.get('total_spent', 0))
                 active_lists += 1
             except (ValueError, TypeError) as e:
                 logger.warning(f"Invalid shopping list data for list {shopping_list.get('_id')}: {str(e)}", 
@@ -327,7 +345,7 @@ def food_order_summary():
         active_orders = 0
         for order in food_orders:
             try:
-                total_cost = float(order.get('total_cost', 0)) if order.get('total_cost') is not None else 0.0
+                total_cost = parse_currency(order.get('total_cost', 0))
                 total_spent += total_cost
                 active_orders += 1
             except (ValueError, TypeError) as e:
