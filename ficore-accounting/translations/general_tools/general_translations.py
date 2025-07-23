@@ -7,6 +7,7 @@ GENERAL_TRANSLATIONS = {
         'general_register': 'Register',
         'general_back_to_dashboard': 'Back to Dashboard',
         'general_signup': 'Sign Up',
+        'other': 'Other',
         'general_select': 'Select',
         'shopping_management': 'Shopping Management',
         # General module
@@ -1852,6 +1853,7 @@ GENERAL_TRANSLATIONS = {
         'general_total_spent': 'Jimlar Kashewa',
         'active': 'Mai Aiki',
         'general_collaborators': 'Masu Haɗin Gwiwa',
+        'other': 'Daban',
         'general_item_name': 'Sunan Abu',
         'general_store': 'Shago',
         'general_frequency': 'Yawan',
