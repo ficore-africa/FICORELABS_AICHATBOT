@@ -99,7 +99,13 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None):
 
     for config in activity_configs.values():
         try:
-            cursor = db[config['collection']].find(query).sort(config.get('sort_field', 'created_at'), -1).limit(5)
+            # Use aggregation pipeline for optimized querying
+            pipeline = [
+                {'$match': query},
+                {'$sort': {config.get('sort_field', 'created_at'): -1}},
+                {'$limit': 2}  # Fetch only 2 records per collection
+            ]
+            cursor = db[config['collection']].aggregate(pipeline)
             for record in cursor:
                 # Validate required fields
                 if any(record.get(field) is None for field in config['required_fields']):
@@ -123,6 +129,18 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None):
                             f"Missing total_cost in food order record: {record.get('_id', 'unknown')}",
                             extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr}
                         )
+                # Validate timestamp format
+                try:
+                    timestamp = record.get(config.get('sort_field', 'created_at'), datetime.utcnow())
+                    if isinstance(timestamp, str):
+                        timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                    activity_timestamp = timestamp.isoformat()
+                except ValueError as ve:
+                    logger.warning(
+                        f"Invalid timestamp in {config['collection']} record: {record.get('_id', 'unknown')}, error: {str(ve)}",
+                        extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr}
+                    )
+                    continue
                 # Construct activity object
                 activity = {
                     'type': config['type'],
@@ -136,7 +154,7 @@ def get_recent_activities(user_id=None, is_admin_user=False, db=None):
                         }),
                         module=config['collection']
                     ),
-                    'timestamp': record.get(config.get('sort_field', 'created_at'), datetime.utcnow()).isoformat(),
+                    'timestamp': activity_timestamp,
                     'details': config['details'](record),
                     'icon': config['icon']
                 }
@@ -429,4 +447,4 @@ def notifications():
     except Exception as e:
         logger.error(f"Error fetching notifications: {str(e)}", 
                      extra={'session_id': session.get('sid', 'no-session-id'), 'ip_address': request.remote_addr})
-        return jsonify([]), 200  # Return empty array instead of error to avoid client-side issues
+        return jsonify([]), 200  # Return empty array instead of error to avoid client-side issues.
